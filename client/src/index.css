@@ -1,0 +1,609 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%; /* #FFFFFF */
+  --foreground: 240 10% 3.9%; /* #0A0A0B */
+  --muted: 240 4.8% 95.9%; /* #F4F4F5 */
+  --muted-foreground: 240 3.8% 46.1%; /* #71717A */
+  --popover: 0 0% 100%; /* #FFFFFF */
+  --popover-foreground: 240 10% 3.9%; /* #0A0A0B */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 240 10% 3.9%; /* #0A0A0B */
+  --border: 240 5.9% 90%; /* #E4E4E7 */
+  --input: 240 5.9% 90%; /* #E4E4E7 */
+  --primary: 220 91% 50%; /* #1E40AF - Taekwondo Blue */
+  --primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --secondary: 158 64% 42%; /* #059669 */
+  --secondary-foreground: 0 0% 98%; /* #FAFAFA */
+  --accent: 43 96% 56%; /* #F59E0B */
+  --accent-foreground: 0 0% 98%; /* #FAFAFA */
+  --success: 158 64% 52%; /* #10B981 */
+  --warning: 43 96% 56%; /* #F59E0B */
+  --danger: 0 84% 60%; /* #EF4444 */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 0 0% 98%; /* #FAFAFA */
+  --ring: 240 10% 3.9%; /* #0A0A0B */
+  --radius: 0.5rem;
+
+  /* Sport-specific color variables */
+  /* Taekwondo colors (default) */
+  --sport-primary: 220 91% 50%; /* #1E40AF - Blue */
+  --sport-primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --sport-accent: 220 91% 45%; /* Darker blue */
+  --sport-accent-light: 220 91% 55%; /* Lighter blue */
+  --sport-gradient-from: 220 91% 50%;
+  --sport-gradient-to: 220 91% 35%;
+  
+  /* Chart colors */
+  --chart-1: 220 91% 50%; /* #1E40AF */
+  --chart-2: 158 64% 42%; /* #059669 */
+  --chart-3: 43 96% 56%; /* #F59E0B */
+  --chart-4: 0 84% 60%; /* #EF4444 */
+  --chart-5: 270 95% 75%; /* #A855F7 */
+  
+  /* Sidebar colors */
+  --sidebar-background: 0 0% 100%; /* #FFFFFF */
+  --sidebar-foreground: 240 5.9% 10%; /* #18181B */
+  --sidebar-primary: 220 91% 50%; /* #1E40AF */
+  --sidebar-primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --sidebar-accent: 240 4.8% 95.9%; /* #F4F4F5 */
+  --sidebar-accent-foreground: 240 5.9% 10%; /* #18181B */
+  --sidebar-border: 240 5.9% 90%; /* #E4E4E7 */
+  --sidebar-ring: 240 10% 3.9%; /* #0A0A0B */
+}
+
+.dark {
+  --background: 240 10% 3.9%; /* #0A0A0B */
+  --foreground: 0 0% 98%; /* #FAFAFA */
+  --muted: 240 3.7% 15.9%; /* #27272A */
+  --muted-foreground: 240 5% 64.9%; /* #A1A1AA */
+  --popover: 240 10% 3.9%; /* #0A0A0B */
+  --popover-foreground: 0 0% 98%; /* #FAFAFA */
+  --card: 240 10% 3.9%; /* #0A0A0B */
+  --card-foreground: 0 0% 98%; /* #FAFAFA */
+  --border: 240 3.7% 15.9%; /* #27272A */
+  --input: 240 3.7% 15.9%; /* #27272A */
+  --primary: 220 91% 50%; /* #1E40AF */
+  --primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --secondary: 158 64% 42%; /* #059669 */
+  --secondary-foreground: 0 0% 98%; /* #FAFAFA */
+  --accent: 43 96% 56%; /* #F59E0B */
+  --accent-foreground: 0 0% 98%; /* #FAFAFA */
+  --success: 158 64% 52%; /* #10B981 */
+  --warning: 43 96% 56%; /* #F59E0B */
+  --danger: 0 84% 60%; /* #EF4444 */
+  --destructive: 0 62.8% 30.6%; /* #7F1D1D */
+  --destructive-foreground: 0 0% 98%; /* #FAFAFA */
+  --ring: 240 4.9% 83.9%; /* #D4D4D8 */
+  
+  /* Sidebar colors for dark mode */
+  --sidebar-background: 240 5.9% 10%; /* #18181B */
+  --sidebar-foreground: 0 0% 98%; /* #FAFAFA */
+  --sidebar-primary: 220 91% 50%; /* #1E40AF */
+  --sidebar-primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --sidebar-accent: 240 3.7% 15.9%; /* #27272A */
+  --sidebar-accent-foreground: 0 0% 98%; /* #FAFAFA */
+  --sidebar-border: 240 3.7% 15.9%; /* #27272A */
+  --sidebar-ring: 240 4.9% 83.9%; /* #D4D4D8 */
+}
+
+/* Sport-specific theme classes */
+.sport-taekwondo {
+  --sport-primary: 220 91% 50%; /* #1E40AF - Blue */
+  --sport-primary-foreground: 210 40% 98%; /* #F1F5F9 */
+  --sport-accent: 220 91% 45%; /* Darker blue */
+  --sport-accent-light: 220 91% 55%; /* Lighter blue */
+  --sport-gradient-from: 220 91% 50%;
+  --sport-gradient-to: 220 91% 35%;
+  --primary: 220 91% 50%; /* Update primary to match sport */
+}
+
+.sport-karate {
+  --sport-primary: 0 84% 60%; /* #EF4444 - Red */
+  --sport-primary-foreground: 0 0% 98%; /* #FAFAFA */
+  --sport-accent: 0 84% 55%; /* Darker red */
+  --sport-accent-light: 0 84% 65%; /* Lighter red */
+  --sport-gradient-from: 0 84% 60%;
+  --sport-gradient-to: 0 84% 45%;
+  --primary: 0 84% 60%; /* Update primary to match sport */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+@layer components {
+  /* Modern glass effect */
+  .glass-effect {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Gradient animations */
+  .gradient-animate {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+
+  /* Sport-specific utility classes */
+  .sport-primary {
+    background-color: hsl(var(--sport-primary));
+    color: hsl(var(--sport-primary-foreground));
+  }
+
+  .sport-primary-text {
+    color: hsl(var(--sport-primary));
+  }
+
+  .sport-accent {
+    background-color: hsl(var(--sport-accent));
+    color: hsl(var(--sport-primary-foreground));
+  }
+
+  .sport-gradient {
+    background: linear-gradient(135deg, 
+      hsl(var(--sport-gradient-from)), 
+      hsl(var(--sport-gradient-to))
+    );
+  }
+
+  .sport-border {
+    border-color: hsl(var(--sport-primary));
+  }
+
+  .sport-ring {
+    --tw-ring-color: hsl(var(--sport-primary));
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  /* Smooth hover effects */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Pulse animation for live indicators */
+  .pulse-gentle {
+    animation: pulseGentle 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulseGentle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  /* Shimmer effect for loading states */
+  .shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  /* Floating animation */
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  /* Scale on hover */
+  .scale-hover {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .scale-hover:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Smooth border radius animation */
+  .border-radius-animate {
+    transition: border-radius 0.3s ease-in-out;
+  }
+  
+  .border-radius-animate:hover {
+    border-radius: 1.5rem;
+  }
+  
+  /* Modern card glow effect */
+  .card-glow {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-glow::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .card-glow:hover::before {
+    opacity: 1;
+  }
+  
+  /* Mobile Responsive Enhancements */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .mobile-container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+  }
+  
+  /* Prevent text overflow */
+  .mobile-text-container {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+  }
+  
+  .mobile-padding {
+    @apply p-3;
+  }
+  
+  @screen sm {
+    .mobile-padding {
+      @apply p-4;
+    }
+  }
+  
+  @screen md {
+    .mobile-padding {
+      @apply p-6;
+    }
+  }
+  
+  @screen lg {
+    .mobile-padding {
+      @apply p-8;
+    }
+  }
+  
+  .mobile-grid {
+    @apply grid grid-cols-1 gap-3;
+  }
+  
+  @screen sm {
+    .mobile-grid {
+      @apply grid-cols-2 gap-4;
+    }
+  }
+  
+  @screen md {
+    .mobile-grid {
+      @apply gap-6;
+    }
+  }
+  
+  @screen lg {
+    .mobile-grid {
+      @apply grid-cols-3 gap-8;
+    }
+  }
+  
+  @screen xl {
+    .mobile-grid {
+      @apply grid-cols-4;
+    }
+  }
+  
+  .mobile-sidebar {
+    @apply fixed top-0 left-0 bottom-0 w-72 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out;
+  }
+  
+  .mobile-sidebar.open {
+    @apply translate-x-0;
+  }
+  
+  @screen lg {
+    .mobile-sidebar {
+      @apply static transform-none w-64;
+    }
+  }
+  
+  .mobile-button {
+    @apply min-h-[44px] px-3 py-2 text-sm rounded-lg flex items-center justify-center gap-2;
+  }
+  
+  @screen sm {
+    .mobile-button {
+      @apply px-4 py-3 text-base;
+    }
+  }
+  
+  .mobile-card {
+    @apply p-3 rounded-lg shadow-sm;
+  }
+  
+  @screen sm {
+    .mobile-card {
+      @apply p-4 rounded-xl;
+    }
+  }
+  
+  @screen md {
+    .mobile-card {
+      @apply p-6;
+    }
+  }
+  
+  /* Responsive text sizes */
+  .mobile-heading {
+    @apply text-lg font-semibold;
+  }
+  
+  @screen sm {
+    .mobile-heading {
+      @apply text-xl;
+    }
+  }
+  
+  @screen md {
+    .mobile-heading {
+      @apply text-2xl font-bold;
+    }
+  }
+  
+  .mobile-subheading {
+    @apply text-sm font-medium;
+  }
+  
+  @screen sm {
+    .mobile-subheading {
+      @apply text-base;
+    }
+  }
+  
+  .mobile-text {
+    @apply text-xs;
+  }
+  
+  @screen sm {
+    .mobile-text {
+      @apply text-sm;
+    }
+  }
+  
+  /* Responsive spacing */
+  .mobile-space-y {
+    @apply space-y-3;
+  }
+  
+  @screen sm {
+    .mobile-space-y {
+      @apply space-y-4;
+    }
+  }
+  
+  @screen md {
+    .mobile-space-y {
+      @apply space-y-6;
+    }
+  }
+  
+  .mobile-space-x {
+    @apply space-x-2;
+  }
+  
+  @screen sm {
+    .mobile-space-x {
+      @apply space-x-3;
+    }
+  }
+  
+  @screen md {
+    .mobile-space-x {
+      @apply space-x-4;
+    }
+  }
+  
+  /* Responsive layouts */
+  .mobile-flex-col {
+    @apply flex flex-col space-y-3;
+  }
+  
+  @screen sm {
+    .mobile-flex-col {
+      @apply space-y-4;
+    }
+  }
+  
+  @screen md {
+    .mobile-flex-col {
+      @apply flex-row space-y-0 space-x-4;
+    }
+  }
+  
+  @screen lg {
+    .mobile-flex-col {
+      @apply space-x-6;
+    }
+  }
+  
+  /* Safe area for mobile devices with notches */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Responsive content width */
+  .mobile-content {
+    @apply w-full max-w-none;
+  }
+  
+  @screen sm {
+    .mobile-content {
+      @apply max-w-2xl;
+    }
+  }
+  
+  @screen md {
+    .mobile-content {
+      @apply max-w-4xl;
+    }
+  }
+  
+  @screen lg {
+    .mobile-content {
+      @apply max-w-6xl;
+    }
+  }
+  
+  @screen xl {
+    .mobile-content {
+      @apply max-w-7xl;
+    }
+  }
+  
+  /* Responsive form elements */
+  .mobile-input {
+    @apply w-full px-3 py-2 text-sm;
+  }
+  
+  @screen sm {
+    .mobile-input {
+      @apply px-4 py-3 text-base;
+    }
+  }
+  
+  /* Responsive table */
+  .mobile-table {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .mobile-table table {
+    @apply min-w-full text-xs;
+  }
+  
+  @screen sm {
+    .mobile-table table {
+      @apply text-sm;
+    }
+  }
+  
+  /* Responsive navigation */
+  .mobile-nav {
+    @apply flex flex-col space-y-1;
+  }
+  
+  @screen lg {
+    .mobile-nav {
+      @apply space-y-2;
+    }
+  }
+  
+  /* Responsive charts and media */
+  .mobile-chart {
+    @apply w-full h-48;
+  }
+  
+  @screen sm {
+    .mobile-chart {
+      @apply h-64;
+    }
+  }
+  
+  @screen md {
+    .mobile-chart {
+      @apply h-80;
+    }
+  }
+  
+  @screen lg {
+    .mobile-chart {
+      @apply h-96;
+    }
+  }
+  
+  /* Responsive modal/dialog */
+  .mobile-modal {
+    @apply w-full max-w-none mx-2;
+  }
+  
+  @screen sm {
+    .mobile-modal {
+      @apply max-w-md mx-auto;
+    }
+  }
+  
+  @screen md {
+    .mobile-modal {
+      @apply max-w-lg;
+    }
+  }
+  
+  @screen lg {
+    .mobile-modal {
+      @apply max-w-xl;
+    }
+  }
+}

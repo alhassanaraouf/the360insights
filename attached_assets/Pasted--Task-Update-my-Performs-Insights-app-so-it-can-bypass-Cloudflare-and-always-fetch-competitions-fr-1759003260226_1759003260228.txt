@@ -1,0 +1,64 @@
+# Task
+Update my Performs Insights app so it can bypass Cloudflare and always fetch competitions from SimplyCompete.
+
+# Requirements
+
+## 1. sync_competitions.py
+- Use Playwright with headless Chromium (`--no-sandbox`) to:
+  1. Open https://worldtkd.simplycompete.com/events
+  2. Wait until the page fully loads
+  3. Extract cookies issued by Cloudflare (including `cf_clearance`)
+  4. Save cookies into `cookies.json`
+
+- Implement a function `get_cookies()`:
+  - If `cookies.json` exists and is valid, load and return them
+  - Otherwise, run Playwright to refresh cookies and save them
+
+- Implement a function `get_competitions()`:
+  - Load cookies from `cookies.json`
+  - Call the API:
+    ```
+    https://worldtkd.simplycompete.com/events/eventList?da=true&eventType=All&invitationStatus=all&isArchived=false&itemsPerPage=12&pageNumber=1
+    ```
+  - Pass cookies in request headers
+  - Parse JSON and extract:
+    - `id`
+    - `name`
+    - `startDate`
+  - Return as Python list of dicts
+
+- Implement a function `save_competitions(competitions)`:
+  - Connect to SQLite (`app.db`)
+  - Create table `competitions` if it does not exist:
+    ```sql
+    CREATE TABLE IF NOT EXISTS competitions (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      start_date TEXT
+    )
+    ```
+  - Insert or update competitions using `INSERT OR REPLACE`
+
+## 2. app.py (Flask Backend)
+- Import `get_competitions()` and `save_competitions()`
+- Create endpoint `/competitions/sync`:
+  - Call `get_competitions()`
+  - Save results in DB
+  - Return competitions in JSON
+
+- Create endpoint `/competitions`:
+  - Return all competitions currently in DB (without syncing)
+
+## 3. Error Handling
+- If API returns 403 Forbidden:
+  - Refresh cookies with Playwright
+  - Retry request automatically
+
+# Expected Output
+When I call `/competitions/sync`, the DB should be updated and I should see:
+
+```json
+[
+  { "id": "11f0475f-66b5-53f3-95c6-0225d1e4088f", "name": "Albania Open 2025", "start_date": "2025-03-15" },
+  { "id": "11f06186-d592-e11a-a2a2-0225d1e4088f", "name": "Small States Countries Championships 2025", "start_date": "2025-10-02" }
+]

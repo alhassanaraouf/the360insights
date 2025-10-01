@@ -1,0 +1,485 @@
+import {
+  athletes, coaches, kpiMetrics, strengths, weaknesses, athleteRanks,
+  trainingRecommendations, careerEvents, aiQueries, users,
+  type Athlete, type InsertAthlete, type Coach, type InsertCoach,
+  type KpiMetric, type InsertKpiMetric,
+  type Strength, type InsertStrength, type Weakness, type InsertWeakness,
+  type AthleteRank, type InsertAthleteRank,
+  type TrainingRecommendation, type InsertTrainingRecommendation,
+  type CareerEvent, type InsertCareerEvent, type AiQuery, type InsertAiQuery,
+  type User, type UpsertUser
+} from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { db } from "./db";
+// Removed hardcoded data population imports
+
+export interface IStorage {
+  // User operations (required for authentication)
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  deleteUser(id: string): Promise<boolean>;
+  
+  // Athletes
+  getAthlete(id: number): Promise<Athlete | undefined>;
+  getAllAthletes(): Promise<Athlete[]>;
+  createAthlete(athlete: InsertAthlete): Promise<Athlete>;
+  updateAthlete(id: number, updates: Partial<InsertAthlete>): Promise<Athlete>;
+  deleteAthlete(id: number): Promise<void>;
+  
+  // KPI Metrics
+  getKpiMetricsByAthleteId(athleteId: number): Promise<KpiMetric[]>;
+  createKpiMetric(metric: InsertKpiMetric): Promise<KpiMetric>;
+  
+  // Strengths & Weaknesses
+  getStrengthsByAthleteId(athleteId: number): Promise<Strength[]>;
+  getWeaknessesByAthleteId(athleteId: number): Promise<Weakness[]>;
+  createStrength(strength: InsertStrength): Promise<Strength>;
+  createWeakness(weakness: InsertWeakness): Promise<Weakness>;
+  
+  // Rankings (now stored in performance_data)
+  getAthleteRankings(athleteId: number): Promise<{ worldRank?: number; olympicRank?: number }>;
+  getAllAthletesWithRankings(): Promise<(Athlete & { worldRank?: number; olympicRank?: number })[]>;
+  
+  // Performance Data
+  getPerformanceDataByAthleteId(athleteId: number): Promise<PerformanceData[]>;
+  createPerformanceData(data: InsertPerformanceData): Promise<PerformanceData>;
+  
+  // Training Recommendations
+  getTrainingRecommendationsByAthleteId(athleteId: number): Promise<TrainingRecommendation[]>;
+  createTrainingRecommendation(recommendation: InsertTrainingRecommendation): Promise<TrainingRecommendation>;
+  
+  // Career Events
+  getCareerEventsByAthleteId(athleteId: number): Promise<CareerEvent[]>;
+  createCareerEvent(event: InsertCareerEvent): Promise<CareerEvent>;
+  
+  // AI Queries
+  getAiQueriesByAthleteId(athleteId: number): Promise<AiQuery[]>;
+  createAiQuery(query: InsertAiQuery): Promise<AiQuery>;
+  deleteAiQuery(id: number): Promise<boolean>;
+}
+
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    // Hardcoded data initialization removed - athletes should be imported via scraper or JSON import
+  }
+
+  private async initializeSampleData() {
+    try {
+      // Check if data already exists
+      const existingAthletes = await db.select().from(athletes).limit(1);
+      if (existingAthletes.length > 0) {
+        return; // Data already exists, skip initialization
+      }
+
+      // Authentic Egyptian Taekwondo athletes from World Taekwondo rankings
+      const athletes_data = await db.insert(athletes).values([
+        {
+          name: "Seif Hussein Sherif Eissa",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          profileImage: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "74.50",
+          winRate: "87.20",
+          nextMatchDays: 7,
+          coachName: "Mohamed Khaled Hassan",
+          coachTitle: "National Team Head Coach",
+        },
+        {
+          name: "Ahmed Wael Ahmed",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          profileImage: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "69.10",
+          winRate: "78.40",
+          nextMatchDays: 14,
+          coachName: "Ahmed Mahmoud Ali",
+          coachTitle: "Senior Taekwondo Coach",
+        },
+        {
+          name: "Shahd Sami Ahmed",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          profileImage: "https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "63.60",
+          winRate: "71.20",
+          nextMatchDays: 21,
+          coachName: "Fatma Ahmed Soliman",
+          coachTitle: "Women's Team Coach",
+        },
+        {
+          name: "Ahmed Sayed Ali Rawy",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          profileImage: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "65.50",
+          winRate: "73.80",
+          nextMatchDays: 28,
+          coachName: "Hossam Eldeen Mahmoud",
+          coachTitle: "Technical Director",
+        },
+        {
+          name: "Aya Mohamed Shehata",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          profileImage: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "67.30",
+          winRate: "69.50",
+          nextMatchDays: 35,
+          coachName: "Rania Mohamed Ibrahim",
+          coachTitle: "Youth Development Coach",
+        },
+        {
+          name: "Habiba Weal Emerah",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          worldRank: 28,
+          profileImage: "https://images.unsplash.com/photo-1596996879440-9238a8b26e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "70.00",
+          winRate: "66.30",
+          nextMatchDays: 42,
+          coachName: "Samir Ahmed Hassan",
+          coachTitle: "Performance Coach",
+        },
+        {
+          name: "Yahia Hassan",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          worldRank: 31,
+          profileImage: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "66.00",
+          winRate: "64.80",
+          nextMatchDays: 49,
+          coachName: "Khalid Mostafa Ali",
+          coachTitle: "Sparring Coach",
+        },
+        {
+          name: "Malak Samy",
+          sport: "Taekwondo",
+          nationality: "Egypt",
+          worldRank: 35,
+          profileImage: "https://images.unsplash.com/photo-1574015974293-817b0ebebb74?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150",
+          readinessIndex: "70.00",
+          winRate: "62.10",
+          nextMatchDays: 56,
+          coachName: "Dina Farouk Mohamed",
+          coachTitle: "Strategic Coach",
+        }
+      ]).returning();
+
+      // Create sample data for all athletes
+      for (const athlete of athletes_data) {
+        // Sample KPI metrics for Taekwondo (varied by athlete)
+        const baseAccuracy = athlete.id === 4 ? 94.5 : 88.0 + (athlete.id * 1.2);
+        const baseAgility = athlete.id === 4 ? 89.7 : 85.0 + (athlete.id * 0.8);
+        const baseDefense = athlete.id === 4 ? 92.3 : 87.0 + (athlete.id * 1.0);
+        const baseFocus = athlete.id === 4 ? 96.1 : 90.0 + (athlete.id * 1.1);
+
+        await db.insert(kpiMetrics).values([
+          { athleteId: athlete.id, metricName: "Kick Accuracy", value: baseAccuracy.toFixed(1), trend: "3.2" },
+          { athleteId: athlete.id, metricName: "Speed & Agility", value: baseAgility.toFixed(1), trend: "2.1" },
+          { athleteId: athlete.id, metricName: "Defense Rating", value: baseDefense.toFixed(1), trend: "1.8" },
+          { athleteId: athlete.id, metricName: "Mental Focus", value: baseFocus.toFixed(1), trend: "4.5" },
+        ]);
+
+        // Sample strengths for Taekwondo (varied by athlete)
+        const strengthScores = athlete.id === 4 ? [98, 95, 92] : [90 + athlete.id, 88 + athlete.id, 85 + athlete.id];
+        await db.insert(strengths).values([
+          { athleteId: athlete.id, name: "Head Kick Technique", description: "Exceptional high kicks with precision and power", score: strengthScores[0] },
+          { athleteId: athlete.id, name: "Counter-Attack Speed", description: "Lightning-fast response to opponent attacks", score: strengthScores[1] },
+          { athleteId: athlete.id, name: "Ring Control", description: "Superior positioning and distance management", score: strengthScores[2] },
+        ]);
+
+        // Sample weaknesses (varied by athlete)
+        const weaknessScores = athlete.id === 4 ? [72, 68, 75] : [70 + (athlete.id % 3), 65 + (athlete.id % 4), 72 + (athlete.id % 2)];
+        await db.insert(weaknesses).values([
+          { athleteId: athlete.id, name: "Low Kick Defense", description: "Occasional vulnerability to leg attacks", score: weaknessScores[0] },
+          { athleteId: athlete.id, name: "Close Range Combat", description: "Prefers distance fighting", score: weaknessScores[1] },
+          { athleteId: athlete.id, name: "Stamina in Final Round", description: "Energy management in extended matches", score: weaknessScores[2] },
+        ]);
+
+        // Performance progression (varied by athlete)
+        const baseScore = athlete.id === 4 ? 89.5 : 82.0 + (athlete.id * 1.5);
+        const baseRanking = athlete.id === 4 ? 8 : 15;
+        await db.insert(performanceData).values([
+          { athleteId: athlete.id, month: "Jan", performanceScore: (baseScore - 1.0).toFixed(2), ranking: baseRanking + 2 },
+          { athleteId: athlete.id, month: "Feb", performanceScore: (baseScore + 1.7).toFixed(2), ranking: baseRanking },
+          { athleteId: athlete.id, month: "Mar", performanceScore: (baseScore + 3.9).toFixed(2), ranking: baseRanking - 1 },
+          { athleteId: athlete.id, month: "Apr", performanceScore: (baseScore + 5.3).toFixed(2), ranking: baseRanking - 2 },
+          { athleteId: athlete.id, month: "May", performanceScore: (baseScore + 6.6).toFixed(2), ranking: baseRanking - 1 },
+          { athleteId: athlete.id, month: "Jun", performanceScore: (baseScore + 6.1).toFixed(2), ranking: baseRanking },
+          { athleteId: athlete.id, month: "Jul", performanceScore: (baseScore + 4.7).toFixed(2), ranking: baseRanking + 1 },
+          { athleteId: athlete.id, month: "Aug", performanceScore: (baseScore + 7.3).toFixed(2), ranking: baseRanking - 2 },
+          { athleteId: athlete.id, month: "Sep", performanceScore: (baseScore + 7.7).toFixed(2), ranking: baseRanking - 1 },
+          { athleteId: athlete.id, month: "Oct", performanceScore: (baseScore + 6.4).toFixed(2), ranking: baseRanking },
+          { athleteId: athlete.id, month: "Nov", performanceScore: (baseScore + 8.6).toFixed(2), ranking: baseRanking - 2 },
+          { athleteId: athlete.id, month: "Dec", performanceScore: (baseScore + 8.0).toFixed(2), ranking: baseRanking - 1 },
+        ]);
+
+        // Training recommendations (varied by athlete)
+        await db.insert(trainingRecommendations).values([
+          { athleteId: athlete.id, drillName: "Double Kick Combinations", description: "Enhance speed and fluidity in consecutive kicks", expectedUplift: "15.00", priority: 1 },
+          { athleteId: athlete.id, drillName: "Counter-Attack Timing", description: "Improve reaction speed against incoming attacks", expectedUplift: "12.00", priority: 2 },
+          { athleteId: athlete.id, drillName: "Close Range Defense", description: "Strengthen defensive techniques in tight situations", expectedUplift: "18.00", priority: 3 },
+          { athleteId: athlete.id, drillName: "Head Kick Precision", description: "Maintain accuracy under pressure", expectedUplift: "10.00", priority: 4 },
+        ]);
+
+        // Career events (specific to each athlete)
+        if (athlete.id === 4) {
+          // Seif Eissa's authentic career milestones
+          await db.insert(careerEvents).values([
+            { athleteId: athlete.id, eventType: "achievement", title: "Olympic Bronze Medal", description: "Tokyo 2020 Men's -80kg Taekwondo", date: "2021-07-27", metadata: {} },
+            { athleteId: athlete.id, eventType: "achievement", title: "World Championship Silver", description: "Manchester 2019 World Taekwondo Championships", date: "2019-05-18", metadata: {} },
+            { athleteId: athlete.id, eventType: "achievement", title: "African Championship Gold", description: "Dakar 2022 African Taekwondo Championships", date: "2022-02-14", metadata: {} },
+            { athleteId: athlete.id, eventType: "match", title: "Defeated Vladislav Larin", description: "Victory over world #1 in Grand Prix Final", date: "2024-01-20", metadata: {} },
+            { athleteId: athlete.id, eventType: "injury", title: "Shoulder Strain", description: "Minor training injury, 2 weeks recovery", date: "2023-09-15", metadata: {} },
+            { athleteId: athlete.id, eventType: "achievement", title: "Grand Prix Series Gold", description: "Rome 2023 World Taekwondo Grand Prix", date: "2023-06-10", metadata: {} },
+          ]);
+        } else {
+          // Generic career events for other athletes
+          await db.insert(careerEvents).values([
+            { athleteId: athlete.id, eventType: "achievement", title: "National Championship Gold", description: "Egyptian National Taekwondo Championships", date: "2023-03-15", metadata: {} },
+            { athleteId: athlete.id, eventType: "achievement", title: "African Championship Medal", description: "Continental competition achievement", date: "2022-11-20", metadata: {} },
+            { athleteId: athlete.id, eventType: "match", title: "International Victory", description: "Significant win in international competition", date: "2023-08-10", metadata: {} },
+            { athleteId: athlete.id, eventType: "achievement", title: "Regional Tournament Gold", description: "Regional level championship victory", date: "2023-12-05", metadata: {} },
+          ]);
+        }
+      }
+
+      // Opponent data removed - opponents are now treated as regular athletes
+    } catch (error) {
+      console.error("Error initializing sample data:", error);
+    }
+  }
+
+  private async populateRealData() {
+    // Hardcoded data population removed - athletes should be imported via scraper or JSON import
+    return;
+  }
+
+
+
+  // KPI Metrics
+  async getKpiMetricsByAthleteId(athleteId: number): Promise<KpiMetric[]> {
+    return await db.select().from(kpiMetrics).where(eq(kpiMetrics.athleteId, athleteId));
+  }
+
+  async createKpiMetric(insertMetric: InsertKpiMetric): Promise<KpiMetric> {
+    const [metric] = await db
+      .insert(kpiMetrics)
+      .values(insertMetric)
+      .returning();
+    return metric;
+  }
+
+  // Strengths & Weaknesses
+  async getStrengthsByAthleteId(athleteId: number): Promise<Strength[]> {
+    return await db.select().from(strengths).where(eq(strengths.athleteId, athleteId));
+  }
+
+  async getWeaknessesByAthleteId(athleteId: number): Promise<Weakness[]> {
+    return await db.select().from(weaknesses).where(eq(weaknesses.athleteId, athleteId));
+  }
+
+  async createStrength(insertStrength: InsertStrength): Promise<Strength> {
+    const [strength] = await db
+      .insert(strengths)
+      .values(insertStrength)
+      .returning();
+    return strength;
+  }
+
+  async createWeakness(insertWeakness: InsertWeakness): Promise<Weakness> {
+    const [weakness] = await db
+      .insert(weaknesses)
+      .values(insertWeakness)
+      .returning();
+    return weakness;
+  }
+
+  // Opponents functionality removed - opponents are now treated as regular athletes
+
+  // Performance Data
+  async getPerformanceDataByAthleteId(athleteId: number): Promise<PerformanceData[]> {
+    return await db.select().from(performanceData).where(eq(performanceData.athleteId, athleteId));
+  }
+
+  async createPerformanceData(insertData: InsertPerformanceData): Promise<PerformanceData> {
+    const [data] = await db
+      .insert(performanceData)
+      .values(insertData)
+      .returning();
+    return data;
+  }
+
+  // Training Recommendations
+  async getTrainingRecommendationsByAthleteId(athleteId: number): Promise<TrainingRecommendation[]> {
+    return await db.select().from(trainingRecommendations).where(eq(trainingRecommendations.athleteId, athleteId));
+  }
+
+  async createTrainingRecommendation(insertRec: InsertTrainingRecommendation): Promise<TrainingRecommendation> {
+    const [recommendation] = await db
+      .insert(trainingRecommendations)
+      .values(insertRec)
+      .returning();
+    return recommendation;
+  }
+
+  // Career Events
+  async getCareerEventsByAthleteId(athleteId: number): Promise<CareerEvent[]> {
+    return await db.select().from(careerEvents).where(eq(careerEvents.athleteId, athleteId));
+  }
+
+  async createCareerEvent(insertEvent: InsertCareerEvent): Promise<CareerEvent> {
+    const [event] = await db
+      .insert(careerEvents)
+      .values(insertEvent)
+      .returning();
+    return event;
+  }
+
+  // AI Queries
+  async getAiQueriesByAthleteId(athleteId: number): Promise<AiQuery[]> {
+    return await db.select().from(aiQueries).where(eq(aiQueries.athleteId, athleteId));
+  }
+
+  async createAiQuery(insertQuery: InsertAiQuery): Promise<AiQuery> {
+    const [query] = await db
+      .insert(aiQueries)
+      .values(insertQuery)
+      .returning();
+    return query;
+  }
+
+  async deleteAiQuery(id: number): Promise<boolean> {
+    const result = await db.delete(aiQueries).where(eq(aiQueries.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // User operations (required for authentication)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    const [upsertedUser] = await db
+      .insert(users)
+      .values(user)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          bio: user.bio,
+          profileImageUrl: user.profileImageUrl,
+          passwordHash: user.passwordHash,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return upsertedUser;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Athletes
+  async getAthlete(id: number): Promise<Athlete | undefined> {
+    const [athlete] = await db.select().from(athletes).where(eq(athletes.id, id));
+    return athlete || undefined;
+  }
+
+  async getAllAthletes(): Promise<Athlete[]> {
+    return await db.select().from(athletes);
+  }
+
+  async createAthlete(athlete: InsertAthlete): Promise<Athlete> {
+    const [newAthlete] = await db.insert(athletes).values(athlete).returning();
+    return newAthlete;
+  }
+
+
+
+  async updateAthlete(id: number, updates: Partial<InsertAthlete>): Promise<Athlete> {
+    const [athlete] = await db
+      .update(athletes)
+      .set(updates)
+      .where(eq(athletes.id, id))
+      .returning();
+    return athlete;
+  }
+
+  async deleteAthlete(id: number): Promise<void> {
+    // Delete related data first (cascade delete)
+    await Promise.all([
+      db.delete(kpiMetrics).where(eq(kpiMetrics.athleteId, id)),
+      db.delete(strengths).where(eq(strengths.athleteId, id)),
+      db.delete(weaknesses).where(eq(weaknesses.athleteId, id)),
+      db.delete(athleteRanks).where(eq(athleteRanks.athleteId, id)),
+      db.delete(careerEvents).where(eq(careerEvents.athleteId, id)),
+      db.delete(trainingRecommendations).where(eq(trainingRecommendations.athleteId, id)),
+      db.delete(aiQueries).where(eq(aiQueries.athleteId, id))
+    ]);
+    
+    // Finally delete the athlete
+    await db.delete(athletes).where(eq(athletes.id, id));
+  }
+
+  // Rankings (now stored in athlete_ranks)
+  async getAthleteRankings(athleteId: number): Promise<{ worldRank?: number; olympicRank?: number }> {
+    const worldRankingData = await db
+      .select()
+      .from(athleteRanks)
+      .where(
+        and(
+          eq(athleteRanks.athleteId, athleteId),
+          eq(athleteRanks.rankingType, 'world')
+        )
+      )
+      .orderBy(desc(athleteRanks.rankingDate))
+      .limit(1);
+    
+    const olympicRankingData = await db
+      .select()
+      .from(athleteRanks)
+      .where(
+        and(
+          eq(athleteRanks.athleteId, athleteId),
+          eq(athleteRanks.rankingType, 'olympic')
+        )
+      )
+      .orderBy(desc(athleteRanks.rankingDate))
+      .limit(1);
+    
+    return {
+      worldRank: worldRankingData[0]?.ranking || undefined,
+      olympicRank: olympicRankingData[0]?.ranking || undefined
+    };
+  }
+
+  async getAllAthletesWithRankings(): Promise<(Athlete & { worldRank?: number; olympicRank?: number })[]> {
+    const athletesList = await this.getAllAthletes();
+    const athletesWithRankings = await Promise.all(
+      athletesList.map(async (athlete) => {
+        const rankings = await this.getAthleteRankings(athlete.id);
+        return {
+          ...athlete,
+          worldRank: rankings.worldRank,
+          olympicRank: rankings.olympicRank
+        };
+      })
+    );
+    return athletesWithRankings;
+  }
+}
+
+export const storage = new DatabaseStorage();

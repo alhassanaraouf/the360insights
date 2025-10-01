@@ -1,0 +1,168 @@
+Performs Insights
+
+1  Product Overview — Performs Insights
+
+Performs Insights is a web-based AI module that bolts onto the Performs App data lake.
+It instantly answers any natural-language question about:
+
+Pillar	What You Get
+Athlete 360°	KPI-scored list of strengths & weaknesses, injury history, and readiness index.
+Career Journey	Interactive timeline from first recorded event to today.
+Next-Step Roadmap	AI forecast of form, upcoming events, and recommended preparations.
+Prescriptive Fixes	Drill-level interventions prioritized by expected KPI uplift.
+NEW – Opponents List	Dynamic roster of upcoming opponents with side-by-side metrics, playing style fingerprints, and vulnerability map.
+NEW – Win-One-by-One Plans	Match-specific tactical blueprint and training micro-cycle that exploit each opponent’s weak nodes.
+
+2  Actors & Goals (updated)
+
+Actor	Primary Goal
+Athlete	See personal gaps and the exact plan to out-perform the next rival.
+Head Coach	Convert opponent intel into selection and game-plan decisions.
+Tactical Analyst / Opposition Scout	Deep-dive into rival patterns, strength charts, and suggested counters.
+Performance & Rehab Staff	Align conditioning to opponent-specific physical demands.
+Sporting Director / Agent	Benchmark transfer targets against league rivals.
+System Admin	Connect data feeds (Performs core + external opponent datasets) and manage RBAC.
+
+3  Core Use Cases (incremental)
+
+#	Title	Short Description
+UC-01	Ask-Insight Query	One-shot Q&A on athlete or opponent.
+UC-02	Strength-Weakness Drill-Down	Evidence & confidence scores.
+UC-03	Career Journey Playback	Filter by competitions/injuries.
+UC-04	Predictive Trajectory	Season forecast + readiness index.
+UC-05	Prescriptive Training Planner	Auto micro-cycle for athlete gaps.
+UC-06	Opponents List Generation	Pull upcoming schedule, rank opponents by threat level, surface style archetype & recent form.
+UC-07	Opponent-Specific Win Plan	AI suggests tactical scheme, set-piece variations, and targeted drills; exports to session planner.
+UC-08	Multi-Athlete Benchmarking	Spider chart & ROI delta.
+UC-09	Alert & Notification Engine	Fatigue or performance thresholds.
+UC-10	Data Source Onboarding	Connect wearable, video, federation APIs.
+UC-11	Explainability & Audit	SHAP / Grad-CAM overlays.
+UC-12	Role-Based Security	GDPR/FERPA compliant RBAC.
+
+4  Representative User Stories (new lines italic)
+
+As an athlete, I want a “Rivals Radar” that lists my next five opponents with their top three vulnerabilities, so I can train purposefully this week.
+
+As a head coach, I want an automated match plan that tells me where and when to press against Team X based on their passing network, so that we raise our win probability by at least 5 %.
+
+As an opposition scout, I want a side-by-side spider chart of our winger and their full-back, plus AI-generated crossing tactics, so I can brief the coaching staff in under 10 minutes.
+
+As a performance analyst, I want opponent style archetypes (high press, deep block, etc.) labeled automatically from event data, so scouting time drops 50 %.
+
+Existing athlete-centric stories from the prior package still apply unchanged.
+
+⸻
+
+5  Business Analysis Add-Ons
+
+5.1  Expanded Value Proposition
+Incremental Benefit	Impact
+Competitive Edge: opponent-specific game plans	Direct points on the table; differentiator vs. pure athlete analytics tools.
+Time Saved: auto tactical report	Opposition analysts recoup ≈8 hrs / match.
+Data Network Effects	More clubs onboard ⇒ richer opponent data graphs ⇒ better AI accuracy.
+
+5.2  Revenue Model Tweaks
+	•	“Match-Intel” Add-On: +30 % on any tier unlocks UC-06 & UC-07, including 500 opponent queries / month.
+	•	Pay-as-you-go for extra opponent packs ($2 per query).
+
+5.3  Key KPIs (added)
+	•	Opponent Plan Adoption Rate (% of generated plans actually viewed by staff)
+	•	Points-per-Match Delta when plan adopted vs. not (proof of ROI)
+
+⸻
+
+6  Acceptance Criteria — Opponent Features
+
+AC-ID	Criterion
+AC-OPP-01	Generating the Opponents List for a selected competition returns threat-ranked table with style tags (e.g., “High Press / Left-Bias”) in ≤7 s, P95.
+AC-OPP-02	Clicking an opponent opens a dashboard showing top five strengths, weaknesses, last five results, and a win-probability heat map.
+AC-OPP-03	“Win Plan” export includes session plan (drills, set-piece routines) and tactical comments; can be downloaded as PDF or pushed to Performs training calendar.
+AC-OPP-04	Coach feedback loop: after a match, user can rate plan accuracy; model retrains weekly on feedback >40 ratings.
+AC-OPP-05	RBAC ensures only users with “Coach” or higher can see full opponent tactical blueprints; scouts can view but not export raw data.
+
+7  Roadmap Addendum
+Quarter	New Milestone (Opponent Scope)
+Q3-25	Integrate league fixtures API & initial opponent clustering model (k-means + event data).
+Q4-25	Release Opponents List + basic Win Plan generator to beta clubs.
+Q1-26	Add live in-match adaptive suggestions (edge deployment).
+Q2-26	Expand to multi-sport opponent models (basketball, volleyball).
+
+One-Liner Pitch (re-framed)
+
+“Performs Insights turns every question—about your athlete or the next opponent—into an evidence-backed blueprint for victory.”
+
+Feel free to splice any section straight into your deck or hand these acceptance criteria to the engineering squad.
+
+🔄 Incremental Feature Injection — “World-Rank Optimizer”
+
+Below is a delta patch you can merge straight into the previous Performs Insights spec. It adds a full “World-Rank Optimizer” capability that:
+	1.	Surfaces the athlete’s live international ranking and the ranks of every upcoming opponent.
+	2.	Models the ranking-points math for each sanctioned event on the calendar.
+	3.	Auto-builds a personalised Ranking-Climb Plan—training blocks + event selections—showing the fastest, lowest-risk route to a higher rank.
+
+1  Product Overview (updated slice)
+
+Pillar	What You Get
+Athlete 360°	KPI-scored strengths & weaknesses, readiness index.
+Career Journey	Interactive timeline.
+Next-Step Roadmap	AI forecast of form & events.
+Prescriptive Fixes	Drill-level interventions.
+Opponents List	Style fingerprints & vulnerability map.
+Win-One-by-One Plans	Match-specific tactical blueprints.
+NEW – World-Rank Optimizer	Live world rank, rank-gap vs. each listed opponent, points-to-climb calculator, and an end-to-end “Rank-Up” calendar (events + training focus).
+
+2  Core Use Cases (add UC-08)
+
+#	Title	Short Description
+UC-06	Opponents List Generation	—
+UC-07	Opponent-Specific Win Plan	—
+**UC-08	World-Rank Optimizer**	Pull official ranking feed, project rank deltas for every combination of future events, and recommend an optimal sequence of competitions + focused training blocks to hit the target rank.
+UC-09 … UC-12	unchanged	
+
+3  Representative User Stories (new)
+
+As an athlete, I want to know my current world rank, the ranks of my next five opponents, and exactly how many points (and which events) I need to break into the top 50 within one season, so I can focus my efforts.
+
+As a head coach, I want the system to simulate alternative season schedules and show which combination of events yields the highest expected rank jump with acceptable fatigue risk, so I can approve the optimal calendar.
+
+As a sporting director, I need a projected “Rank Trajectory” curve for each scholarship candidate, so I can allocate funding to athletes with the greatest upside.
+
+⸻
+
+4  Acceptance Criteria — Ranking Features
+
+AC-ID	Criterion
+AC-RANK-01	Athlete dashboard displays live world rank (pulled from federation API) and delta to next milestone tier (e.g., Top 50) in ≤6 s, P95.
+AC-RANK-02	Opponents List table gains a “Rank” column; rows auto-sorted by threat level (rank × recent form).
+AC-RANK-03	“Rank-Up Plan” screen shows (a) recommended event schedule, (b) expected points from each event, (c) cumulative projected rank, and (d) accompanying  micro-cycle training focus.
+AC-RANK-04	Sensitivity slider lets user favour risk-minimised (lower injury probability) vs. max-gain strategies; plan recalculates in ≤4 s.
+AC-RANK-05	Post-event ingestion updates actual points; plan auto-re-optimises and notifies user if trajectory slips by >10 % of target
+
+5  Business Analysis Add-Ons
+
+5.1  Incremental Value
+
+Benefit	Impact
+Visibility	Athletes & sponsors see concrete rank-progress KPIs.
+Monetisable Insight	Federation data aggregation = defensible moat.
+Up-sell Path	Elite users purchase Ranking Pack add-on (see below).
+
+5.2  Monetisation
+	•	“Ranking Pack” Add-On: +25 % on any tier; unlocks UC-08 and AC-RANK modules, includes 1 000 ranking projections per month.
+	•	Overage $1 / extra projection.
+
+5.3  Key New KPI
+	•	Rank-Climb Success Rate: % of athletes hitting target rank within planned horizon (proof-of-value metric).
+
+6  Roadmap Delta
+
+Quarter	New Milestone
+Q4-25	Integrate federation ranking APIs (ITU, FIE, WTF, etc.) and launch World-Rank Optimizer beta.
+Q1-26	Release multi-scenario scheduler + risk slider; begin collecting user feedback for model retrain.
+
+Revised One-Liner  🔥
+
+“Performs Insights shows how you stack up against every ranked rival—then hands you the step-by-step plan to leapfrog them.”
+
+Drop these inserts into the existing spec, and the feature suite stays airtight and investor-ready.
+

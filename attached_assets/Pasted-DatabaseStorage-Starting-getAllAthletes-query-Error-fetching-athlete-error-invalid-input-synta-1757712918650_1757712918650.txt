@@ -1,0 +1,54 @@
+DatabaseStorage: Starting getAllAthletes query...
+Error fetching athlete: error: invalid input syntax for type integer: "NaN"
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.getAthlete (/home/runner/workspace/server/storage.ts:358:23)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:111:23) {
+  length: 146,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '617',
+  routine: 'pg_strtoint32_safe'
+}
+9:34:03 PM [express] GET /api/athletes/null 500 in 68ms :: {"error":"Failed to fetch athlete"}
+DatabaseStorage: Successfully retrieved 333 athletes
+Error fetching athletes: error: column "points" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.getAthleteRankings (/home/runner/workspace/server/storage.ts:419:30)
+    at async <anonymous> (/home/runner/workspace/server/storage.ts:464:26)
+    at async Promise.all (index 0)
+    at async DatabaseStorage.getAllAthletesWithRankings (/home/runner/workspace/server/storage.ts:462:34)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:67:24) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '39',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
