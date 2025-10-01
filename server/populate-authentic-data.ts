@@ -1,11 +1,14 @@
-import OpenAI from "openai";
 import { db } from "./db";
 import { kpiMetrics, strengths, weaknesses, athleteRanks, careerEvents } from "@shared/schema";
 import { eq } from "drizzle-orm";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export async function populateAuthenticAthleteData() {
+  const openai = getOpenAIClient();
+  if (!openai) {
+    throw new Error("OpenAI API key not configured. AI features are unavailable.");
+  }
+
   try {
     // Check if data already exists for Seif Eissa (ID: 12)
     const existingKpis = await db.select().from(kpiMetrics).where(eq(kpiMetrics.athleteId, 12)).limit(1);

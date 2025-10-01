@@ -1,8 +1,5 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface TrainingDay {
   day: number;
@@ -72,6 +69,11 @@ export class TrainingPlanGenerator {
     duration: number,
     targetCompetition?: string
   ): Promise<TrainingPlan> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const [athlete, strengths, weaknesses, kpis, careerEvents] = await Promise.all([
         storage.getAthlete(athleteId),
@@ -204,6 +206,11 @@ Focus on evidence-based training methodologies specific to Taekwondo, addressing
     strengths: any[],
     weaknesses: any[]
   ): Promise<MicroCycle> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     const startDate = this.getWeekStartDate(weekNumber);
     const endDate = this.getWeekEndDate(weekNumber);
 
@@ -314,6 +321,11 @@ Ensure progression throughout the week and include specific Taekwondo techniques
     weekNumber: number,
     performanceData: any
   ): Promise<{ adjustments: string[]; modifiedSessions: TrainingSession[] }> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const adjustmentPrompt = `
 Analyze performance data and suggest training plan adjustments:

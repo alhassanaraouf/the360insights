@@ -1,9 +1,6 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
 import type { InsertAthlete } from "@shared/schema";
-
-// Using OpenAI o3 model for maximum accuracy in athlete verification
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface AuthenticEgyptianAthlete {
   name: string;
@@ -18,6 +15,11 @@ export interface AuthenticEgyptianAthlete {
 
 export class AuthenticAthleteSeeder {
   async fetchRealEgyptianAthletes(): Promise<AuthenticEgyptianAthlete[]> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const prompt = `
 You are a World Taekwondo data specialist. I need you to provide authentic Egyptian Taekwondo athletes who are currently or recently ranked in official World Taekwondo rankings.
@@ -136,6 +138,11 @@ Examples of the format I need:
     unverifiedAthletes: string[];
     verificationReport: string;
   }> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const allAthletes = await storage.getAllAthletes();
       const verifiedAthletes: string[] = [];

@@ -1,9 +1,6 @@
-import OpenAI from "openai";
 import type { Competition } from "@shared/schema";
 import { getRealisticPointsProjection, parseCompetitionType, getAvailableGRankingLevels } from "./g-ranking-calculator";
-
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface CompetitionRecommendation {
   strategy: string;
@@ -31,6 +28,11 @@ export async function getCompetitionRecommendations(
   rankingType: string,
   targetDate?: string,
 ): Promise<CompetitionRecommendation> {
+  const openai = getOpenAIClient();
+  if (!openai) {
+    throw new Error("OpenAI API key not configured. AI recommendations are unavailable.");
+  }
+  
   try {
     // Check if athlete is already at top rank and wants to maintain it
     const isTopRank = currentRank === 1;

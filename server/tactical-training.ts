@@ -1,8 +1,5 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface DrillStep {
   stepNumber: number;
@@ -62,6 +59,11 @@ export class TacticalTrainingEngine {
     availableTime: number,
     difficulty: string
   ): Promise<TacticalDrill[]> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const [athlete, weaknesses, strengths, kpis] = await Promise.all([
         storage.getAthlete(athleteId),
@@ -220,6 +222,11 @@ Focus on Taekwondo-specific techniques like kicks, footwork, distance management
     session: TrainingSession,
     performance: { accuracy: number; notes: string }
   ): Promise<AICoachingFeedback> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const athlete = await storage.getAthlete(session.athleteId);
       if (!athlete) throw new Error("Athlete not found");
@@ -289,6 +296,11 @@ Be supportive but constructive, like a world-class coach.`;
     nextSessionRecommendations: string[];
     overallRating: number;
   }> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     const session = this.activeSessions.get(athleteId);
     if (!session) {
       throw new Error("No active session found");

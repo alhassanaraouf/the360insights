@@ -1,9 +1,6 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
 import { aiEngine } from "./ai-engine";
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface MatchEvent {
   timestamp: number;
@@ -66,6 +63,11 @@ export class RealTimeAnalysisEngine {
   }
 
   async getLiveAnalysis(): Promise<LiveMatchAnalysis> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     if (!this.currentMatch?.isActive) {
       throw new Error("No active match session");
     }
@@ -153,6 +155,11 @@ Focus on immediate actionable advice based on the current match state and recent
   }
 
   async generateAdaptiveSuggestions(): Promise<AdaptiveSuggestion[]> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     if (!this.currentMatch?.isActive) {
       throw new Error("No active match session");
     }

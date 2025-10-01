@@ -1,8 +1,5 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface InjuryRiskFactor {
   factor: string;
@@ -104,6 +101,11 @@ export class InjuryPreventionEngine {
     athleteId: number,
     biomechanicalData?: BiomechanicalData
   ): Promise<InjuryPreventionInsight> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const [athlete, kpis, performanceData, weaknesses, careerEvents] = await Promise.all([
         storage.getAthlete(athleteId),
@@ -275,6 +277,11 @@ Focus on Taekwondo-specific injury patterns, common risks like knee ligament str
     injuryType: string,
     severity: 'mild' | 'moderate' | 'severe'
   ): Promise<RecoveryRecommendation[]> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const athlete = await storage.getAthlete(athleteId);
       if (!athlete) {
@@ -343,6 +350,11 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
     }>;
     confidenceLevel: number;
   }> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const [athlete, performanceData, weaknesses] = await Promise.all([
         storage.getAthlete(athleteId),

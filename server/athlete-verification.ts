@@ -1,9 +1,6 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
 import type { InsertAthlete, Athlete } from "@shared/schema";
-
-// Using OpenAI o3-mini model for enhanced verification accuracy
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface VerifiedAthleteData {
   name: string;
@@ -27,16 +24,12 @@ export interface VerificationResult {
 
 export class AthleteVerificationEngine {
   async verifyAthleteData(athleteName: string, providedData?: Partial<InsertAthlete>): Promise<VerificationResult> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
-      // Check if OpenAI API key is available
-      if (!process.env.OPENAI_API_KEY) {
-        return {
-          isValid: false,
-          verifiedData: null,
-          errors: ['OpenAI API key not configured. Please provide your OpenAI API key to enable data verification.'],
-          confidence: 0
-        };
-      }
       const prompt = `
 You are a precise data verification expert for World Taekwondo athlete information.
 
@@ -131,6 +124,11 @@ Example of verified athlete data format:
   }
 
   async verifyOpponentData(opponentName: string, athleteId: number): Promise<VerificationResult> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
+
     try {
       const athlete = await storage.getAthlete(athleteId);
       if (!athlete) {

@@ -1,10 +1,8 @@
-import OpenAI from "openai";
 import { db } from "./db";
 import { athletes, kpiMetrics, strengths, weaknesses, athleteRanks, careerEvents } from "@shared/schema";
 import type { InsertKpiMetric, InsertStrength, InsertWeakness, InsertAthleteRank, InsertCareerEvent } from "@shared/schema";
 import { eq } from "drizzle-orm";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { getOpenAIClient } from "./openai-client";
 
 export interface AuthenticAthleteProfile {
   athleteId: number;
@@ -101,6 +99,10 @@ export class AuthenticDataPopulator {
     worldRank: number | null,
     sport: string
   ): Promise<AuthenticAthleteProfile> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+    }
     
     const prompt = `Generate authentic and realistic performance data for Egyptian Taekwondo athlete "${name}".
 

@@ -1,10 +1,7 @@
-import OpenAI from "openai";
 import { storage } from "./storage";
+import { getOpenAIClient } from "./openai-client";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-
-// Using OpenAI o3 model for maximum accuracy in AI analysis
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface OpponentAnalysis {
   weaknessExploitation: string[];
@@ -33,6 +30,11 @@ export class AIAnalysisEngine {
     athleteId: number,
     opponentId: number,
   ): Promise<OpponentAnalysis> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+    }
+    
     try {
       const [
         athlete,
@@ -119,6 +121,11 @@ Provide a comprehensive tactical analysis in JSON format:
   async analyzePerformanceTrend(
     athleteId: number,
   ): Promise<PerformanceInsight> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+    }
+    
     try {
       const [athlete, kpis, strengths, weaknesses] = await Promise.all([
         storage.getAthlete(athleteId),
@@ -188,7 +195,12 @@ Analyze the performance trend and provide insights in JSON format:
   }
 
   async generateTrainingRecommendations(athleteId: number): Promise<string[]> {
-    try {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+    }
+    
+    try{
       const [athlete, weaknesses, kpis] = await Promise.all([
         storage.getAthlete(athleteId),
         storage.getWeaknessesByAthleteId(athleteId),
@@ -244,6 +256,11 @@ Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]
     query: string,
     athleteId: number,
   ): Promise<{ response: string; confidence: number }> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+    }
+    
     try {
       console.log(`Processing query: "${query}" for athlete ${athleteId}`);
 
@@ -459,6 +476,11 @@ Provide specific, actionable insights based on this data.`;
   async analyzeAthleteStrengthsWeaknesses(
     athleteId: number,
   ): Promise<AthleteStrengthsWeaknesses> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+    }
+    
     try {
       // Fetch athlete data from database
       const [athlete] = await Promise.all([storage.getAthlete(athleteId)]);
