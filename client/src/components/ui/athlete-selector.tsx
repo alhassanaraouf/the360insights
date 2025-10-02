@@ -2,11 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
-import { User, Target, Globe } from "lucide-react";
+import { User, Globe, Check, ChevronsUpDown } from "lucide-react";
+import { useState } from "react";
 
 interface AthleteSelectorProps {
   title?: string;
@@ -22,6 +25,8 @@ export default function AthleteSelector({
   const { selectedAthleteId, setSelectedAthleteId } = useAthlete();
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: athletesData, isLoading } = useQuery({
     queryKey: ["/api/athletes"],
@@ -37,10 +42,21 @@ export default function AthleteSelector({
     return athlete.nationality === 'Egypt' || athlete.nationality === 'EGY';
   }) || [];
 
+  // Further filter by search query
+  const searchFilteredAthletes = filteredAthletes.filter((athlete: any) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      athlete.name?.toLowerCase().includes(query) ||
+      athlete.nationality?.toLowerCase().includes(query) ||
+      athlete.worldRank?.toString().includes(query)
+    );
+  });
+
   const handleAthleteSelect = (athleteId: string) => {
     const id = parseInt(athleteId);
     setSelectedAthleteId(id);
     onAthleteSelected?.(id);
+    setOpen(false);
   };
 
   if (selectedAthleteId) {
@@ -72,34 +88,63 @@ export default function AthleteSelector({
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                   Available Athletes
                 </h3>
-                <Select onValueChange={handleAthleteSelect}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Choose an athlete..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredAthletes?.map((athlete: any) => (
-                      <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                        <div className="flex items-center space-x-3 py-1">
-                          <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                            <Target className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{athlete.name}</p>
-                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                              <Globe className="h-3 w-3" />
-                              <span>{athlete.nationality}</span>
-                              {athlete.worldRank && (
-                                <Badge variant="outline" className="text-xs">
-                                  World #{athlete.worldRank}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full h-12 justify-between"
+                      data-testid="button-athlete-selector"
+                    >
+                      <span className="text-muted-foreground">Choose an athlete...</span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput 
+                        placeholder="Search athletes..." 
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No athlete found.</CommandEmpty>
+                        <CommandGroup>
+                          {searchFilteredAthletes.map((athlete: any) => (
+                            <CommandItem
+                              key={athlete.id}
+                              value={athlete.id.toString()}
+                              onSelect={() => handleAthleteSelect(athlete.id.toString())}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex items-center space-x-3 w-full py-1">
+                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                  <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{athlete.name}</p>
+                                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                    <Globe className="h-3 w-3 flex-shrink-0" />
+                                    <span>{athlete.nationality}</span>
+                                    {athlete.worldRank && (
+                                      <Badge variant="outline" className="text-xs">
+                                        #{athlete.worldRank}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Quick Access to Top Athletes */}
@@ -114,11 +159,15 @@ export default function AthleteSelector({
                       variant="outline"
                       className="h-auto p-4 justify-start hover:bg-blue-50 dark:hover:bg-blue-950/50"
                       onClick={() => handleAthleteSelect(athlete.id.toString())}
+                      data-testid={`button-quick-athlete-${athlete.id}`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                          <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                          <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="text-left">
                           <p className="font-medium text-sm">{athlete.name}</p>
                           <p className="text-xs text-muted-foreground">{athlete.nationality}</p>
