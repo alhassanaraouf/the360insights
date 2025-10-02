@@ -674,44 +674,8 @@ export default function TrainingPlanner() {
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     {generatedPlan.planName}
                   </span>
-                  {/* Export and New Plan Buttons */}
+                  {/* New Plan Button */}
                   <div className="flex gap-2">
-                    <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            console.log("Export clicked, generatedPlan:", generatedPlan);
-                            console.log("Plan ID check:", generatedPlan?.id);
-
-                            // Check if we have a valid plan with an ID
-                            const planId = generatedPlan?.id;
-                            
-                            if (planId && typeof planId === 'number') {
-                              console.log("Using plan ID for export:", planId);
-
-                              const link = document.createElement('a');
-                              link.href = `/api/export/training-plan/${planId}`;
-                              link.download = `Training_Plan_Report_${generatedPlan.planName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-
-                              toast({
-                                title: "Export Started",
-                                description: `Exporting "${generatedPlan.planName}" as PDF...`,
-                              });
-                            } else {
-                              console.log("Invalid plan ID found:", planId);
-                              toast({
-                                title: "Export Failed", 
-                                description: "This training plan hasn't been saved yet. Please generate a new plan first.",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                        >
-                      Export PDF
-                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setGeneratedPlan(null)}>
                       <Plus className="h-4 w-4 mr-2" />
                       New Plan
