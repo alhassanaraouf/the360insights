@@ -179,7 +179,7 @@ const AthleteDropdownList = memo(({
 
   return (
     <PopoverContent className="w-[400px] p-0" align="start">
-      <Command>
+      <Command shouldFilter={false}>
         <CommandInput 
           placeholder="Search athletes..." 
           value={searchInput}
