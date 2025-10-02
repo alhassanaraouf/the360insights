@@ -64,7 +64,7 @@ export default function AthleteSelector({
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] lg:min-h-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-950 p-4">
+    <div className="flex items-center justify-center h-[calc(100vh-3.5rem)] bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-950 p-4">
       <Card className="w-full max-w-2xl border-0 shadow-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full w-fit mb-4">
