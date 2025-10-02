@@ -22,6 +22,7 @@ import {
 import { useLocation } from "wouter";
 import RankChangeIndicator from "@/components/ui/rank-change-indicator";
 import { calculateRankChange, getRankChangeClasses } from "@/lib/rank-utils";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 
 interface Athlete {
   id: number;
@@ -146,6 +147,7 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
+                    <span className="mr-1">{getCountryFlagWithFallback(athlete.nationality)}</span>
                     {athlete.nationality} • {athlete.worldCategory}
                   </p>
                 </div>
@@ -286,6 +288,7 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
+                    <span className="mr-1">{getCountryFlagWithFallback(athlete.nationality)}</span>
                     {athlete.nationality} • {athlete.olympicCategory}
                   </p>
                 </div>

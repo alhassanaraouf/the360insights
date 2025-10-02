@@ -11,6 +11,7 @@ import {
   Flag,
   Weight
 } from "lucide-react";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 
 interface DrawSheetProps {
   competition: Competition;
@@ -173,7 +174,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     {participant.athlete.name}
                   </div>
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    <span>{participant.athlete.nationality}</span>
+                    <span>{getCountryFlagWithFallback(participant.athlete.nationality)} {participant.athlete.nationality}</span>
                     {participant.seedNumber && (
                       <Badge variant="outline" className="text-xs">
                         Seed #{participant.seedNumber}
@@ -251,7 +252,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                                         {match.participant1.athlete.name}
                                       </div>
                                       <div className="text-xs text-gray-500">
-                                        {match.participant1.athlete.nationality}
+                                        {getCountryFlagWithFallback(match.participant1.athlete.nationality)} {match.participant1.athlete.nationality}
                                       </div>
                                     </div>
                                     {match.participant1.seedNumber && (
@@ -289,7 +290,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                                         {match.participant2.athlete.name}
                                       </div>
                                       <div className="text-xs text-gray-500">
-                                        {match.participant2.athlete.nationality}
+                                        {getCountryFlagWithFallback(match.participant2.athlete.nationality)} {match.participant2.athlete.nationality}
                                       </div>
                                     </div>
                                     {match.participant2.seedNumber && (

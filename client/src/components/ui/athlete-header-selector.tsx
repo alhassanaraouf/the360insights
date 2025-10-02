@@ -22,6 +22,7 @@ import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
 import { User, Globe, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 
 interface AthleteHeaderSelectorProps {
   title?: string;
@@ -186,7 +187,7 @@ const AthleteDropdownList = memo(({
                             {athlete.name}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            ({athlete.nationality})
+                            ({getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality})
                           </span>
                           {athlete.worldRank && (
                             <span className="text-xs text-blue-600 font-medium">
@@ -269,7 +270,7 @@ export default function AthleteHeaderSelector({
               <div className="flex items-center gap-1">
                 <Globe className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 <span className="mobile-text text-blue-700 dark:text-blue-300 truncate">
-                  {(currentAthlete as any).nationality}
+                  {getCountryFlagWithFallback((currentAthlete as any).nationality)} {(currentAthlete as any).nationality}
                 </span>
               </div>
               {(currentAthlete as any).worldRank && (
@@ -308,7 +309,7 @@ export default function AthleteHeaderSelector({
                   </Avatar>
                   <span className="truncate">{(currentAthlete as any).name}</span>
                   <span className="text-xs text-muted-foreground">
-                    ({(currentAthlete as any).nationality})
+                    ({getCountryFlagWithFallback((currentAthlete as any).nationality)} {(currentAthlete as any).nationality})
                   </span>
                   {(currentAthlete as any).worldRank && (
                     <span className="text-xs text-blue-600 font-medium">

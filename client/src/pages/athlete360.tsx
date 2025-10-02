@@ -20,6 +20,7 @@ import AthleteSelector from "@/components/ui/athlete-selector";
 import AthleteHeaderSelector from "@/components/ui/athlete-header-selector";
 import RankChangeIndicator from "@/components/ui/rank-change-indicator";
 import { BidFormDialog } from "@/components/bid-form-dialog";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import { 
   User, 
   Heart, 
@@ -385,7 +386,7 @@ export default function Athlete360() {
                   <div className="flex flex-col sm:flex-row mobile-space-y sm:space-y-0 sm:space-x-4 mobile-text text-gray-600 dark:text-gray-300">
                     <span className="flex items-center">
                       <Globe className="w-4 h-4 mr-1 flex-shrink-0" />
-                      <span>{athlete?.nationality}</span>
+                      <span>{getCountryFlagWithFallback(athlete?.nationality || '')} {athlete?.nationality}</span>
                     </span>
                     <span className="flex items-center">
                       <Trophy className="w-4 h-4 mr-1 flex-shrink-0" />

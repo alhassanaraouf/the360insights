@@ -15,6 +15,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
 import { apiRequest } from "@/lib/queryClient";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import { 
   User, 
   Search,
@@ -483,7 +484,7 @@ export default function Athletes() {
                       <CardTitle className="text-lg">{athlete.name}</CardTitle>
                       <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                         <MapPin className="w-3 h-3" />
-                        <span>{athlete.nationality}</span>
+                        <span>{getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality}</span>
                       </div>
                     </div>
                   </div>
