@@ -92,6 +92,14 @@ export default function Sidebar() {
     queryKey: ["/api/auth/user"],
   });
 
+  // Helper function to add athlete ID to href if present
+  const buildHref = (basePath: string) => {
+    if (selectedAthleteId && basePath !== "/" && basePath !== "/athletes" && basePath !== "/competition-draws" && basePath !== "/sponsorship-hub") {
+      return `${basePath}?athlete=${selectedAthleteId}`;
+    }
+    return basePath;
+  };
+
   const navigation = [
     { name: t("nav.dashboard"), href: "/", icon: Home },
     { name: "Athletes Directory", href: "/athletes", icon: Users },
@@ -173,10 +181,11 @@ export default function Sidebar() {
         <nav className="flex-1 mobile-padding space-y-2 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = location === item.href;
+            const isActive = location === item.href || location.startsWith(item.href + '?');
+            const href = buildHref(item.href);
 
             return (
-              <Link key={item.name} href={item.href}>
+              <Link key={item.name} href={href}>
                 <div
                   className={`mobile-button touch-target justify-start transition-colors cursor-pointer ${
                     isActive
