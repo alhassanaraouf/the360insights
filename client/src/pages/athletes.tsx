@@ -440,8 +440,8 @@ export default function Athletes() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">{(athletes as Athlete[])?.length || 0}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Total Athletes</div>
+              <div className="text-2xl font-bold text-purple-600">{totalAthletes}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">Filtered Results</div>
             </CardContent>
           </Card>
           <Card>
@@ -473,8 +473,8 @@ export default function Athletes() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{totalAthletes}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Filtered Results</div>
+              <div className="text-2xl font-bold text-primary">{(athletes as Athlete[])?.length || 0}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">Total Athletes</div>
             </CardContent>
           </Card>
         </div>
