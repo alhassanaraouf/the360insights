@@ -12,7 +12,7 @@ build = ["npm", "run", "build"]
 run = ["sh", "-c", "node index.js"]
 
 [workflows]
-runButton = "Run"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -32,6 +32,9 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow]]
 name = "Run"
 author = 46016172
@@ -44,10 +47,6 @@ args = "npm run dev"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 33117
-externalPort = 8080
 
 [[ports]]
 localPort = 33739
@@ -96,6 +95,10 @@ externalPort = 3000
 [[ports]]
 localPort = 45013
 externalPort = 8081
+
+[[ports]]
+localPort = 45897
+externalPort = 8080
 
 [[ports]]
 localPort = 45963

@@ -45,7 +45,16 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
 - **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 
-### Recent Changes (October 1, 2025)
+### Recent Changes (October 2, 2025)
+
+- **Environment-Based Object Storage Configuration**: Implemented dynamic bucket selection based on environment
+  - Dev bucket: `replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945` (used in development)
+  - Prod bucket: `replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b` (used in production)
+  - Bucket selection: Uses `BUCKET_ID` env var if set, otherwise `NODE_ENV` determines bucket (production → prod bucket, otherwise → dev bucket)
+  - Updated `server/bucket-storage.ts` to initialize client with environment-based bucket ID
+  - Added console logging to show which bucket is being used on startup
+
+### Previous Changes (October 1, 2025)
 
 - **Migration to Standard Replit Environment**: Successfully migrated from Replit Agent to standard Replit environment
   - Refactored OpenAI client initialization to use centralized lazy-loading pattern (getOpenAIClient())

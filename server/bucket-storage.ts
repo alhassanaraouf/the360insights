@@ -1,10 +1,20 @@
 import { Client } from '@replit/object-storage';
 
+// Determine bucket ID based on environment
+const DEV_BUCKET_ID = 'replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945';
+const PROD_BUCKET_ID = 'replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b';
+
+// Use BUCKET_ID env var if set, otherwise use NODE_ENV to determine
+const bucketId = process.env.BUCKET_ID || 
+  (process.env.NODE_ENV === 'production' ? PROD_BUCKET_ID : DEV_BUCKET_ID);
+
+console.log(`Using bucket: ${bucketId} (environment: ${process.env.NODE_ENV || 'development'})`);
+
 // Initialize Replit Object Storage client with bucket ID
 const client = new Client();
 // Initialize the client with the specific bucket ID (async call)
 let isInitialized = false;
-const initPromise = client.init('replit-objstore-59c76f0b-8f18-4450-b997-2d163531fb5e').then(() => {
+const initPromise = client.init(bucketId).then(() => {
   isInitialized = true;
   console.log('Replit Object Storage client initialized successfully');
 }).catch(error => {
@@ -18,7 +28,7 @@ export interface ImageUploadResult {
 }
 
 export class BucketStorageService {
-  private bucketId = 'replit-objstore-59c76f0b-8f18-4450-b997-2d163531fb5e';
+  private bucketId = bucketId;
 
   async uploadAthleteImage(athleteId: number, imageBuffer: Buffer, fileName: string): Promise<ImageUploadResult> {
     try {
