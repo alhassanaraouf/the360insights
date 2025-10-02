@@ -275,6 +275,19 @@ export default function Athletes() {
   
   const nationalities = nationalitiesData || [];
 
+  // Get total count of all athletes in the system (no filters)
+  const { data: totalSystemAthletesData } = useQuery({
+    queryKey: ["/api/athletes/total", selectedSport],
+    queryFn: async () => {
+      const response = await fetch(`/api/athletes?sport=${selectedSport}&limit=1`);
+      if (!response.ok) throw new Error('Failed to fetch total athletes');
+      const data = await response.json();
+      return data.total || 0;
+    }
+  });
+  
+  const totalSystemAthletes = totalSystemAthletesData || 0;
+
   // Only show skeleton on initial load when there's no data at all
   if (isLoading && !athletesData) {
     return (
@@ -473,7 +486,7 @@ export default function Athletes() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">{(athletes as Athlete[])?.length || 0}</div>
+              <div className="text-2xl font-bold text-primary">{totalSystemAthletes}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">Total Athletes</div>
             </CardContent>
           </Card>
