@@ -61,6 +61,7 @@ export default function Athletes() {
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
   const [, navigate] = useLocation();
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("rank");
   const [filterNationality, setFilterNationality] = useState(showEgyptianOnly ? "Egypt" : "all");
@@ -68,6 +69,14 @@ export default function Athletes() {
   const [showTopRankedOnly, setShowTopRankedOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const [editingAthlete, setEditingAthlete] = useState<any>(null);
   const [selectedAthletes, setSelectedAthletes] = useState<number[]>([]);
@@ -340,8 +349,8 @@ export default function Athletes() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Search athletes or nationality..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-10"
                 />
               </div>
