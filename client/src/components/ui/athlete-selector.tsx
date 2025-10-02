@@ -29,7 +29,7 @@ export default function AthleteSelector({
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: athletesData, isLoading } = useQuery({
-    queryKey: ["/api/athletes"],
+    queryKey: ["/api/athletes?limit=500"],
   });
 
   // Filter athletes based on sport and Egypt toggle
