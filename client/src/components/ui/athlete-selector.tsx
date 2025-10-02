@@ -23,12 +23,12 @@ export default function AthleteSelector({
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
   
-  const { data: athletes, isLoading } = useQuery({
+  const { data: athletesData, isLoading } = useQuery({
     queryKey: ["/api/athletes"],
   });
 
   // Filter athletes based on sport and Egypt toggle
-  const filteredAthletes = (athletes as any[])?.filter((athlete: any) => {
+  const filteredAthletes = (athletesData as any)?.athletes?.filter((athlete: any) => {
     // First filter by sport (case-insensitive)
     if (athlete.sport?.toLowerCase() !== selectedSport.toLowerCase()) return false;
     
