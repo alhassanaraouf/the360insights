@@ -265,7 +265,7 @@ export default function AthleteSelector({
   // Build query parameters for top athletes (no search)
   const topAthletesParams = useMemo(() => {
     const params = new URLSearchParams();
-    params.set('limit', '4');
+    params.set('limit', '6');
     params.set('topRankedOnly', 'true');
     if (selectedSport) params.set('sport', selectedSport);
     if (showEgyptianOnly) params.set('nationality', 'Egypt');
