@@ -29,7 +29,7 @@ export function calculateRankChange(
     return {
       direction: 'new',
       amount: 0,
-      displayText: 'NEW',
+      displayText: '—',
       color: 'gray'
     };
   }
