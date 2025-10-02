@@ -151,7 +151,7 @@ export default function Athletes() {
   });
 
   // Fetch athletes with pagination and all filters
-  const { data: athletesData, isLoading } = useQuery({
+  const { data: athletesData, isLoading, isFetching } = useQuery({
     queryKey: ["/api/athletes", selectedSport, currentPage, searchTerm, filterNationality, filterGender, showTopRankedOnly, sortBy],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -180,7 +180,8 @@ export default function Athletes() {
       const response = await fetch(`/api/athletes?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch athletes');
       return response.json();
-    }
+    },
+    placeholderData: (previousData) => previousData
   });
 
   const athletes = athletesData?.athletes || [];
@@ -274,7 +275,8 @@ export default function Athletes() {
   
   const nationalities = nationalitiesData || [];
 
-  if (isLoading) {
+  // Only show skeleton on initial load when there's no data at all
+  if (isLoading && !athletesData) {
     return (
       <>
         <Header 
@@ -376,7 +378,7 @@ export default function Athletes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Nationalities</SelectItem>
-                  {nationalities.map((nationality) => (
+                  {nationalities.map((nationality: string) => (
                     <SelectItem key={nationality} value={nationality}>
                       {nationality}
                     </SelectItem>
