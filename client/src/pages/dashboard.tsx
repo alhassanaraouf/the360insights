@@ -30,6 +30,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport, getSportConfig } from "@/lib/sport-context";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 
 
 export default function Dashboard() {
@@ -258,7 +259,7 @@ export default function Dashboard() {
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{athlete.name}</h3>
-                        <p className="text-sm text-muted-foreground">{athlete.nationality}</p>
+                        <p className="text-sm text-muted-foreground">{getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality}</p>
                         <div className="flex items-center gap-4 mt-2">
                           {athlete.worldRank && (
                             <div className="flex items-center gap-1">

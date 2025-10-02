@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import { User, Globe, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef, useMemo, memo, useCallback } from "react";
 
@@ -49,7 +50,7 @@ const QuickAccessSection = memo(({
               </Avatar>
               <div className="text-left">
                 <p className="font-medium text-sm">{athlete.name}</p>
-                <p className="text-xs text-muted-foreground">{athlete.nationality}</p>
+                <p className="text-xs text-muted-foreground">{getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality}</p>
               </div>
             </div>
           </Button>
@@ -220,7 +221,7 @@ const AthleteDropdown = memo(({
                           <p className="font-medium truncate">{athlete.name}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                             <Globe className="h-3 w-3 flex-shrink-0" />
-                            <span>{athlete.nationality}</span>
+                            <span>{getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality}</span>
                             {athlete.worldRank && (
                               <Badge variant="outline" className="text-xs">
                                 #{athlete.worldRank}
