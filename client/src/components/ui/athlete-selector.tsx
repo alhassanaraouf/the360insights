@@ -1,15 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
-import { User, Globe, Check, ChevronsUpDown } from "lucide-react";
-import { useState } from "react";
+import { User, Globe, ChevronsUpDown, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 interface AthleteSelectorProps {
   title?: string;
@@ -26,42 +27,94 @@ export default function AthleteSelector({
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  const { data: athletesData, isLoading } = useQuery({
-    queryKey: ["/api/athletes?limit=500"],
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Build query parameters
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '20');
+    if (selectedSport) params.set('sport', selectedSport);
+    if (showEgyptianOnly) params.set('nationality', 'Egypt');
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    return params.toString();
+  }, [selectedSport, showEgyptianOnly, debouncedSearch]);
+
+  // Infinite query for athletes
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useInfiniteQuery({
+    queryKey: ['/api/athletes', queryParams],
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams(queryParams);
+      params.set('page', pageParam.toString());
+      const response = await fetch(`/api/athletes?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch athletes');
+      return response.json();
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const currentCount = allPages.reduce((sum, page) => sum + (page.athletes?.length || 0), 0);
+      const total = lastPage.total || 0;
+      return currentCount < total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 
-  // Filter athletes based on sport and Egypt toggle
-  const filteredAthletes = (athletesData as any)?.athletes?.filter((athlete: any) => {
-    // First filter by sport (case-insensitive)
-    if (athlete.sport?.toLowerCase() !== selectedSport.toLowerCase()) return false;
-    
-    // Then filter by Egypt toggle
-    if (!showEgyptianOnly) return true;
-    return athlete.nationality === 'Egypt' || athlete.nationality === 'EGY';
-  }) || [];
+  // Flatten all pages into a single array
+  const athletes = useMemo(() => {
+    return data?.pages.flatMap(page => page.athletes || []) || [];
+  }, [data]);
 
-  // Further filter by search query
-  const searchFilteredAthletes = filteredAthletes.filter((athlete: any) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      athlete.name?.toLowerCase().includes(query) ||
-      athlete.nationality?.toLowerCase().includes(query) ||
-      athlete.worldRank?.toString().includes(query)
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    // Only setup observer when popover is open
+    if (!open) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
     );
-  });
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [open, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleAthleteSelect = (athleteId: string) => {
     const id = parseInt(athleteId);
     setSelectedAthleteId(id);
     onAthleteSelected?.(id);
     setOpen(false);
+    setSearchInput("");
   };
 
   if (selectedAthleteId) {
-    return null; // Don't show selector if athlete is already selected
+    return null;
   }
 
   return (
@@ -98,50 +151,70 @@ export default function AthleteSelector({
                       className="w-full h-12 justify-between"
                       data-testid="button-athlete-selector"
                     >
-                      <span className="text-muted-foreground">Choose an athlete...</span>
+                      <span className="text-muted-foreground">
+                        {isLoading ? "Loading..." : "Search athletes..."}
+                      </span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <Command shouldFilter={false}>
                       <CommandInput 
-                        placeholder="Search athletes..." 
-                        value={searchQuery}
-                        onValueChange={setSearchQuery}
+                        placeholder="Search by name, nationality..." 
+                        value={searchInput}
+                        onValueChange={setSearchInput}
                       />
                       <CommandList>
-                        <CommandEmpty>No athlete found.</CommandEmpty>
-                        <CommandGroup>
-                          {searchFilteredAthletes.map((athlete: any) => (
-                            <CommandItem
-                              key={athlete.id}
-                              value={athlete.id.toString()}
-                              onSelect={() => handleAthleteSelect(athlete.id.toString())}
-                              className="cursor-pointer"
-                            >
-                              <div className="flex items-center space-x-3 w-full py-1">
-                                <Avatar className="h-8 w-8 flex-shrink-0">
-                                  <AvatarImage src={athlete.profileImage} alt={athlete.name} />
-                                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
-                                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium truncate">{athlete.name}</p>
-                                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                                    <Globe className="h-3 w-3 flex-shrink-0" />
-                                    <span>{athlete.nationality}</span>
-                                    {athlete.worldRank && (
-                                      <Badge variant="outline" className="text-xs">
-                                        #{athlete.worldRank}
-                                      </Badge>
-                                    )}
+                        <ScrollArea className="h-[300px]">
+                          {isError ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              Failed to load athletes
+                            </div>
+                          ) : athletes.length === 0 && !isLoading ? (
+                            <CommandEmpty>No athlete found.</CommandEmpty>
+                          ) : (
+                            <CommandGroup>
+                              {athletes.map((athlete: any) => (
+                                <CommandItem
+                                  key={athlete.id}
+                                  value={athlete.id.toString()}
+                                  onSelect={() => handleAthleteSelect(athlete.id.toString())}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="flex items-center space-x-3 w-full py-1">
+                                    <Avatar className="h-8 w-8 flex-shrink-0">
+                                      <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                                        <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium truncate">{athlete.name}</p>
+                                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                        <Globe className="h-3 w-3 flex-shrink-0" />
+                                        <span>{athlete.nationality}</span>
+                                        {athlete.worldRank && (
+                                          <Badge variant="outline" className="text-xs">
+                                            #{athlete.worldRank}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
+                                </CommandItem>
+                              ))}
+                              {/* Infinite scroll sentinel */}
+                              <div ref={observerTarget} className="h-4">
+                                {isFetchingNextPage && (
+                                  <div className="flex items-center justify-center py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
+                                  </div>
+                                )}
                               </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
+                            </CommandGroup>
+                          )}
+                        </ScrollArea>
                       </CommandList>
                     </Command>
                   </PopoverContent>
@@ -154,7 +227,7 @@ export default function AthleteSelector({
                   Quick Access
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredAthletes?.slice(0, 4).map((athlete: any) => (
+                  {athletes.slice(0, 4).map((athlete: any) => (
                     <Button
                       key={athlete.id}
                       variant="outline"
