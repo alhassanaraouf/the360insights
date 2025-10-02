@@ -683,7 +683,6 @@ export default function RankUp() {
                             <th className="text-left p-3 font-semibold">Competition Name</th>
                             <th className="text-left p-3 font-semibold">Country/Region</th>
                             <th className="text-left p-3 font-semibold">Date</th>
-                            <th className="text-center p-3 font-semibold">Points Available</th>
                             <th className="text-center p-3 font-semibold">Cumulative Points</th>
                           </tr>
                         </thead>
@@ -728,20 +727,9 @@ export default function RankUp() {
                                 </div>
                               </td>
                               <td className="p-3 text-center">
-                                <span className="font-semibold text-green-600 dark:text-green-400">
-                                  {comp.pointsAvailable} pts
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
                                 <div className="font-semibold text-blue-600 dark:text-blue-400">
                                   {comp.cumulativePoints ?? 0} pts
                                 </div>
-                                {(comp.cumulativePoints ?? 0) >= rankUpResult.pointsNeeded && (
-                                  <Badge variant="default" className="text-xs mt-1">
-                                    <Star className="h-3 w-3 mr-1" />
-                                    Sufficient
-                                  </Badge>
-                                )}
                               </td>
                             </tr>
                           ))}
