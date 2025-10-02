@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,56 @@ import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
 import { User, Globe, ChevronsUpDown, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 
 interface AthleteSelectorProps {
   title?: string;
   description?: string;
   onAthleteSelected?: (athleteId: number) => void;
 }
+
+// Memoized Quick Access component to prevent re-renders
+const QuickAccessSection = memo(({ 
+  topAthletes, 
+  onSelect 
+}: { 
+  topAthletes: any[]; 
+  onSelect: (id: string) => void;
+}) => {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+        Quick Access - Top Athletes
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {topAthletes.map((athlete: any) => (
+          <Button
+            key={athlete.id}
+            variant="outline"
+            className="h-auto p-4 justify-start hover:bg-blue-50 dark:hover:bg-blue-950/50"
+            onClick={() => onSelect(athlete.id.toString())}
+            data-testid={`button-quick-athlete-${athlete.id}`}
+          >
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-left">
+                <p className="font-medium text-sm">{athlete.name}</p>
+                <p className="text-xs text-muted-foreground">{athlete.nationality}</p>
+              </div>
+            </div>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+QuickAccessSection.displayName = "QuickAccessSection";
 
 export default function AthleteSelector({ 
   title = "Select Athlete", 
@@ -39,7 +82,31 @@ export default function AthleteSelector({
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Build query parameters
+  // Build query parameters for top athletes (no search)
+  const topAthletesParams = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '4');
+    params.set('sortBy', 'worldRank');
+    if (selectedSport) params.set('sport', selectedSport);
+    if (showEgyptianOnly) params.set('nationality', 'Egypt');
+    return params.toString();
+  }, [selectedSport, showEgyptianOnly]);
+
+  // Query for top athletes (independent of search)
+  const { data: topAthletesData } = useQuery({
+    queryKey: ['/api/athletes/top', topAthletesParams],
+    queryFn: async () => {
+      const response = await fetch(`/api/athletes?${topAthletesParams}`);
+      if (!response.ok) throw new Error('Failed to fetch top athletes');
+      return response.json();
+    },
+  });
+
+  const topAthletes = useMemo(() => {
+    return topAthletesData?.athletes || [];
+  }, [topAthletesData]);
+
+  // Build query parameters for search
   const queryParams = useMemo(() => {
     const params = new URLSearchParams();
     params.set('limit', '20');
@@ -49,7 +116,7 @@ export default function AthleteSelector({
     return params.toString();
   }, [selectedSport, showEgyptianOnly, debouncedSearch]);
 
-  // Infinite query for athletes
+  // Infinite query for athletes (with search)
   const {
     data,
     fetchNextPage,
@@ -221,36 +288,13 @@ export default function AthleteSelector({
                 </Popover>
               </div>
 
-              {/* Quick Access to Top Athletes */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Quick Access
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {athletes.slice(0, 4).map((athlete: any) => (
-                    <Button
-                      key={athlete.id}
-                      variant="outline"
-                      className="h-auto p-4 justify-start hover:bg-blue-50 dark:hover:bg-blue-950/50"
-                      onClick={() => handleAthleteSelect(athlete.id.toString())}
-                      data-testid={`button-quick-athlete-${athlete.id}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10 flex-shrink-0">
-                          <AvatarImage src={athlete.profileImage} alt={athlete.name} />
-                          <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
-                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="text-left">
-                          <p className="font-medium text-sm">{athlete.name}</p>
-                          <p className="text-xs text-muted-foreground">{athlete.nationality}</p>
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              {/* Quick Access to Top Athletes - Memoized to prevent re-renders */}
+              {topAthletes.length > 0 && (
+                <QuickAccessSection 
+                  topAthletes={topAthletes}
+                  onSelect={handleAthleteSelect}
+                />
+              )}
             </>
           )}
         </CardContent>
