@@ -41,6 +41,31 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Helper for infinite queries that need to append pageParam to the URL
+export const getInfiniteQueryFn = <T>(options: {
+  on401: UnauthorizedBehavior;
+}) => {
+  return async (context: any) => {
+    const baseUrl = context.queryKey[0] as string;
+    const pageParam = context.pageParam || 1;
+    
+    // Append page parameter to URL
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const url = `${baseUrl}${separator}page=${pageParam}`;
+    
+    const res = await fetch(url, {
+      credentials: "include",
+    });
+
+    if (options.on401 === "returnNull" && res.status === 401) {
+      return null;
+    }
+
+    await throwIfResNotOk(res);
+    return await res.json();
+  };
+};
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -1,16 +1,22 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getInfiniteQueryFn } from "@/lib/queryClient";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
+import { useSport } from "@/lib/sport-context";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import { 
   Target,
   TrendingUp,
@@ -21,7 +27,10 @@ import {
   Calculator,
   Users,
   Medal,
-  Brain
+  Brain,
+  ChevronsUpDown,
+  Loader2,
+  User as UserIcon
 } from "lucide-react";
 
 interface Athlete {
@@ -78,11 +87,184 @@ interface RankUpResult {
   aiRecommendations: AIRecommendations;
 }
 
+// Memoized athlete dropdown component with search and infinite scroll
+const AthleteDropdownList = memo(({ 
+  open,
+  setOpen,
+  selectedSport,
+  showEgyptianOnly,
+  selectedAthleteId,
+  onSelect
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  selectedSport: string;
+  showEgyptianOnly: boolean;
+  selectedAthleteId: string;
+  onSelect: (id: string) => void;
+}) => {
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Build query URL with parameters (excluding page)
+  const baseQueryUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '20');
+    if (selectedSport) params.set('sport', selectedSport);
+    if (showEgyptianOnly) params.set('nationality', 'Egypt');
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    return `/api/athletes?${params.toString()}`;
+  }, [selectedSport, showEgyptianOnly, debouncedSearch]);
+
+  // Infinite query for athletes using shared authenticated infinite fetcher
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    isLoading: isQueryLoading,
+    isFetching,
+  } = useInfiniteQuery<{ athletes: Athlete[]; total: number }>({
+    queryKey: [baseQueryUrl, selectedSport, showEgyptianOnly, debouncedSearch],
+    queryFn: getInfiniteQueryFn<{ athletes: Athlete[]; total: number }>({ on401: "throw" }),
+    getNextPageParam: (lastPage, allPages) => {
+      const currentCount = allPages.reduce((sum, page) => sum + (page.athletes?.length || 0), 0);
+      const total = lastPage.total || 0;
+      return currentCount < total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+
+  // Flatten all pages into a single array
+  const athletes = useMemo(() => {
+    return data?.pages.flatMap(page => page.athletes || []) || [];
+  }, [data]);
+
+  // Check if we're waiting for debounce or loading
+  const isSearching = searchInput !== debouncedSearch || isQueryLoading || isFetching;
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handleSelect = useCallback((athleteId: string) => {
+    onSelect(athleteId);
+    setOpen(false);
+    setSearchInput("");
+  }, [onSelect, setOpen]);
+
+  return (
+    <PopoverContent className="w-[400px] p-0" align="start">
+      <Command>
+        <CommandInput 
+          placeholder="Search athletes..." 
+          value={searchInput}
+          onValueChange={setSearchInput}
+        />
+        <CommandList>
+          <ScrollArea className="h-[300px]">
+            {isError && (
+              <div className="p-4 text-sm text-destructive">
+                Error loading athletes. Please try again.
+              </div>
+            )}
+            {!isError && (
+              <CommandGroup>
+                {athletes.length === 0 && !isSearching && (
+                  <CommandEmpty>No athlete found</CommandEmpty>
+                )}
+                {athletes.length === 0 && isSearching && (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
+                  </div>
+                )}
+                <div className="p-1">
+                  {athletes.map((athlete: any) => {
+                    const isSelected = selectedAthleteId === athlete.id.toString();
+                    return (
+                      <CommandItem
+                        key={athlete.id}
+                        value={athlete.id.toString()}
+                        onSelect={() => handleSelect(athlete.id.toString())}
+                        className="flex items-center gap-3 p-2 cursor-pointer"
+                        data-testid={`athlete-item-${athlete.id}`}
+                      >
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                          <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                            <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{athlete.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {getCountryFlagWithFallback(athlete.nationality)} {athlete.nationality}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {athlete.worldRank && (
+                            <Badge variant="outline" className="text-xs px-1 py-0">
+                              W#{athlete.worldRank}
+                            </Badge>
+                          )}
+                          {athlete.olympicRank && (
+                            <Badge variant="outline" className="text-xs px-1 py-0">
+                              O#{athlete.olympicRank}
+                            </Badge>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
+                  {hasNextPage && (
+                    <div ref={observerTarget} className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="ml-2 text-xs text-muted-foreground">Loading more...</span>
+                    </div>
+                  )}
+                </div>
+              </CommandGroup>
+            )}
+          </ScrollArea>
+        </CommandList>
+      </Command>
+    </PopoverContent>
+  );
+});
+
+AthleteDropdownList.displayName = "AthleteDropdownList";
+
 export default function RankUp() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { showEgyptianOnly } = useEgyptFilter();
+  const { selectedSport } = useSport();
 
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
   const [targetRank, setTargetRank] = useState<string>("");
@@ -92,45 +274,22 @@ export default function RankUp() {
   const [rankUpResult, setRankUpResult] = useState<RankUpResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [userChangedRankingType, setUserChangedRankingType] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Fetch all athletes
-  const { data: athleteData, isLoading: athletesLoading } = useQuery({
-    queryKey: ["/api/athletes", showEgyptianOnly],
+  // Fetch selected athlete details for ranking data
+  const { data: selectedAthlete } = useQuery({
+    queryKey: ["/api/athletes", selectedAthleteId],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        limit: '1000', // Get a large number of athletes for rank-up feature
-      });
-      
-      if (showEgyptianOnly) {
-        params.append('nationality', 'Egypt');
-      }
-      
-      const response = await fetch(`/api/athletes?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch athletes');
+      if (!selectedAthleteId) return null;
+      const response = await fetch(`/api/athletes/${selectedAthleteId}`);
+      if (!response.ok) throw new Error('Failed to fetch athlete');
       return response.json();
-    }
+    },
+    enabled: !!selectedAthleteId,
   });
-
-  // Extract athletes array from response and apply any additional filtering
-  const athletes = athleteData?.athletes || [];
-
-  // Clear selection if current athlete is not in filtered list
-  useEffect(() => {
-    if (selectedAthleteId && !athletes.find(a => a.id.toString() === selectedAthleteId)) {
-      setSelectedAthleteId("");
-      setRankingType("");
-      setCategory("");
-      setTargetRank("");
-      setTargetDate("");
-      setRankUpResult(null);
-    }
-  }, [selectedAthleteId, athletes]);
 
   // Get available ranking types for selected athlete
   const availableRankingTypes = useMemo(() => {
-    if (!selectedAthleteId) return [];
-    
-    const selectedAthlete = athletes.find(a => a.id === parseInt(selectedAthleteId));
     if (!selectedAthlete) return [];
     
     const types = [];
@@ -138,14 +297,11 @@ export default function RankUp() {
     if (selectedAthlete.olympicRank) types.push({ value: "olympic", label: "Olympic Rankings" });
     
     return types;
-  }, [athletes, selectedAthleteId]);
+  }, [selectedAthlete]);
 
   // Get categories specific to selected athlete and ranking type
   const categories = useMemo(() => {
-    if (!selectedAthleteId || !rankingType) return [];
-    
-    const selectedAthlete = athletes.find(a => a.id === parseInt(selectedAthleteId));
-    if (!selectedAthlete) return [];
+    if (!selectedAthlete || !rankingType) return [];
     
     const cats = new Set<string>();
     if (rankingType === "world" && selectedAthlete.worldCategory) {
@@ -156,7 +312,7 @@ export default function RankUp() {
     }
     
     return Array.from(cats).sort();
-  }, [athletes, selectedAthleteId, rankingType]);
+  }, [selectedAthlete, rankingType]);
 
   // Reset states when athlete changes (but not when just availableRankingTypes recalculates)
   useEffect(() => {
@@ -200,6 +356,16 @@ export default function RankUp() {
     }
     prevCategoriesRef.current = categories;
   }, [categories, category]);
+
+  // Get current athlete's ranking for the selected ranking type
+  const getCurrentRanking = (athlete: Athlete, type: string) => {
+    if (type === 'world') return athlete.worldRank;
+    if (type === 'olympic') return athlete.olympicRank;
+    return null;
+  };
+
+  const selectedAthleteCurrentRank = selectedAthlete ? getCurrentRanking(selectedAthlete, rankingType) : null;
+  const isAlreadyTopRank = selectedAthleteCurrentRank === 1;
 
   // Calculate rank up requirements
   const calculateRankUp = async () => {
@@ -276,18 +442,6 @@ export default function RankUp() {
     }
   };
 
-  const selectedAthlete = athletes.find(a => a.id === parseInt(selectedAthleteId));
-
-  // Get current athlete's ranking for the selected ranking type
-  const getCurrentRanking = (athlete: Athlete, type: string) => {
-    if (type === 'world') return athlete.worldRank;
-    if (type === 'olympic') return athlete.olympicRank;
-    return null;
-  };
-
-  const selectedAthleteCurrentRank = selectedAthlete ? getCurrentRanking(selectedAthlete, rankingType) : null;
-  const isAlreadyTopRank = selectedAthleteCurrentRank === 1;
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -331,43 +485,40 @@ export default function RankUp() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="athlete">Select Athlete</Label>
-                  <Select value={selectedAthleteId} onValueChange={setSelectedAthleteId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose athlete...">
-                        {selectedAthleteId && (() => {
-                          const selectedAthlete = athletes.find(a => a.id.toString() === selectedAthleteId);
-                          return selectedAthlete ? `${selectedAthlete.name} (${selectedAthlete.nationality})` : 'Choose athlete...';
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {athletes.map((athlete) => {
-                        const worldRank = athlete.worldRank;
-                        const olympicRank = athlete.olympicRank;
-                        return (
-                          <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                            <div className="flex items-center justify-between w-full">
-                              <span className="truncate">
-                                {athlete.name} ({athlete.nationality})
-                              </span>
-                              <div className="flex gap-1 ml-2 flex-shrink-0">
-                                {worldRank && (
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
-                                    W#{worldRank}
-                                  </Badge>
-                                )}
-                                {olympicRank && (
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
-                                    O#{olympicRank}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={dropdownOpen}
+                        className="w-full justify-between"
+                        data-testid="button-select-athlete"
+                      >
+                        {selectedAthlete ? (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Avatar className="h-6 w-6 flex-shrink-0">
+                              <AvatarImage src={selectedAthlete.profileImage} alt={selectedAthlete.name} />
+                              <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                                <UserIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{selectedAthlete.name}</span>
+                          </div>
+                        ) : (
+                          "Choose athlete..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <AthleteDropdownList
+                      open={dropdownOpen}
+                      setOpen={setDropdownOpen}
+                      selectedSport={selectedSport}
+                      showEgyptianOnly={showEgyptianOnly}
+                      selectedAthleteId={selectedAthleteId}
+                      onSelect={setSelectedAthleteId}
+                    />
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
