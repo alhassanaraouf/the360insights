@@ -55,7 +55,7 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
   const olympicRankings = athletes
     .filter((athlete) => athlete.olympicRank)
     .sort((a, b) => (a.olympicRank || 999) - (b.olympicRank || 999))
-    .slice(0, 8);
+    .slice(0, 10);
 
   const handleAthleteClick = (athleteId: number) => {
     navigate(`/athlete360?athlete=${athleteId}`);

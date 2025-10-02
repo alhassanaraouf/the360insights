@@ -58,7 +58,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const params = new URLSearchParams({
         sport: selectedSport,
-        limit: '10',
+        limit: '30',
         topRankedOnly: 'true'
       });
       
