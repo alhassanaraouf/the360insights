@@ -124,7 +124,7 @@ export default function Dashboard() {
   return (
     <>
       <Header
-        title={`${sportConfig.name} Dashboard`}
+        title={`${sportConfig.name}`}
         description="Comprehensive analytics for coaches, managers, and scouts"
       />
 
