@@ -105,9 +105,9 @@ externalPort = 5000
 localPort = 46427
 externalPort = 8099
 
-[objectStorage]
-defaultBucketID = "replit-objstore-59c76f0b-8f18-4450-b997-2d163531fb5e"
-
 [agent]
 integrations = ["javascript_openai:1.0.0"]
 expertMode = true
+
+[objectStorage]
+defaultBucketID = "replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b"
