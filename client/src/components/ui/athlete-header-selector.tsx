@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAthlete } from "@/lib/athlete-context";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
-import { User, Target, Globe } from "lucide-react";
+import { User, Globe, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AthleteHeaderSelectorProps {
   title?: string;
@@ -18,6 +23,7 @@ export default function AthleteHeaderSelector({
   const { selectedAthleteId, setSelectedAthleteId } = useAthlete();
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
+  const [open, setOpen] = useState(false);
   
   const { data: athletesData, isLoading } = useQuery({
     queryKey: ["/api/athletes"],
@@ -40,7 +46,10 @@ export default function AthleteHeaderSelector({
 
   const handleAthleteSelect = (athleteId: string) => {
     setSelectedAthleteId(parseInt(athleteId));
+    setOpen(false);
   };
+
+  const selectedAthlete = filteredAthletes.find((a: any) => a.id === selectedAthleteId);
 
   if (isLoading) {
     return (
@@ -61,15 +70,14 @@ export default function AthleteHeaderSelector({
         </div>
         <div className="min-w-0 flex-1">
           <p className="mobile-text font-medium text-blue-900 dark:text-blue-100 truncate">{title}</p>
-          {showCurrentAthlete && currentAthlete && (
+          {showCurrentAthlete && currentAthlete ? (
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              {(currentAthlete as any).profileImageUrl && (
-                <img 
-                  src={(currentAthlete as any).profileImageUrl} 
-                  alt={(currentAthlete as any).name}
-                  className="w-4 h-4 rounded-full object-cover flex-shrink-0"
-                />
-              )}
+              <Avatar className="h-4 w-4">
+                <AvatarImage src={(currentAthlete as any).profileImage} alt={(currentAthlete as any).name} />
+                <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                  <User className="h-2 w-2 text-blue-600 dark:text-blue-400" />
+                </AvatarFallback>
+              </Avatar>
               <div className="flex items-center gap-1">
                 <Globe className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 <span className="mobile-text text-blue-700 dark:text-blue-300 truncate">{(currentAthlete as any).nationality}</span>
@@ -80,46 +88,83 @@ export default function AthleteHeaderSelector({
                 </Badge>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
       
       <div className="flex items-center mobile-space-x mt-3 lg:mt-0">
-        <Select value={selectedAthleteId?.toString() || ""} onValueChange={handleAthleteSelect}>
-          <SelectTrigger className="w-full sm:w-64 bg-white dark:bg-gray-900 border-blue-300 dark:border-blue-700">
-            <SelectValue placeholder="Choose athlete..." />
-          </SelectTrigger>
-          <SelectContent>
-            {filteredAthletes?.map((athlete: any) => (
-              <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                <div className="flex items-center space-x-2 w-full">
-                  <div className="flex-shrink-0">
-                    {athlete.profileImageUrl ? (
-                      <img 
-                        src={athlete.profileImageUrl} 
-                        alt={athlete.name}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                        <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium truncate">{athlete.name}</span>
-                      <span className="text-xs text-muted-foreground">({athlete.nationality})</span>
-                      {athlete.worldRank && (
-                        <span className="text-xs text-blue-600 font-medium">#{athlete.worldRank}</span>
-                      )}
-                    </div>
-                  </div>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full sm:w-80 justify-between bg-white dark:bg-gray-900 border-blue-300 dark:border-blue-700"
+              data-testid="button-athlete-selector"
+            >
+              {selectedAthlete ? (
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={selectedAthlete.profileImage} alt={selectedAthlete.name} />
+                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs">
+                      <User className="h-3 w-3" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{selectedAthlete.name}</span>
+                  <span className="text-xs text-muted-foreground">({selectedAthlete.nationality})</span>
+                  {selectedAthlete.worldRank && (
+                    <span className="text-xs text-blue-600 font-medium">#{selectedAthlete.worldRank}</span>
+                  )}
                 </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              ) : (
+                "Choose athlete..."
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[320px] sm:w-[400px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search athletes..." data-testid="input-search-athletes" />
+              <CommandList>
+                <CommandEmpty>No athlete found.</CommandEmpty>
+                <CommandGroup>
+                  {filteredAthletes?.map((athlete: any) => (
+                    <CommandItem
+                      key={athlete.id}
+                      value={`${athlete.name} ${athlete.nationality} ${athlete.worldRank || ''}`}
+                      onSelect={() => handleAthleteSelect(athlete.id.toString())}
+                      data-testid={`item-athlete-${athlete.id}`}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedAthleteId === athlete.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={athlete.profileImage} alt={athlete.name} />
+                          <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs">
+                            <User className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium truncate">{athlete.name}</span>
+                            <span className="text-xs text-muted-foreground">({athlete.nationality})</span>
+                            {athlete.worldRank && (
+                              <span className="text-xs text-blue-600 font-medium">#{athlete.worldRank}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
