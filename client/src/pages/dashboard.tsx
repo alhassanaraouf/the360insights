@@ -233,7 +233,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">
-                Top Ranked Athletes
+                Featured Athletes
               </h2>
               <p className="text-muted-foreground">
                 Elite performers in world and Olympic rankings
