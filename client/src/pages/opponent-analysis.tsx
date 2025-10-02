@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -19,11 +22,16 @@ import {
   Shield,
   Activity,
   Users,
-  Filter
+  Filter,
+  ChevronsUpDown,
+  Loader2,
+  User,
+  Globe
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import type { Athlete } from "@shared/schema";
 import AthleteSelector from "@/components/ui/athlete-selector";
 import AthleteHeaderSelector from "@/components/ui/athlete-header-selector";
@@ -48,6 +56,10 @@ interface PerformanceInsight {
 export default function OpponentAnalysis() {
   const [selectedOpponent, setSelectedOpponent] = useState<string>("");
   const [showAllWeightClass, setShowAllWeightClass] = useState<boolean>(false);
+  const [opponentSelectorOpen, setOpponentSelectorOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const observerTarget = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { selectedAthleteId } = useAthlete();
@@ -57,18 +69,58 @@ export default function OpponentAnalysis() {
     enabled: !!selectedAthleteId,
   });
 
-  const { data: opponents, isLoading: opponentsLoading } = useQuery<(Athlete & { worldRank?: number; olympicRank?: number })[]>({
-    queryKey: [`/api/athletes/${selectedAthleteId}/opponents`, showAllWeightClass],
-    enabled: !!selectedAthleteId,
-    queryFn: async () => {
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Build query parameters for opponent search
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('limit', '20');
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    return params.toString();
+  }, [debouncedSearch]);
+
+  // Infinite query for opponents with search
+  const {
+    data: opponentsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isError: isOpponentsError,
+    isLoading: opponentsLoading,
+    isFetching: isOpponentsFetching,
+  } = useInfiniteQuery({
+    queryKey: [`/api/athletes/${selectedAthleteId}/opponents`, showAllWeightClass, queryParams],
+    queryFn: async ({ pageParam = 1 }) => {
       const endpoint = showAllWeightClass 
         ? `/api/athletes/${selectedAthleteId}/opponents/all-weight-class`
         : `/api/athletes/${selectedAthleteId}/opponents`;
-      const response = await fetch(endpoint);
+      const params = new URLSearchParams(queryParams);
+      params.set('page', pageParam.toString());
+      const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch opponents');
       return response.json();
-    }
+    },
+    getNextPageParam: (lastPage) => {
+      // Backend now returns { opponents, total, page, limit, hasMore }
+      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+    },
+    initialPageParam: 1,
+    enabled: !!selectedAthleteId,
   });
+
+  // Flatten all pages into a single array
+  const opponents = useMemo(() => {
+    return opponentsData?.pages.flatMap(page => page.opponents || []) || [];
+  }, [opponentsData]);
+
+  // Check if we're waiting for debounce or loading
+  const isSearching = searchInput !== debouncedSearch || opponentsLoading || isOpponentsFetching;
 
   const { data: performanceInsight, isLoading: performanceLoading } = useQuery<PerformanceInsight>({
     queryKey: [`/api/ai/performance-insight/${selectedAthleteId}`],
@@ -95,8 +147,34 @@ export default function OpponentAnalysis() {
     }
   });
 
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    if (!opponentSelectorOpen) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [opponentSelectorOpen, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const handleOpponentSelect = (opponentId: string) => {
     setSelectedOpponent(opponentId);
+    setOpponentSelectorOpen(false);
   };
 
   const selectedOpponentData = opponents?.find((o) => o.id.toString() === selectedOpponent);
@@ -149,27 +227,106 @@ export default function OpponentAnalysis() {
               </Label>
             </div>
             
-            <Select value={selectedOpponent} onValueChange={handleOpponentSelect}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select an opponent to analyze..." />
-              </SelectTrigger>
-              <SelectContent>
-                {opponents && (opponents as any[]).map((opponent) => (
-                  <SelectItem key={opponent.id} value={opponent.id.toString()}>
-                    <span className="block sm:hidden">
-                      {opponent.name} {opponent.worldCategory && opponent.olympicCategory ? 
-                        `(${opponent.worldCategory}/${opponent.olympicCategory})` : 
-                        `(${opponent.worldCategory || opponent.olympicCategory})`}
+            <Popover open={opponentSelectorOpen} onOpenChange={setOpponentSelectorOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={opponentSelectorOpen}
+                  className="w-full h-12 justify-between"
+                  data-testid="button-opponent-selector"
+                >
+                  {selectedOpponentData ? (
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={selectedOpponentData.profileImage} alt={selectedOpponentData.name} />
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                          <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{selectedOpponentData.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {opponentsLoading ? "Loading..." : "Select an opponent to analyze..."}
                     </span>
-                    <span className="hidden sm:block">
-                      {opponent.name} - #{opponent.worldRank || 'NR'} ({opponent.nationality}) {opponent.worldCategory && opponent.olympicCategory ? 
-                        `[${opponent.worldCategory}/${opponent.olympicCategory}]` : 
-                        `[${opponent.worldCategory || opponent.olympicCategory}]`}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder="Search by name, nationality..." 
+                    value={searchInput}
+                    onValueChange={setSearchInput}
+                  />
+                  <CommandList>
+                    <ScrollArea className="h-[300px]">
+                      {isOpponentsError ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          Failed to load opponents
+                        </div>
+                      ) : isSearching ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                          Searching...
+                        </div>
+                      ) : opponents.length === 0 ? (
+                        <CommandEmpty>No opponents found.</CommandEmpty>
+                      ) : (
+                        <CommandGroup>
+                          {opponents.map((opponent: any) => (
+                            <CommandItem
+                              key={opponent.id}
+                              value={opponent.id.toString()}
+                              onSelect={() => handleOpponentSelect(opponent.id.toString())}
+                              className="cursor-pointer"
+                              data-testid={`item-opponent-${opponent.id}`}
+                            >
+                              <div className="flex items-center space-x-3 w-full py-1">
+                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                  <AvatarImage src={opponent.profileImage} alt={opponent.name} />
+                                  <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30">
+                                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium truncate">{opponent.name}</p>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                                    <div className="flex items-center gap-1">
+                                      <Globe className="h-3 w-3 flex-shrink-0" />
+                                      <span>{getCountryFlagWithFallback(opponent.nationality)} {opponent.nationality}</span>
+                                    </div>
+                                    {opponent.worldRank && (
+                                      <Badge variant="outline" className="text-xs">
+                                        #{opponent.worldRank}
+                                      </Badge>
+                                    )}
+                                    {opponent.worldCategory && (
+                                      <span className="text-xs">
+                                        {opponent.worldCategory}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                          {/* Infinite scroll trigger */}
+                          <div ref={observerTarget} className="h-4" />
+                          {isFetchingNextPage && (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                            </div>
+                          )}
+                        </CommandGroup>
+                      )}
+                    </ScrollArea>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </CardContent>
         </Card>
 

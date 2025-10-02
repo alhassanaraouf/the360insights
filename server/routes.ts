@@ -121,8 +121,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/athletes/:id/opponents", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      const opponents = await storage.getOpponentsByWeightClass(athleteId);
-      res.json(opponents);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+      
+      const allOpponents = await storage.getOpponentsByWeightClass(athleteId);
+      
+      // Apply search filter if provided
+      let filteredOpponents = allOpponents;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredOpponents = allOpponents.filter((opponent: any) =>
+          opponent.name?.toLowerCase().includes(searchLower) ||
+          opponent.nationality?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Apply pagination
+      const total = filteredOpponents.length;
+      const offset = (page - 1) * limit;
+      const paginatedOpponents = filteredOpponents.slice(offset, offset + limit);
+      
+      res.json({
+        opponents: paginatedOpponents,
+        total,
+        page,
+        limit,
+        hasMore: offset + limit < total
+      });
     } catch (error) {
       console.error("Error fetching opponents by weight class:", error);
       res.status(500).json({ error: "Failed to fetch opponents" });
@@ -133,8 +159,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/athletes/:id/opponents/all-weight-class", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      const opponents = await storage.getAllOpponentsByWeightClass(athleteId);
-      res.json(opponents);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+      
+      const allOpponents = await storage.getAllOpponentsByWeightClass(athleteId);
+      
+      // Apply search filter if provided
+      let filteredOpponents = allOpponents;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredOpponents = allOpponents.filter((opponent: any) =>
+          opponent.name?.toLowerCase().includes(searchLower) ||
+          opponent.nationality?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Apply pagination
+      const total = filteredOpponents.length;
+      const offset = (page - 1) * limit;
+      const paginatedOpponents = filteredOpponents.slice(offset, offset + limit);
+      
+      res.json({
+        opponents: paginatedOpponents,
+        total,
+        page,
+        limit,
+        hasMore: offset + limit < total
+      });
     } catch (error) {
       console.error("Error fetching all opponents by weight class:", error);
       res.status(500).json({ error: "Failed to fetch all opponents" });
