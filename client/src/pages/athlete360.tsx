@@ -179,7 +179,7 @@ export default function Athlete360() {
   // Show athlete selector if no athlete is selected
   if (!athleteId) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <AthleteSelector 
           title="Select Athlete for 360° Analysis"
           description="Choose an athlete to view their complete performance profile"

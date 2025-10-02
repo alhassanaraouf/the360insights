@@ -52,7 +52,7 @@ export default function CareerJourney() {
   // Show athlete selector if no athlete is selected
   if (!selectedAthleteId) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <AthleteSelector 
           title="Select Athlete for Career Journey"
           description="Choose an athlete to view their career timeline and achievements"

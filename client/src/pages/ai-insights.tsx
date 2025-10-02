@@ -193,7 +193,7 @@ export default function AiInsights() {
   // Show athlete selector if no athlete is selected
   if (!selectedAthleteId) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <AthleteSelector 
           title="Select Athlete for AI Insights"
           description="Choose an athlete to get personalized AI-powered performance insights and analysis"

@@ -207,7 +207,7 @@ export default function TrainingPlanner() {
   // Show athlete selector if no athlete is selected
   if (!selectedAthleteId) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <AthleteSelector 
           title="Select Athlete for Training Planner"
           description="Choose an athlete to create personalized training plans"

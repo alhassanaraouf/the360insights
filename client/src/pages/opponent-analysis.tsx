@@ -104,7 +104,7 @@ export default function OpponentAnalysis() {
   // Show athlete selector if no athlete is selected
   if (!selectedAthleteId) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         <AthleteSelector 
           title="Select Athlete for Analysis"
           description="Choose an athlete to analyze their opponents and strategies"
