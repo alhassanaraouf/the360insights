@@ -175,18 +175,6 @@ export default function TrainingPlanner() {
   // Check if competition plan is selected
   const isCompetitionPlan = planParameters.planType === 'competition-prep';
 
-  // Show athlete selector if no athlete is selected
-  if (!selectedAthleteId) {
-    return (
-      <div className="min-h-screen">
-        <AthleteSelector 
-          title="Select Athlete for Training Planner"
-          description="Choose an athlete to create personalized training plans"
-        />
-      </div>
-    );
-  }
-
   const generatePlanMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/training/generate-plan", {
@@ -215,6 +203,18 @@ export default function TrainingPlanner() {
       });
     }
   });
+
+  // Show athlete selector if no athlete is selected
+  if (!selectedAthleteId) {
+    return (
+      <div className="min-h-screen">
+        <AthleteSelector 
+          title="Select Athlete for Training Planner"
+          description="Choose an athlete to create personalized training plans"
+        />
+      </div>
+    );
+  }
 
   const handleGeneratePlan = () => {
     if (!planParameters.planType || !planParameters.duration) {

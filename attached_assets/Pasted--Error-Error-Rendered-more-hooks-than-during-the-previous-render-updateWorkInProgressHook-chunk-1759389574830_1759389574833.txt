@@ -1,0 +1,72 @@
+[Error] Error: Rendered more hooks than during the previous render.
+	updateWorkInProgressHook (chunk-RPCDYKBN.js:11678:87)
+	updateReducer (chunk-RPCDYKBN.js:11727)
+	useState (chunk-RPCDYKBN.js:12753)
+	useMutation (@tanstack_react-query.js:3276)
+	TrainingPlanner (training-planner.tsx:122)
+	renderWithHooks (chunk-RPCDYKBN.js:11548)
+	updateFunctionComponent (chunk-RPCDYKBN.js:14582)
+	callCallback2 (chunk-RPCDYKBN.js:3674)
+	dispatchEvent
+	invokeGuardedCallbackDev (chunk-RPCDYKBN.js:3699)
+	invokeGuardedCallback (chunk-RPCDYKBN.js:3733)
+	beginWork$1 (chunk-RPCDYKBN.js:19765)
+	performUnitOfWork (chunk-RPCDYKBN.js:19198)
+	workLoopSync (chunk-RPCDYKBN.js:19137)
+	renderRootSync (chunk-RPCDYKBN.js:19116)
+	performSyncWorkOnRoot (chunk-RPCDYKBN.js:18874)
+	flushSyncCallbacks (chunk-RPCDYKBN.js:9119)
+	(anonymous function) (chunk-RPCDYKBN.js:18627)
+[Error] Error: Rendered more hooks than during the previous render.
+	updateWorkInProgressHook (chunk-RPCDYKBN.js:11678:87)
+	updateReducer (chunk-RPCDYKBN.js:11727)
+	useState (chunk-RPCDYKBN.js:12753)
+	useMutation (@tanstack_react-query.js:3276)
+	TrainingPlanner (training-planner.tsx:122)
+	renderWithHooks (chunk-RPCDYKBN.js:11548)
+	updateFunctionComponent (chunk-RPCDYKBN.js:14582)
+	callCallback2 (chunk-RPCDYKBN.js:3674)
+	dispatchEvent
+	invokeGuardedCallbackDev (chunk-RPCDYKBN.js:3699)
+	invokeGuardedCallback (chunk-RPCDYKBN.js:3733)
+	beginWork$1 (chunk-RPCDYKBN.js:19765)
+	performUnitOfWork (chunk-RPCDYKBN.js:19198)
+	workLoopSync (chunk-RPCDYKBN.js:19137)
+	renderRootSync (chunk-RPCDYKBN.js:19116)
+	recoverFromConcurrentError (chunk-RPCDYKBN.js:18736)
+	performSyncWorkOnRoot (chunk-RPCDYKBN.js:18879)
+	flushSyncCallbacks (chunk-RPCDYKBN.js:9119)
+	(anonymous function) (chunk-RPCDYKBN.js:18627)
+[Error] The above error occurred in the <TrainingPlanner> component:
+
+TrainingPlanner@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/pages/training-planner.tsx:58:43
+div
+main
+div
+ResponsiveLayout@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/components/layout/responsive-layout.tsx:20:52
+Route@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:20
+Switch@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:379:25
+Router@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/App.tsx:47:49
+TooltipProviderProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js:38:52
+TooltipProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:67:12
+AthleteProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/lib/athlete-context.tsx:21:43
+EgyptFilterProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/lib/egypt-filter-context.tsx:20:47
+SportProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/src/lib/sport-context.tsx:20:41
+QueryClientProvider@https://674b9916-4a31-48e1-a32b-34bb44db618d-00-3hkmtkr6ey0hg.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+	logCapturedError (chunk-RPCDYKBN.js:14032)
+	(anonymous function) (chunk-RPCDYKBN.js:14052)
+	callCallback (chunk-RPCDYKBN.js:11248)
+	commitUpdateQueue (chunk-RPCDYKBN.js:11265)
+	commitLayoutEffectOnFiber (chunk-RPCDYKBN.js:17093)
+	commitLayoutMountEffects_complete (chunk-RPCDYKBN.js:17980)
+	commitLayoutEffects_begin (chunk-RPCDYKBN.js:17969)
+	commitLayoutEffects (chunk-RPCDYKBN.js:17920)
+	commitRootImpl (chunk-RPCDYKBN.js:19353)
+	commitRoot (chunk-RPCDYKBN.js:19277)
+	performSyncWorkOnRoot (chunk-RPCDYKBN.js:18895)
+	flushSyncCallbacks (chunk-RPCDYKBN.js:9119)
+	(anonymous function) (chunk-RPCDYKBN.js:18627)
