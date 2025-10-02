@@ -106,6 +106,8 @@ const AthleteDropdown = memo(({
     hasNextPage,
     isFetchingNextPage,
     isError,
+    isLoading: isQueryLoading,
+    isFetching,
   } = useInfiniteQuery({
     queryKey: ['/api/athletes', queryParams],
     queryFn: async ({ pageParam = 1 }) => {
@@ -127,6 +129,9 @@ const AthleteDropdown = memo(({
   const athletes = useMemo(() => {
     return data?.pages.flatMap(page => page.athletes || []) || [];
   }, [data]);
+
+  // Check if we're waiting for debounce or loading
+  const isSearching = searchInput !== debouncedSearch || isQueryLoading || isFetching;
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {
@@ -188,7 +193,12 @@ const AthleteDropdown = memo(({
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   Failed to load athletes
                 </div>
-              ) : athletes.length === 0 && !isLoading ? (
+              ) : isSearching ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                  Searching...
+                </div>
+              ) : athletes.length === 0 ? (
                 <CommandEmpty>No athlete found.</CommandEmpty>
               ) : (
                 <CommandGroup>
