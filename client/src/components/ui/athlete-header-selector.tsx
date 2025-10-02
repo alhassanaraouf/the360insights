@@ -65,9 +65,12 @@ export default function AthleteHeaderSelector({
   return (
     <div className="mobile-flex-col mobile-gap lg:items-center lg:justify-between mobile-card bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-lg border border-blue-200 dark:border-blue-800/30 mb-6">
       <div className="flex items-center mobile-space-x">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex-shrink-0">
-          <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        </div>
+        <Avatar className="h-10 w-10 flex-shrink-0">
+          <AvatarImage src={(currentAthlete as any)?.profileImage} alt={(currentAthlete as any)?.name} />
+          <AvatarFallback className="bg-blue-100 dark:bg-blue-900/50">
+            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0 flex-1">
           <p className="mobile-text font-medium text-blue-900 dark:text-blue-100 truncate">{title}</p>
           {showCurrentAthlete && currentAthlete ? (
