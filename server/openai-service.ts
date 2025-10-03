@@ -179,7 +179,7 @@ Provide your response in JSON format with the following structure:
     console.log(prompt);
     console.log("=== END PROMPT ===");
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         {
           role: "system",
@@ -192,7 +192,6 @@ Provide your response in JSON format with the following structure:
         },
       ],
       response_format: { type: "json_object" },
-      // GPT-5 only supports the default temperature value of 1
     });
 
     // Validate response structure

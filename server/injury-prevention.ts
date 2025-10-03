@@ -194,7 +194,7 @@ Provide comprehensive injury prevention analysis in JSON format:
 Focus on Taekwondo-specific injury patterns, common risks like knee ligament stress, ankle injuries from pivoting, and shoulder strain from high kicks.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",

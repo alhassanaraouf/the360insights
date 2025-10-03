@@ -84,7 +84,7 @@ Provide a comprehensive tactical analysis in JSON format:
 }`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -164,7 +164,7 @@ Analyze the performance trend and provide insights in JSON format:
 }`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -229,7 +229,7 @@ Provide 5-7 specific, actionable training recommendations that address the ident
 Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -421,7 +421,7 @@ Provide specific, actionable insights based on this data.`;
 
         const response = (await Promise.race([
           openai.chat.completions.create({
-            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            model: "gpt-5",
             messages: [
               {
                 role: "system",
@@ -520,9 +520,9 @@ Provide a JSON response with exactly this structure:
 Each name should be 2-4 words, and each description should be 1-2 sentences explaining how this affects Taekwondo performance.`;
 
       // Use OpenAI's most advanced available model for analysis
-      console.log("Attempting to call OpenAI with model: gpt-4o");
+      console.log("Attempting to call OpenAI with model: gpt-5");
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // O3 models not yet available in API, using most advanced available model
+        model: "gpt-5",
         messages: [
           {
             role: "system",
