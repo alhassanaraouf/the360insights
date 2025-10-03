@@ -49,68 +49,12 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33739
-externalPort = 6000
-
-[[ports]]
-localPort = 33989
-externalPort = 8000
-
-[[ports]]
-localPort = 34299
-externalPort = 8008
-
-[[ports]]
-localPort = 34773
-externalPort = 3003
-
-[[ports]]
-localPort = 41059
-externalPort = 8080
-
-[[ports]]
-localPort = 42619
-externalPort = 3002
-
-[[ports]]
-localPort = 42811
-externalPort = 6800
-
-[[ports]]
-localPort = 42815
-externalPort = 4200
-
-[[ports]]
-localPort = 43389
-externalPort = 9000
-
-[[ports]]
-localPort = 44013
-externalPort = 5173
-
-[[ports]]
-localPort = 44357
-externalPort = 3001
-
-[[ports]]
-localPort = 44573
+localPort = 34685
 externalPort = 3000
-
-[[ports]]
-localPort = 45013
-externalPort = 8081
-
-[[ports]]
-localPort = 45963
-externalPort = 5000
-
-[[ports]]
-localPort = 46427
-externalPort = 8099
 
 [agent]
 integrations = ["javascript_openai:1.0.0"]
 expertMode = true
 
 [objectStorage]
-defaultBucketID = "replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b"
+defaultBucketID = "replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945"
