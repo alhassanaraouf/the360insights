@@ -62,6 +62,7 @@ export interface IStorage {
   // Athletes
   getAthlete(id: number): Promise<Athlete | undefined>;
   getAllAthletes(): Promise<Athlete[]>;
+  getAthletesByCountry(country: string): Promise<Athlete[]>;
   getAthleteStats(sportFilter?: string, egyptOnly?: boolean): Promise<{
     totalAthletes: number;
     worldRankedAthletes: number;
@@ -435,6 +436,22 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error("DatabaseStorage: Error in getAllAthletes:", error);
+      throw error;
+    }
+  }
+
+  async getAthletesByCountry(country: string): Promise<Athlete[]> {
+    try {
+      console.log(`DatabaseStorage: Getting athletes for country: ${country}`);
+      const result = await withRetry(() => 
+        db.select()
+          .from(athletes)
+          .where(eq(athletes.nationality, country))
+      );
+      console.log(`DatabaseStorage: Found ${result.length} athletes from ${country}`);
+      return result;
+    } catch (error) {
+      console.error(`DatabaseStorage: Error getting athletes by country:`, error);
       throw error;
     }
   }

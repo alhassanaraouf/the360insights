@@ -1738,6 +1738,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate playing styles for all athletes with optional country filter
+  app.post("/api/generate/playing-styles", async (req, res) => {
+    try {
+      const { country } = req.body;
+      console.log("Starting playing style generation...");
+      if (country) {
+        console.log(`Filtering by country: ${country}`);
+      }
+      
+      // Get all athletes or filter by country
+      const allAthletes = country 
+        ? await storage.getAthletesByCountry(country)
+        : await storage.getAllAthletes();
+      
+      console.log(`Found ${allAthletes.length} athletes to process`);
+      
+      const results = {
+        total: allAthletes.length,
+        successful: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+      
+      // Process athletes in parallel batches of 5 to optimize speed while avoiding rate limits
+      const batchSize = 5;
+      for (let i = 0; i < allAthletes.length; i += batchSize) {
+        const batch = allAthletes.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allAthletes.length / batchSize)}`);
+        
+        // Process batch in parallel
+        const batchPromises = batch.map(async (athlete) => {
+          try {
+            const playingStyle = await aiEngine.generatePlayingStyle(athlete.id);
+            results.successful++;
+            console.log(`✅ Generated playing style for ${athlete.name}: ${playingStyle}`);
+            return { success: true, athlete: athlete.name, playingStyle };
+          } catch (error) {
+            results.failed++;
+            const errorMsg = `Failed to generate playing style for ${athlete.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            results.errors.push(errorMsg);
+            console.error(`❌ ${errorMsg}`);
+            return { success: false, athlete: athlete.name, error: errorMsg };
+          }
+        });
+        
+        // Wait for all promises in the batch to complete
+        await Promise.all(batchPromises);
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + batchSize < allAthletes.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      console.log(`Batch generation complete: ${results.successful} successful, ${results.failed} failed`);
+      
+      res.json({
+        success: true,
+        message: country 
+          ? `Playing style generation complete for ${country}`
+          : `Playing style generation complete`,
+        results
+      });
+    } catch (error) {
+      console.error("Playing style generation error:", error);
+      res.status(500).json({ error: "Failed to generate playing styles" });
+    }
+  });
+
   // Generate and save strengths and weaknesses to database
   app.post("/api/ai/generate-and-save-strengths-weaknesses/:athleteId", async (req, res) => {
     try {
