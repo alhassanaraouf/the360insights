@@ -48,10 +48,6 @@ args = "npm run dev"
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 34685
-externalPort = 3000
-
 [agent]
 integrations = ["javascript_openai:1.0.0"]
 expertMode = true
