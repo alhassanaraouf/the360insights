@@ -45,11 +45,19 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
 - **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 
-### Recent Changes (October 2, 2025)
+### Recent Changes (October 3, 2025)
+
+- **Fixed Object Storage Bucket Initialization**: Resolved issue where profile pictures were uploaded to production bucket during dev imports
+  - Root cause: Client was initialized with `new Client()` without passing bucketId parameter, defaulting to production bucket
+  - Fix: Changed initialization to `new Client({ bucketId })` to explicitly specify the target bucket
+  - Added enhanced logging to show bucket ID during each upload operation
+  - Removed unnecessary `init()` call and `isInitialized` checks since the client is now properly configured at instantiation
+  - Dev imports now correctly use dev bucket: `replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945`
+  - Production uploads use prod bucket: `replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b`
+
+### Previous Changes (October 2, 2025)
 
 - **Environment-Based Object Storage Configuration**: Implemented dynamic bucket selection based on environment
-  - Dev bucket: `replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945` (used in development)
-  - Prod bucket: `replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b` (used in production)
   - Bucket selection: Uses `BUCKET_ID` env var if set, otherwise `NODE_ENV` determines bucket (production → prod bucket, otherwise → dev bucket)
   - Updated `server/bucket-storage.ts` to initialize client with environment-based bucket ID
   - Added console logging to show which bucket is being used on startup

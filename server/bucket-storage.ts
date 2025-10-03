@@ -10,16 +10,9 @@ const bucketId = process.env.BUCKET_ID ||
 
 console.log(`Using bucket: ${bucketId} (environment: ${process.env.NODE_ENV || 'development'})`);
 
-// Initialize Replit Object Storage client with bucket ID
-const client = new Client();
-// Initialize the client with the specific bucket ID (async call)
-let isInitialized = false;
-const initPromise = client.init(bucketId).then(() => {
-  isInitialized = true;
-  console.log('Replit Object Storage client initialized successfully');
-}).catch(error => {
-  console.error('Failed to initialize Replit Object Storage client:', error);
-});
+// Initialize Replit Object Storage client with the specific bucket ID
+const client = new Client({ bucketId });
+console.log('Replit Object Storage client initialized successfully with bucket:', bucketId);
 
 export interface ImageUploadResult {
   url: string;
@@ -32,18 +25,11 @@ export class BucketStorageService {
 
   async uploadAthleteImage(athleteId: number, imageBuffer: Buffer, fileName: string): Promise<ImageUploadResult> {
     try {
-      // Ensure client is initialized
-      if (!isInitialized) {
-        await initPromise;
-      }
-      
       const fileExtension = fileName.split('.').pop() || 'jpg';
       const key = `athletes/${athleteId}/profile.${fileExtension}`;
       
-      console.log(`Uploading ${key} (${imageBuffer.length} bytes)`);
-      console.log('Buffer type:', typeof imageBuffer);
-      console.log('Buffer is Buffer:', Buffer.isBuffer(imageBuffer));
-      console.log('First 10 bytes:', imageBuffer.slice(0, 10));
+      console.log(`📤 Uploading ${key} to bucket: ${this.bucketId}`);
+      console.log(`   Size: ${imageBuffer.length} bytes`);
       
       // Upload to Replit Object Storage
       const uploadResult = await client.uploadFromBytes(key, imageBuffer);
@@ -138,11 +124,6 @@ export class BucketStorageService {
 
   async deleteAthleteImage(athleteId: number): Promise<void> {
     try {
-      // Ensure client is initialized
-      if (!isInitialized) {
-        await initPromise;
-      }
-      
       // List all files for this athlete
       const prefix = `athletes/${athleteId}/`;
       const listResult = await client.list({ prefix });
@@ -164,11 +145,6 @@ export class BucketStorageService {
 
   async getAthleteImageUrl(athleteId: number): Promise<string | null> {
     try {
-      // Ensure client is initialized
-      if (!isInitialized) {
-        await initPromise;
-      }
-      
       const prefix = `athletes/${athleteId}/`;
       const listResult = await client.list({ prefix });
       
@@ -188,11 +164,6 @@ export class BucketStorageService {
 
   async getAthleteImageBuffer(athleteId: number): Promise<Buffer | null> {
     try {
-      // Ensure client is initialized
-      if (!isInitialized) {
-        await initPromise;
-      }
-      
       const prefix = `athletes/${athleteId}/`;
       const listResult = await client.list({ prefix });
       
