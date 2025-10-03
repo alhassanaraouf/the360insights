@@ -111,6 +111,30 @@ Respond with ONLY the playing style label, nothing else.`;
         throw new Error("Athlete or opponent data not found");
       }
 
+      // Auto-generate playing style for opponent if unknown or missing
+      if (!opponent.playingStyle || opponent.playingStyle === "Unknown") {
+        console.log(`Opponent ${opponent.name} has unknown playing style. Generating...`);
+        try {
+          opponent.playingStyle = await this.generatePlayingStyle(opponentId);
+          console.log(`Generated playing style for ${opponent.name}: ${opponent.playingStyle}`);
+        } catch (error) {
+          console.error(`Failed to generate playing style for opponent:`, error);
+          opponent.playingStyle = "Unknown";
+        }
+      }
+
+      // Auto-generate playing style for athlete if unknown or missing
+      if (!athlete.playingStyle || athlete.playingStyle === "Unknown") {
+        console.log(`Athlete ${athlete.name} has unknown playing style. Generating...`);
+        try {
+          athlete.playingStyle = await this.generatePlayingStyle(athleteId);
+          console.log(`Generated playing style for ${athlete.name}: ${athlete.playingStyle}`);
+        } catch (error) {
+          console.error(`Failed to generate playing style for athlete:`, error);
+          athlete.playingStyle = "Unknown";
+        }
+      }
+
       const analysisPrompt = `
 Analyze this Taekwondo matchup and provide tactical recommendations:
 
@@ -118,6 +142,7 @@ ATHLETE PROFILE:
 - Name: ${athlete.name}
 - Nationality: ${athlete.nationality}
 - Gender: ${athlete.gender || "Unknown"}
+- Playing Style: ${athlete.playingStyle || "Unknown"}
 - Strengths: ${athleteStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${athleteWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
 
@@ -125,6 +150,7 @@ OPPONENT PROFILE:
 - Name: ${opponent.name}
 - Nationality: ${opponent.nationality}
 - Gender: ${opponent.gender || "Unknown"}
+- Playing Style: ${opponent.playingStyle || "Unknown"}
 - Strengths: ${opponentStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${opponentWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
 
