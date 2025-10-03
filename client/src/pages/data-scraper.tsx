@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Globe, Trophy, Download, Database, Search, FileText, Upload } from "lucide-react";
+import { Globe, Trophy, Download, Database, Search, FileText, Upload, Brain } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 // Countries with verified Olympic/World Championship athlete data
@@ -48,12 +48,12 @@ export default function DataScraper() {
         },
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Scraping failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -82,12 +82,12 @@ export default function DataScraper() {
         },
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Scraping failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -112,18 +112,18 @@ export default function DataScraper() {
       const formData = new FormData();
       formData.append('jsonFile', file);
       formData.append('rankingType', rankingType);
-      
+
       const response = await fetch('/api/import/json', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'JSON import failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -151,18 +151,18 @@ export default function DataScraper() {
     mutationFn: async ({ file }: { file: File }) => {
       const formData = new FormData();
       formData.append('jsonFile', file);
-      
+
       const response = await fetch('/api/import/competitions', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Competition import failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
@@ -177,6 +177,40 @@ export default function DataScraper() {
       toast({
         title: "Import Failed",
         description: error.message || "Failed to import competition data. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for generating playing styles for all athletes
+  const generatePlayingStylesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/generate/playing-styles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Playing style generation failed');
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setScrapeResults(data); // Assuming results structure is similar for display
+      toast({
+        title: "Playing Styles Generated",
+        description: `Successfully generated playing styles for ${data.results?.total || 0} athletes.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Playing Style Generation Failed",
+        description: error.message || "Failed to generate playing styles. Please try again.",
         variant: "destructive",
       });
     },
@@ -208,7 +242,7 @@ export default function DataScraper() {
       });
       return;
     }
-    
+
     if (importType === 'athletes') {
       importJsonMutation.mutate({ file: jsonFile, rankingType });
     } else {
@@ -244,7 +278,7 @@ export default function DataScraper() {
 
     setIsBatchScraping(true);
     const results: any[] = [];
-    
+
     try {
       // Run all scrapes in parallel
       const scrapePromises = selectedCountries.map(async (countryCode) => {
@@ -256,12 +290,12 @@ export default function DataScraper() {
             },
             credentials: 'include',
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Scraping failed');
           }
-          
+
           return await response.json();
         } catch (error: any) {
           return {
@@ -304,6 +338,10 @@ export default function DataScraper() {
     }
   };
 
+  const handleGenerateAllPlayingStyles = () => {
+    generatePlayingStylesMutation.mutate();
+  };
+
   const toggleCountrySelection = (countryCode: string) => {
     setSelectedCountries(prev => 
       prev.includes(countryCode)
@@ -312,7 +350,7 @@ export default function DataScraper() {
     );
   };
 
-  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping;
+  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping || generatePlayingStylesMutation.isPending;
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -589,6 +627,54 @@ export default function DataScraper() {
         </Card>
       </div>
 
+      {/* Button to Generate All Playing Styles */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Brain className="h-5 w-5" />
+            <span>AI Playing Style Generation</span>
+          </CardTitle>
+          <CardDescription>
+            Generate playing styles for all athletes using AI. This can take a while.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={handleGenerateAllPlayingStyles}
+            disabled={generatePlayingStylesMutation.isPending}
+            className="w-full"
+          >
+            {generatePlayingStylesMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Generating Playing Styles...
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4 mr-2" />
+                Generate All Playing Styles (AI)
+              </>
+            )}
+          </Button>
+
+          {generatePlayingStylesMutation.data && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium text-gray-700">Results:</p>
+              <p className="text-sm text-gray-600">
+                ✅ Successful: {generatePlayingStylesMutation.data.results?.successful || 0}
+              </p>
+              <p className="text-sm text-gray-600">
+                ❌ Failed: {generatePlayingStylesMutation.data.results?.failed || 0}
+              </p>
+              <p className="text-sm text-gray-600">
+                📊 Total: {generatePlayingStylesMutation.data.results?.total || 0}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       {/* Results Display */}
       {scrapeResults && (
         <Card>
@@ -608,14 +694,14 @@ export default function DataScraper() {
                   {scrapeResults.totalCompetitions ? 'Competitions Found' : 'Athletes Found'}
                 </div>
               </div>
-              
+
               <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {scrapeResults.athletesSaved || scrapeResults.saved || 0}
                 </div>
                 <div className="text-sm text-blue-700 dark:text-blue-300">Successfully Saved</div>
               </div>
-              
+
               <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   {scrapeResults.duplicatesSkipped || 0}

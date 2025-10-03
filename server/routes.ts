@@ -1694,19 +1694,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as string[]
       };
       
-      for (const athlete of allAthletes) {
-        try {
-          const playingStyle = await aiEngine.generatePlayingStyle(athlete.id);
-          results.successful++;
-          console.log(`✅ Generated playing style for ${athlete.name}: ${playingStyle}`);
-          
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          results.failed++;
-          const errorMsg = `Failed to generate playing style for ${athlete.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          results.errors.push(errorMsg);
-          console.error(`❌ ${errorMsg}`);
+      // Process athletes in parallel batches of 5 to optimize speed while avoiding rate limits
+      const batchSize = 5;
+      for (let i = 0; i < allAthletes.length; i += batchSize) {
+        const batch = allAthletes.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allAthletes.length / batchSize)}`);
+        
+        // Process batch in parallel
+        const batchPromises = batch.map(async (athlete) => {
+          try {
+            const playingStyle = await aiEngine.generatePlayingStyle(athlete.id);
+            results.successful++;
+            console.log(`✅ Generated playing style for ${athlete.name}: ${playingStyle}`);
+            return { success: true, athlete: athlete.name };
+          } catch (error) {
+            results.failed++;
+            const errorMsg = `Failed to generate playing style for ${athlete.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            results.errors.push(errorMsg);
+            console.error(`❌ ${errorMsg}`);
+            return { success: false, athlete: athlete.name, error: errorMsg };
+          }
+        });
+        
+        // Wait for all promises in the batch to complete
+        await Promise.all(batchPromises);
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + batchSize < allAthletes.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
       
