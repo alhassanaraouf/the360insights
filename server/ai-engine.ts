@@ -111,28 +111,43 @@ Respond with ONLY the playing style label, nothing else.`;
         throw new Error("Athlete or opponent data not found");
       }
 
-      // Auto-generate playing style for opponent if unknown or missing
-      if (!opponent.playingStyle || opponent.playingStyle === "Unknown") {
-        console.log(`Opponent ${opponent.name} has unknown playing style. Generating...`);
+      // Auto-generate playing style for opponent if missing or empty (but not if already "Unknown")
+      // We skip if already "Unknown" to prevent infinite retry loops when AI can't generate
+      const opponentStyleNormalized = opponent.playingStyle?.trim().toLowerCase() || "";
+      const opponentNeedsGeneration = !opponent.playingStyle || opponentStyleNormalized === "";
+      
+      if (opponentNeedsGeneration) {
+        console.log(`Opponent ${opponent.name} has empty playing style. Generating...`);
         try {
-          opponent.playingStyle = await this.generatePlayingStyle(opponentId);
-          console.log(`Generated playing style for ${opponent.name}: ${opponent.playingStyle}`);
+          const generatedStyle = await this.generatePlayingStyle(opponentId);
+          // Always update the object with the generated value (even if "Unknown")
+          opponent.playingStyle = generatedStyle;
+          console.log(`✓ Generated and saved playing style for ${opponent.name}: ${generatedStyle}`);
         } catch (error) {
           console.error(`Failed to generate playing style for opponent:`, error);
           opponent.playingStyle = "Unknown";
         }
+      } else if (opponentStyleNormalized === "unknown") {
+        console.log(`Opponent ${opponent.name} has "Unknown" playing style (previous generation likely failed)`);
       }
 
-      // Auto-generate playing style for athlete if unknown or missing
-      if (!athlete.playingStyle || athlete.playingStyle === "Unknown") {
-        console.log(`Athlete ${athlete.name} has unknown playing style. Generating...`);
+      // Auto-generate playing style for athlete if missing or empty (but not if already "Unknown")
+      const athleteStyleNormalized = athlete.playingStyle?.trim().toLowerCase() || "";
+      const athleteNeedsGeneration = !athlete.playingStyle || athleteStyleNormalized === "";
+      
+      if (athleteNeedsGeneration) {
+        console.log(`Athlete ${athlete.name} has empty playing style. Generating...`);
         try {
-          athlete.playingStyle = await this.generatePlayingStyle(athleteId);
-          console.log(`Generated playing style for ${athlete.name}: ${athlete.playingStyle}`);
+          const generatedStyle = await this.generatePlayingStyle(athleteId);
+          // Always update the object with the generated value (even if "Unknown")
+          athlete.playingStyle = generatedStyle;
+          console.log(`✓ Generated and saved playing style for ${athlete.name}: ${generatedStyle}`);
         } catch (error) {
           console.error(`Failed to generate playing style for athlete:`, error);
           athlete.playingStyle = "Unknown";
         }
+      } else if (athleteStyleNormalized === "unknown") {
+        console.log(`Athlete ${athlete.name} has "Unknown" playing style (previous generation likely failed)`);
       }
 
       const analysisPrompt = `
