@@ -1679,6 +1679,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate playing styles for all athletes
+  app.post("/api/ai/generate-all-playing-styles", async (req, res) => {
+    try {
+      console.log("Starting batch playing style generation for all athletes...");
+      
+      const allAthletes = await storage.getAllAthletes();
+      console.log(`Found ${allAthletes.length} athletes to process`);
+      
+      const results = {
+        total: allAthletes.length,
+        successful: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+      
+      for (const athlete of allAthletes) {
+        try {
+          const playingStyle = await aiEngine.generatePlayingStyle(athlete.id);
+          results.successful++;
+          console.log(`✅ Generated playing style for ${athlete.name}: ${playingStyle}`);
+          
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          results.failed++;
+          const errorMsg = `Failed to generate playing style for ${athlete.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          results.errors.push(errorMsg);
+          console.error(`❌ ${errorMsg}`);
+        }
+      }
+      
+      console.log(`Batch generation complete: ${results.successful} successful, ${results.failed} failed`);
+      
+      res.json({
+        success: true,
+        message: `Playing style generation complete`,
+        results
+      });
+    } catch (error) {
+      console.error("Batch playing style generation error:", error);
+      res.status(500).json({ error: "Failed to generate playing styles for all athletes" });
+    }
+  });
+
   // Generate and save strengths and weaknesses to database
   app.post("/api/ai/generate-and-save-strengths-weaknesses/:athleteId", async (req, res) => {
     try {
