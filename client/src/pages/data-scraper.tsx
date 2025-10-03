@@ -34,6 +34,8 @@ export default function DataScraper() {
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [rankingType, setRankingType] = useState<'world' | 'olympic'>('world');
   const [importType, setImportType] = useState<'athletes' | 'competitions'>('athletes');
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [isBatchScraping, setIsBatchScraping] = useState(false);
   const { toast } = useToast();
 
   // Country scraping mutation
@@ -230,7 +232,87 @@ export default function DataScraper() {
     }
   };
 
-  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending;
+  const handleBatchScrape = async () => {
+    if (selectedCountries.length === 0) {
+      toast({
+        title: "No Countries Selected",
+        description: "Please select at least one country to scrape.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBatchScraping(true);
+    const results: any[] = [];
+    
+    try {
+      // Run all scrapes in parallel
+      const scrapePromises = selectedCountries.map(async (countryCode) => {
+        try {
+          const response = await fetch(`/api/scrape/country/${countryCode}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Scraping failed');
+          }
+          
+          return await response.json();
+        } catch (error: any) {
+          return {
+            country: countryCode,
+            error: error.message || 'Failed to scrape'
+          };
+        }
+      });
+
+      const scrapedResults = await Promise.all(scrapePromises);
+      results.push(...scrapedResults);
+
+      // Combine results
+      const totalAthletes = results.reduce((sum, r) => sum + (r.athletesFound || 0), 0);
+      const totalSaved = results.reduce((sum, r) => sum + (r.athletesSaved || 0), 0);
+      const totalErrors = results.filter(r => r.error).length;
+
+      setScrapeResults({
+        message: `Batch scraping completed for ${selectedCountries.length} countries`,
+        athletesFound: totalAthletes,
+        athletesSaved: totalSaved,
+        errors: totalErrors,
+        results: results
+      });
+
+      toast({
+        title: "Batch Scraping Completed",
+        description: `Successfully scraped ${totalAthletes} athletes from ${selectedCountries.length} countries`,
+      });
+
+      setSelectedCountries([]);
+    } catch (error: any) {
+      toast({
+        title: "Batch Scraping Failed",
+        description: error.message || "Failed to complete batch scraping",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBatchScraping(false);
+    }
+  };
+
+  const toggleCountrySelection = (countryCode: string) => {
+    setSelectedCountries(prev => 
+      prev.includes(countryCode)
+        ? prev.filter(c => c !== countryCode)
+        : [...prev, countryCode]
+    );
+  };
+
+  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping;
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -242,6 +324,64 @@ export default function DataScraper() {
           Import authentic athlete data from taekwondodata.com to enhance your analytics database.
         </p>
       </div>
+
+      {/* Batch Scraping Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Database className="h-5 w-5" />
+            <span>Batch Country Scraping (Parallel)</span>
+          </CardTitle>
+          <CardDescription>
+            Select multiple countries to scrape in parallel for faster data import
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Select Countries for Batch Scraping</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg">
+              {Object.entries(commonCountries).map(([code, name]) => (
+                <div key={code} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`batch-${code}`}
+                    checked={selectedCountries.includes(code)}
+                    onChange={() => toggleCountrySelection(code)}
+                    disabled={isLoading}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <label htmlFor={`batch-${code}`} className="text-sm cursor-pointer">
+                    {name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {selectedCountries.length} {selectedCountries.length === 1 ? 'country' : 'countries'} selected
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedCountries([])}
+              disabled={isLoading || selectedCountries.length === 0}
+            >
+              Clear Selection
+            </Button>
+          </div>
+
+          <Button 
+            onClick={handleBatchScrape}
+            disabled={isLoading || selectedCountries.length === 0}
+            className="w-full flex items-center space-x-2"
+          >
+            <Download className="h-4 w-4" />
+            <span>{isBatchScraping ? `Scraping ${selectedCountries.length} countries...` : "Batch Scrape Countries (Parallel)"}</span>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6 mb-8">
         {/* Country Scraping */}
@@ -482,7 +622,39 @@ export default function DataScraper() {
                 </div>
                 <div className="text-sm text-orange-700 dark:text-orange-300">Duplicates Skipped</div>
               </div>
+
+              {scrapeResults.errors && (
+                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {scrapeResults.errors}
+                  </div>
+                  <div className="text-sm text-red-700 dark:text-red-300">Errors</div>
+                </div>
+              )}
             </div>
+
+            {scrapeResults.results && scrapeResults.results.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium mb-3">Batch Results by Country:</h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {scrapeResults.results.map((result: any, index: number) => (
+                    <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${result.error ? 'bg-red-50 dark:bg-red-950' : 'bg-gray-50 dark:bg-gray-900'}`}>
+                      <div>
+                        <div className="font-medium">{result.message || result.country}</div>
+                        {result.error && (
+                          <div className="text-sm text-red-600 dark:text-red-400">{result.error}</div>
+                        )}
+                        {!result.error && (
+                          <div className="text-sm text-gray-500">
+                            Found: {result.athletesFound || 0} • Saved: {result.athletesSaved || 0}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {scrapeResults.athletes && scrapeResults.athletes.length > 0 && (
               <div>
