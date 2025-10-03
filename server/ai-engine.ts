@@ -26,6 +26,59 @@ export interface AthleteStrengthsWeaknesses {
 }
 
 export class AIAnalysisEngine {
+  async generatePlayingStyle(athleteId: number): Promise<string> {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      return "Unknown";
+    }
+
+    try {
+      const [athlete, strengths, weaknesses] = await Promise.all([
+        storage.getAthlete(athleteId),
+        storage.getStrengthsByAthleteId(athleteId),
+        storage.getWeaknessesByAthleteId(athleteId),
+      ]);
+
+      if (!athlete) {
+        return "Unknown";
+      }
+
+      const prompt = `Based on this Taekwondo athlete's profile, determine their playing style in 1-2 words (e.g., "Aggressive Counter-Puncher", "Defensive Technician", "Explosive Attacker", "Tactical Fighter"):
+
+Athlete: ${athlete.name}
+Nationality: ${athlete.nationality}
+Strengths: ${strengths.map((s: any) => s.name).join(", ") || "None identified"}
+Weaknesses: ${weaknesses.map((w: any) => w.name).join(", ") || "None identified"}
+
+Respond with ONLY the playing style label, nothing else.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: "You are a Taekwondo analyst. Provide concise playing style labels.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 20,
+      });
+
+      const playingStyle = response.choices[0].message.content?.trim() || "Unknown";
+      
+      // Update athlete with playing style
+      await storage.updateAthlete(athleteId, { playingStyle });
+      
+      return playingStyle;
+    } catch (error) {
+      console.error("Error generating playing style:", error);
+      return "Unknown";
+    }
+  }
+
   async analyzeOpponent(
     athleteId: number,
     opponentId: number,
