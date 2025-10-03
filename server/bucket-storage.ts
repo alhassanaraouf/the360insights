@@ -61,60 +61,110 @@ export class BucketStorageService {
     }
   }
 
-  async downloadImageFromUrl(imageUrl: string): Promise<Buffer> {
-    try {
-      console.log(`Downloading image from: ${imageUrl}`);
-      
-      const response = await fetch(imageUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+  async downloadImageFromUrl(imageUrl: string, retries = 2): Promise<Buffer> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`Retry attempt ${attempt} of ${retries} for: ${imageUrl}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        } else {
+          console.log(`Downloading image from: ${imageUrl}`);
         }
-      });
+        
+        const response = await fetch(imageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.worldtaekwondo.org/'
+          },
+          signal: AbortSignal.timeout(30000)
+        });
+        
+        if (response.status === 403) {
+          console.warn(`403 Forbidden for URL: ${imageUrl} - URL may have expired`);
+          throw new Error(`HTTP 403: URL expired or access forbidden`);
+        }
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        const validContentTypes = ['image/', 'application/octet-stream'];
+        const isValidContentType = validContentTypes.some(type => contentType?.startsWith(type));
+        
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+        const urlLooksLikeImage = imageExtensions.some(ext => imageUrl.toLowerCase().includes(ext));
+        
+        const isCloudFrontUrl = imageUrl.includes('cloudfront.net');
+        
+        if (!contentType || (!isValidContentType && !urlLooksLikeImage && !isCloudFrontUrl)) {
+          console.warn(`Questionable content type: ${contentType} for URL: ${imageUrl}, but proceeding anyway`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        if (buffer.length === 0) {
+          throw new Error('Empty image data received');
+        }
+        
+        console.log(`Successfully downloaded image: ${buffer.length} bytes`);
+        return buffer;
+      } catch (error) {
+        lastError = error as Error;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('403') || errorMessage?.includes('expired')) {
+          console.error(`Image URL expired or forbidden (attempt ${attempt + 1}/${retries + 1}):`, errorMessage);
+          break;
+        }
+        if (attempt === retries) {
+          console.error(`Failed to download image after ${retries + 1} attempts:`, error);
+        }
+      }
+    }
+    
+    throw lastError || new Error('Failed to download image');
+  }
+
+  async checkImageExists(athleteId: number): Promise<boolean> {
+    try {
+      const prefix = `athletes/${athleteId}/`;
+      const listResult = await client.list({ prefix });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!listResult || (!listResult.success && !listResult.ok)) {
+        return false;
       }
       
-      const contentType = response.headers.get('content-type');
-      // Allow common image content types and octet-stream (which some CDNs use for images)
-      const validContentTypes = ['image/', 'application/octet-stream'];
-      const isValidContentType = validContentTypes.some(type => contentType?.startsWith(type));
-      
-      // Also check if URL looks like an image file as fallback
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
-      const urlLooksLikeImage = imageExtensions.some(ext => imageUrl.toLowerCase().includes(ext));
-      
-      // Be more lenient with CloudFront URLs as they often return octet-stream
-      const isCloudFrontUrl = imageUrl.includes('cloudfront.net');
-      
-      if (!contentType || (!isValidContentType && !urlLooksLikeImage && !isCloudFrontUrl)) {
-        console.warn(`Questionable content type: ${contentType} for URL: ${imageUrl}, but proceeding anyway`);
-      }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      
-      if (buffer.length === 0) {
-        throw new Error('Empty image data received');
-      }
-      
-      console.log(`Successfully downloaded image: ${buffer.length} bytes`);
-      return buffer;
+      const items = listResult.data || listResult.items || listResult.value || [];
+      return items && items.length > 0;
     } catch (error) {
-      console.error('Error downloading image:', error);
-      throw new Error('Failed to download image');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error checking if image exists for athlete ${athleteId}:`, errorMessage);
+      return false;
     }
   }
 
   async uploadFromUrl(athleteId: number, imageUrl: string, fileName?: string): Promise<ImageUploadResult> {
     try {
-      // Download image from URL
+      const imageExists = await this.checkImageExists(athleteId);
+      
+      if (imageExists) {
+        console.log(`Image already exists for athlete ${athleteId}, skipping download`);
+        return {
+          url: `/api/athletes/${athleteId}/image`,
+          key: `athletes/${athleteId}/profile.jpg`,
+          size: 0
+        };
+      }
+      
       const imageBuffer = await this.downloadImageFromUrl(imageUrl);
       
-      // Generate filename if not provided
       const finalFileName = fileName || `athlete-${athleteId}-${Date.now()}.jpg`;
       
-      // Upload to bucket
       return await this.uploadAthleteImage(athleteId, imageBuffer, finalFileName);
     } catch (error) {
       console.error('Error uploading from URL:', error);
@@ -252,7 +302,8 @@ export class BucketStorageService {
         }
       } catch (error) {
         failed++;
-        const errorMsg = `Failed to upload image for athlete ${athlete.id}: ${error.message}`;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMsg = `Failed to upload image for athlete ${athlete.id}: ${errorMessage}`;
         errors.push(errorMsg);
         console.error(errorMsg);
       }
