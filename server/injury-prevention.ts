@@ -3,15 +3,15 @@ import { getOpenAIClient } from "./openai-client";
 
 export interface InjuryRiskFactor {
   factor: string;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
   description: string;
   likelihood: number; // percentage
-  bodyPart: 'knee' | 'ankle' | 'shoulder' | 'back' | 'hip' | 'wrist' | 'foot';
+  bodyPart: "knee" | "ankle" | "shoulder" | "back" | "hip" | "wrist" | "foot";
   preventionMeasures: string[];
 }
 
 export interface RecoveryRecommendation {
-  type: 'rest' | 'therapy' | 'exercise' | 'nutrition' | 'medical';
+  type: "rest" | "therapy" | "exercise" | "nutrition" | "medical";
   priority: number;
   title: string;
   description: string;
@@ -23,7 +23,7 @@ export interface RecoveryRecommendation {
 
 export interface PredictiveInjuryInsight {
   predictedInjuryProbability: number; // 0-100
-  timeFrame: '1-week' | '1-month' | '3-months' | '6-months';
+  timeFrame: "1-week" | "1-month" | "3-months" | "6-months";
   mostLikelyInjuryType: string;
   contributingFactors: string[];
   earlyWarningSignals: string[];
@@ -33,7 +33,7 @@ export interface PredictiveInjuryInsight {
 export interface RecoveryPlan {
   id: string;
   injuryType: string;
-  severity: 'mild' | 'moderate' | 'severe';
+  severity: "mild" | "moderate" | "severe";
   estimatedRecoveryTime: string;
   phases: RecoveryPhase[];
   progressMetrics: string[];
@@ -52,19 +52,24 @@ export interface RecoveryPhase {
 
 export interface Exercise {
   name: string;
-  type: 'strength' | 'flexibility' | 'stability' | 'endurance' | 'proprioception';
+  type:
+    | "strength"
+    | "flexibility"
+    | "stability"
+    | "endurance"
+    | "proprioception";
   description: string;
   sets: number;
   reps: string;
   duration: string;
-  intensity: 'low' | 'moderate' | 'high';
+  intensity: "low" | "moderate" | "high";
   frequency: string;
   progressionNotes: string[];
 }
 
 export interface InjuryPreventionInsight {
   overallRiskScore: number; // 0-100
-  riskAssessment: 'low' | 'moderate' | 'high' | 'critical';
+  riskAssessment: "low" | "moderate" | "high" | "critical";
   primaryRiskFactors: InjuryRiskFactor[];
   recoveryRecommendations: RecoveryRecommendation[];
   biomechanicalConcerns: string[];
@@ -99,28 +104,33 @@ export interface BiomechanicalData {
 export class InjuryPreventionEngine {
   async analyzeInjuryRisk(
     athleteId: number,
-    biomechanicalData?: BiomechanicalData
+    biomechanicalData?: BiomechanicalData,
   ): Promise<InjuryPreventionInsight> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     try {
-      const [athlete, kpis, performanceData, weaknesses, careerEvents] = await Promise.all([
-        storage.getAthlete(athleteId),
-        storage.getKpiMetricsByAthleteId(athleteId),
-        storage.getPerformanceDataByAthleteId(athleteId),
-        storage.getWeaknessesByAthleteId(athleteId),
-        storage.getCareerEventsByAthleteId(athleteId)
-      ]);
+      const [athlete, kpis, performanceData, weaknesses, careerEvents] =
+        await Promise.all([
+          storage.getAthlete(athleteId),
+          storage.getKpiMetricsByAthleteId(athleteId),
+          storage.getPerformanceDataByAthleteId(athleteId),
+          storage.getWeaknessesByAthleteId(athleteId),
+          storage.getCareerEventsByAthleteId(athleteId),
+        ]);
 
       if (!athlete) {
         throw new Error("Athlete not found");
       }
 
       // Filter injury history from career events
-      const injuryHistory = careerEvents.filter(event => event.eventType === 'injury');
+      const injuryHistory = careerEvents.filter(
+        (event) => event.eventType === "injury",
+      );
 
       const analysisPrompt = `
 Analyze injury risk for this elite Taekwondo athlete and provide comprehensive prevention insights:
@@ -132,27 +142,31 @@ ATHLETE PROFILE:
 - Current Win Rate: ${athlete.winRate}%
 
 PERFORMANCE METRICS:
-${kpis.map(kpi => `${kpi.metricName}: ${kpi.value}% (trend: ${kpi.trend || '0'}%)`).join('\n')}
+${kpis.map((kpi) => `${kpi.metricName}: ${kpi.value}% (trend: ${kpi.trend || "0"}%)`).join("\n")}
 
 CURRENT WEAKNESSES:
-${weaknesses.map(w => `${w.name}: ${w.score}/100 - ${w.description}`).join('\n')}
+${weaknesses.map((w) => `${w.name}: ${w.score}/100 - ${w.description}`).join("\n")}
 
 INJURY HISTORY:
-${injuryHistory.length > 0 ? injuryHistory.map(injury => `${injury.date}: ${injury.title} - ${injury.description}`).join('\n') : 'No previous injuries recorded'}
+${injuryHistory.length > 0 ? injuryHistory.map((injury) => `${injury.date}: ${injury.title} - ${injury.description}`).join("\n") : "No previous injuries recorded"}
 
 PERFORMANCE TREND:
-${performanceData.map(p => `${p.month}: Score ${p.performanceScore}%, Rank #${p.ranking}`).join('\n')}
+${performanceData.map((p) => `${p.month}: Score ${p.performanceScore}%, Rank #${p.ranking}`).join("\n")}
 
-${biomechanicalData ? `
+${
+  biomechanicalData
+    ? `
 BIOMECHANICAL DATA:
 - Movement Quality: ${biomechanicalData.movementQuality}/100
 - Asymmetry Index: ${biomechanicalData.asymmetryIndex}%
 - Fatigue Level: ${biomechanicalData.fatigueLevel}/100
 - Flexibility Score: ${biomechanicalData.flexibilityScore}/100
-- Strength Imbalances: ${biomechanicalData.strengthImbalances.join(', ')}
+- Strength Imbalances: ${biomechanicalData.strengthImbalances.join(", ")}
 - Training Volume: ${biomechanicalData.trainingVolume} hours/week
 - Competition Frequency: ${biomechanicalData.competitionFrequency} events/month
-` : ''}
+`
+    : ""
+}
 
 Provide comprehensive injury prevention analysis in JSON format:
 {
@@ -198,73 +212,88 @@ Focus on Taekwondo-specific injury patterns, common risks like knee ligament str
         messages: [
           {
             role: "system",
-            content: "You are a world-renowned sports medicine physician and biomechanics expert specializing in Taekwondo injury prevention. Provide evidence-based injury risk assessments and recovery protocols based on current sports science research."
+            content:
+              "You are a world-renowned sports medicine physician and biomechanics expert specializing in Taekwondo injury prevention. Provide evidence-based injury risk assessments and recovery protocols based on current sports science research.",
           },
           {
             role: "user",
-            content: analysisPrompt
-          }
+            content: analysisPrompt,
+          },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7
+        temperature: 1,
       });
 
       const insight = JSON.parse(response.choices[0].message.content || "{}");
-      
+
       return {
-        overallRiskScore: Math.max(0, Math.min(100, insight.overallRiskScore || 25)),
-        riskAssessment: insight.riskAssessment || 'low',
+        overallRiskScore: Math.max(
+          0,
+          Math.min(100, insight.overallRiskScore || 25),
+        ),
+        riskAssessment: insight.riskAssessment || "low",
         primaryRiskFactors: insight.primaryRiskFactors || [],
         recoveryRecommendations: insight.recoveryRecommendations || [],
         biomechanicalConcerns: insight.biomechanicalConcerns || [],
         trainingLoadRecommendations: insight.trainingLoadRecommendations || {
-          currentLoad: 'Normal training intensity',
-          recommendedAdjustment: 'Continue current program',
-          reasoning: 'Current metrics within acceptable ranges'
+          currentLoad: "Normal training intensity",
+          recommendedAdjustment: "Continue current program",
+          reasoning: "Current metrics within acceptable ranges",
         },
         preventiveStrategies: insight.preventiveStrategies || [],
         monitoringMetrics: insight.monitoringMetrics || [],
         timeToNextAssessment: insight.timeToNextAssessment || 14,
-        predictiveInsights: insight.predictiveInsights || [{
-          predictedInjuryProbability: 15,
-          timeFrame: '1-month',
-          mostLikelyInjuryType: 'Knee strain',
-          contributingFactors: ['Training intensity', 'Previous history'],
-          earlyWarningSignals: ['Joint stiffness', 'Fatigue'],
-          interventionWindow: 7
-        }],
-        personalizedRecoveryPlans: insight.personalizedRecoveryPlans || [{
-          id: `plan-${athleteId}-${Date.now()}`,
-          injuryType: 'General prevention',
-          severity: 'mild',
-          estimatedRecoveryTime: '1-2 weeks',
-          phases: [{
-            name: 'Active Recovery',
-            duration: '1 week',
-            objectives: ['Maintain mobility', 'Reduce inflammation'],
-            exercises: [{
-              name: 'Light stretching',
-              type: 'flexibility',
-              description: 'Gentle dynamic stretches',
-              sets: 2,
-              reps: '10-15',
-              duration: '15 minutes',
-              intensity: 'low',
-              frequency: 'Daily',
-              progressionNotes: ['Increase range gradually']
-            }],
-            restrictions: ['No high-impact activities'],
-            progressIndicators: ['Pain reduction', 'Improved mobility']
-          }],
-          progressMetrics: ['Pain level', 'Range of motion'],
-          returnToPlayCriteria: ['Pain-free movement', 'Full strength'],
-          preventionForFuture: ['Proper warm-up', 'Strength training']
-        }],
+        predictiveInsights: insight.predictiveInsights || [
+          {
+            predictedInjuryProbability: 15,
+            timeFrame: "1-month",
+            mostLikelyInjuryType: "Knee strain",
+            contributingFactors: ["Training intensity", "Previous history"],
+            earlyWarningSignals: ["Joint stiffness", "Fatigue"],
+            interventionWindow: 7,
+          },
+        ],
+        personalizedRecoveryPlans: insight.personalizedRecoveryPlans || [
+          {
+            id: `plan-${athleteId}-${Date.now()}`,
+            injuryType: "General prevention",
+            severity: "mild",
+            estimatedRecoveryTime: "1-2 weeks",
+            phases: [
+              {
+                name: "Active Recovery",
+                duration: "1 week",
+                objectives: ["Maintain mobility", "Reduce inflammation"],
+                exercises: [
+                  {
+                    name: "Light stretching",
+                    type: "flexibility",
+                    description: "Gentle dynamic stretches",
+                    sets: 2,
+                    reps: "10-15",
+                    duration: "15 minutes",
+                    intensity: "low",
+                    frequency: "Daily",
+                    progressionNotes: ["Increase range gradually"],
+                  },
+                ],
+                restrictions: ["No high-impact activities"],
+                progressIndicators: ["Pain reduction", "Improved mobility"],
+              },
+            ],
+            progressMetrics: ["Pain level", "Range of motion"],
+            returnToPlayCriteria: ["Pain-free movement", "Full strength"],
+            preventionForFuture: ["Proper warm-up", "Strength training"],
+          },
+        ],
         adaptiveRecommendations: insight.adaptiveRecommendations || {
-          immediatePriority: ['Focus on recovery', 'Monitor symptoms'],
-          weeklyAdjustments: ['Adjust training intensity', 'Add recovery sessions'],
-          monthlyReview: ['Performance assessment', 'Update training plan']
-        }
+          immediatePriority: ["Focus on recovery", "Monitor symptoms"],
+          weeklyAdjustments: [
+            "Adjust training intensity",
+            "Add recovery sessions",
+          ],
+          monthlyReview: ["Performance assessment", "Update training plan"],
+        },
       };
     } catch (error) {
       console.error("Error analyzing injury risk:", error);
@@ -275,11 +304,13 @@ Focus on Taekwondo-specific injury patterns, common risks like knee ligament str
   async generateRecoveryProtocol(
     athleteId: number,
     injuryType: string,
-    severity: 'mild' | 'moderate' | 'severe'
+    severity: "mild" | "moderate" | "severe",
   ): Promise<RecoveryRecommendation[]> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     try {
@@ -318,15 +349,16 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
         messages: [
           {
             role: "system",
-            content: "You are a leading sports rehabilitation specialist with expertise in martial arts injury recovery and return-to-sport protocols."
+            content:
+              "You are a leading sports rehabilitation specialist with expertise in martial arts injury recovery and return-to-sport protocols.",
           },
           {
             role: "user",
-            content: recoveryPrompt
-          }
+            content: recoveryPrompt,
+          },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.6
+        temperature: 1,
       });
 
       const protocol = JSON.parse(response.choices[0].message.content || "{}");
@@ -339,7 +371,7 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
 
   async predictInjuryFromPatterns(
     athleteId: number,
-    recentMetrics: any[]
+    recentMetrics: any[],
   ): Promise<{
     predictions: Array<{
       injuryType: string;
@@ -352,14 +384,16 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
   }> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     try {
       const [athlete, performanceData, weaknesses] = await Promise.all([
         storage.getAthlete(athleteId),
         storage.getPerformanceDataByAthleteId(athleteId),
-        storage.getWeaknessesByAthleteId(athleteId)
+        storage.getWeaknessesByAthleteId(athleteId),
       ]);
 
       if (!athlete) {
@@ -370,8 +404,8 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
 Analyze patterns to predict potential injuries for this Taekwondo athlete:
 
 ATHLETE: ${athlete.name}
-PERFORMANCE TREND: ${performanceData.map(p => `${p.month}: ${p.performanceScore}%`).join(', ')}
-CURRENT WEAKNESSES: ${weaknesses.map(w => `${w.name}: ${w.score}/100`).join(', ')}
+PERFORMANCE TREND: ${performanceData.map((p) => `${p.month}: ${p.performanceScore}%`).join(", ")}
+CURRENT WEAKNESSES: ${weaknesses.map((w) => `${w.name}: ${w.score}/100`).join(", ")}
 RECENT METRICS: ${JSON.stringify(recentMetrics)}
 
 Provide predictive analysis in JSON format:
@@ -395,21 +429,27 @@ Base predictions on Taekwondo-specific injury patterns and biomechanical stress 
         messages: [
           {
             role: "system",
-            content: "You are a predictive analytics expert in sports medicine, specializing in injury pattern recognition and early warning systems for martial arts athletes."
+            content:
+              "You are a predictive analytics expert in sports medicine, specializing in injury pattern recognition and early warning systems for martial arts athletes.",
           },
           {
             role: "user",
-            content: predictionPrompt
-          }
+            content: predictionPrompt,
+          },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.5
+        temperature: 1,
       });
 
-      const predictions = JSON.parse(response.choices[0].message.content || "{}");
+      const predictions = JSON.parse(
+        response.choices[0].message.content || "{}",
+      );
       return {
         predictions: predictions.predictions || [],
-        confidenceLevel: Math.max(0, Math.min(100, predictions.confidenceLevel || 75))
+        confidenceLevel: Math.max(
+          0,
+          Math.min(100, predictions.confidenceLevel || 75),
+        ),
       };
     } catch (error) {
       console.error("Error predicting injuries:", error);

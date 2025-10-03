@@ -21,8 +21,8 @@ export interface PerformanceInsight {
 }
 
 export interface AthleteStrengthsWeaknesses {
-  strengths: Array<{name: string; description: string}>;
-  weaknesses: Array<{name: string; description: string}>;
+  strengths: Array<{ name: string; description: string }>;
+  weaknesses: Array<{ name: string; description: string }>;
 }
 
 export class AIAnalysisEngine {
@@ -32,9 +32,11 @@ export class AIAnalysisEngine {
   ): Promise<OpponentAnalysis> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI analysis is unavailable.",
+      );
     }
-    
+
     try {
       const [
         athlete,
@@ -97,7 +99,7 @@ Provide a comprehensive tactical analysis in JSON format:
           },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
+        temperature: 1,
       });
 
       const analysis = JSON.parse(response.choices[0].message.content || "{}");
@@ -123,9 +125,11 @@ Provide a comprehensive tactical analysis in JSON format:
   ): Promise<PerformanceInsight> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI analysis is unavailable.",
+      );
     }
-    
+
     try {
       const [athlete, kpis, strengths, weaknesses] = await Promise.all([
         storage.getAthlete(athleteId),
@@ -177,7 +181,7 @@ Analyze the performance trend and provide insights in JSON format:
           },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.6,
+        temperature: 1,
       });
 
       const insight = JSON.parse(response.choices[0].message.content || "{}");
@@ -197,10 +201,12 @@ Analyze the performance trend and provide insights in JSON format:
   async generateTrainingRecommendations(athleteId: number): Promise<string[]> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI analysis is unavailable.",
+      );
     }
-    
-    try{
+
+    try {
       const [athlete, weaknesses, kpis] = await Promise.all([
         storage.getAthlete(athleteId),
         storage.getWeaknessesByAthleteId(athleteId),
@@ -258,9 +264,11 @@ Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]
   ): Promise<{ response: string; confidence: number }> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI analysis is unavailable.",
+      );
     }
-    
+
     try {
       console.log(`Processing query: "${query}" for athlete ${athleteId}`);
 
@@ -434,7 +442,7 @@ Provide specific, actionable insights based on this data.`;
               },
             ],
             max_tokens: isComplexQuery ? 600 : 300,
-            temperature: 0.3,
+            temperature: 1,
           }),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("OpenAI timeout")), 10000),
@@ -478,9 +486,11 @@ Provide specific, actionable insights based on this data.`;
   ): Promise<AthleteStrengthsWeaknesses> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI analysis is unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI analysis is unavailable.",
+      );
     }
-    
+
     try {
       // Fetch athlete data from database
       const [athlete] = await Promise.all([storage.getAthlete(athleteId)]);
@@ -535,9 +545,12 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
           },
         ],
         response_format: { type: "json_object" },
-        max_completion_tokens: 8000, // Increased to allow for reasoning tokens + output
+        max_completion_tokens: 1000, // Increased to allow for detailed descriptions
       });
-      console.log("OpenAI response received:", JSON.stringify(response, null, 2));
+      console.log(
+        "OpenAI response received:",
+        JSON.stringify(response, null, 2),
+      );
 
       const analysisResult = response.choices[0]?.message?.content;
       console.log("OpenAI O3 response:", analysisResult);
@@ -545,11 +558,13 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
       if (analysisResult) {
         try {
           // Check if response was truncated
-          if (response.choices[0].finish_reason === 'length') {
+          if (response.choices[0].finish_reason === "length") {
             console.log("Response was truncated due to length limit");
-            throw new Error("Response was truncated - increase max_completion_tokens");
+            throw new Error(
+              "Response was truncated - increase max_completion_tokens",
+            );
           }
-          
+
           const parsedResult = JSON.parse(
             analysisResult,
           ) as AthleteStrengthsWeaknesses;
@@ -562,12 +577,22 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
             Array.isArray(parsedResult.weaknesses)
           ) {
             // Check if items are objects with name and description, or just strings
-            const validStructure = parsedResult.strengths.every(item => 
-              (typeof item === 'string') || (item && typeof item.name === 'string' && typeof item.description === 'string')
-            ) && parsedResult.weaknesses.every(item => 
-              (typeof item === 'string') || (item && typeof item.name === 'string' && typeof item.description === 'string')
-            );
-            
+            const validStructure =
+              parsedResult.strengths.every(
+                (item) =>
+                  typeof item === "string" ||
+                  (item &&
+                    typeof item.name === "string" &&
+                    typeof item.description === "string"),
+              ) &&
+              parsedResult.weaknesses.every(
+                (item) =>
+                  typeof item === "string" ||
+                  (item &&
+                    typeof item.name === "string" &&
+                    typeof item.description === "string"),
+              );
+
             if (validStructure) {
               console.log("Valid analysis result:", parsedResult);
               return parsedResult;
@@ -577,7 +602,10 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
         } catch (parseError) {
           console.error("Failed to parse response as JSON:", parseError);
           console.log("Raw response was:", analysisResult);
-          console.log("Response finish reason:", response.choices[0].finish_reason);
+          console.log(
+            "Response finish reason:",
+            response.choices[0].finish_reason,
+          );
           console.log("Response length:", analysisResult.length);
         }
       } else {
