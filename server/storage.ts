@@ -541,82 +541,14 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    // For topRankedOnly, we'll filter after fetching rankings to avoid complex SQL
-    
-    // Get total count for pagination
-    const totalResult = await db
-      .select({ count: sql<number>`count(*)` })
+    // Get ALL athletes matching filters (we'll sort and paginate after adding rankings)
+    let allAthletesList = await db
+      .select()
       .from(athletes)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
     
-    let total = totalResult[0]?.count || 0;
-    
-    // Get paginated athletes (without topRankedOnly filter applied yet)
-    let athletesList = await db
-      .select()
-      .from(athletes)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(asc(athletes.name))
-      .limit(topRankedOnly ? limit * 10 : limit) // Fetch more if we need to filter by ranking
-      .offset(offset);
-    
-    // Handle topRankedOnly filter after fetching
-    if (topRankedOnly) {
-      // Filter athletes to only include those with world rank <= 10
-      const athletesWithBasicRanks = await Promise.all(
-        athletesList.map(async (athlete) => {
-          const worldRanks = await db
-            .select({ ranking: athleteRanks.ranking })
-            .from(athleteRanks)
-            .where(and(
-              eq(athleteRanks.athleteId, athlete.id),
-              eq(athleteRanks.rankingType, 'world')
-            ))
-            .orderBy(desc(athleteRanks.rankingDate))
-            .limit(1);
-          
-          return {
-            ...athlete,
-            worldRank: worldRanks[0]?.ranking || null
-          };
-        })
-      );
-      
-      const filteredAthletes = athletesWithBasicRanks.filter(
-        athlete => athlete.worldRank && athlete.worldRank <= 10
-      );
-      
-      athletesList = filteredAthletes.slice(0, limit);
-      
-      // Recalculate total for topRankedOnly
-      const allFilteredAthletes = await Promise.all(
-        (await db
-          .select()
-          .from(athletes)
-          .where(conditions.length > 0 ? and(...conditions) : undefined)
-        ).map(async (athlete) => {
-          const worldRanks = await db
-            .select({ ranking: athleteRanks.ranking })
-            .from(athleteRanks)
-            .where(and(
-              eq(athleteRanks.athleteId, athlete.id),
-              eq(athleteRanks.rankingType, 'world')
-            ))
-            .orderBy(desc(athleteRanks.rankingDate))
-            .limit(1);
-          
-          return worldRanks[0]?.ranking && worldRanks[0].ranking <= 10;
-        })
-      );
-      
-      total = allFilteredAthletes.filter(Boolean).length;
-    }
-    
-    const totalPages = Math.ceil(total / limit);
-    const currentPage = Math.floor(offset / limit) + 1;
-    
-    // Process athletes in batches to get complete rankings
-    const batchSize = 10;
+    // Get rankings for ALL athletes (needed for sorting and topRankedOnly filter)
+    const batchSize = 50;
     const athletesWithRankings: (Athlete & {
       worldRank?: number;
       olympicRank?: number;
@@ -628,8 +560,8 @@ export class DatabaseStorage implements IStorage {
       olympicRankChange?: number;
     })[] = [];
     
-    for (let i = 0; i < athletesList.length; i += batchSize) {
-      const batch = athletesList.slice(i, i + batchSize);
+    for (let i = 0; i < allAthletesList.length; i += batchSize) {
+      const batch = allAthletesList.slice(i, i + batchSize);
       const batchWithRankings = await Promise.all(
         batch.map(async (athlete) => {
           const rankings = await this.getAthleteRankings(athlete.id);
@@ -639,28 +571,50 @@ export class DatabaseStorage implements IStorage {
       athletesWithRankings.push(...batchWithRankings);
     }
     
-    // Apply sorting
+    // Handle topRankedOnly filter
+    let filteredAthletes = athletesWithRankings;
+    if (topRankedOnly) {
+      filteredAthletes = athletesWithRankings.filter(
+        athlete => athlete.worldRank && athlete.worldRank <= 10
+      );
+    }
+    
+    // Apply sorting to ALL filtered athletes
     if (sortBy === 'rank') {
-      athletesWithRankings.sort((a, b) => {
+      filteredAthletes.sort((a, b) => {
         const aRank = a.worldRank || 9999;
         const bRank = b.worldRank || 9999;
         return aRank - bRank;
       });
     } else if (sortBy === 'olympicRank') {
-      athletesWithRankings.sort((a, b) => {
+      filteredAthletes.sort((a, b) => {
         const aRank = a.olympicRank || 9999;
         const bRank = b.olympicRank || 9999;
         return aRank - bRank;
       });
     } else if (sortBy === 'nationality') {
-      athletesWithRankings.sort((a, b) => a.nationality.localeCompare(b.nationality));
+      filteredAthletes.sort((a, b) => a.nationality.localeCompare(b.nationality));
+    } else if (sortBy === 'winRate') {
+      filteredAthletes.sort((a, b) => {
+        const aRate = parseFloat(a.winRate || '0');
+        const bRate = parseFloat(b.winRate || '0');
+        return bRate - aRate;
+      });
     } else {
-      // Default: sort by name
-      athletesWithRankings.sort((a, b) => a.name.localeCompare(b.name));
+      // Default: sort by name (A-Z)
+      filteredAthletes.sort((a, b) => a.name.localeCompare(b.name));
     }
     
+    // Calculate totals after filtering
+    const total = filteredAthletes.length;
+    const totalPages = Math.ceil(total / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
+    
+    // Apply pagination to sorted results
+    const paginatedAthletes = filteredAthletes.slice(offset, offset + limit);
+    
     return {
-      athletes: athletesWithRankings,
+      athletes: paginatedAthletes,
       total,
       page: currentPage,
       totalPages,
