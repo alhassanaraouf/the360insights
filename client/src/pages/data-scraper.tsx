@@ -36,7 +36,7 @@ export default function DataScraper() {
   const [importType, setImportType] = useState<'athletes' | 'competitions'>('athletes');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [isBatchScraping, setIsBatchScraping] = useState(false);
-  const [playingStyleCountry, setPlayingStyleCountry] = useState<string>('');
+  const [playingStyleCountry, setPlayingStyleCountry] = useState<string>('all');
   const { toast } = useToast();
 
   // Country scraping mutation
@@ -341,7 +341,8 @@ export default function DataScraper() {
   };
 
   const handleGenerateAllPlayingStyles = () => {
-    generatePlayingStylesMutation.mutate(playingStyleCountry || undefined);
+    // Only send country if it's not "all"
+    generatePlayingStylesMutation.mutate(playingStyleCountry === 'all' ? undefined : playingStyleCountry);
   };
 
   const toggleCountrySelection = (countryCode: string) => {
@@ -648,7 +649,7 @@ export default function DataScraper() {
                 <SelectValue placeholder="All countries (no filter)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All countries</SelectItem>
+                <SelectItem value="all">All countries</SelectItem>
                 {Object.entries(commonCountries).map(([code, name]) => {
                   const countryName = name.replace(/ 🥇| 🥈| 🥉/g, '').trim();
                   return (
@@ -660,9 +661,9 @@ export default function DataScraper() {
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              {playingStyleCountry 
-                ? `Will generate playing styles only for athletes from ${playingStyleCountry}`
-                : 'Will generate playing styles for all athletes in the database'}
+              {playingStyleCountry === 'all'
+                ? 'Will generate playing styles for all athletes in the database'
+                : `Will generate playing styles only for athletes from ${playingStyleCountry}`}
             </p>
           </div>
 
@@ -680,9 +681,9 @@ export default function DataScraper() {
             ) : (
               <>
                 <Brain className="h-4 w-4 mr-2" />
-                {playingStyleCountry 
-                  ? `Generate for ${playingStyleCountry}` 
-                  : 'Generate All Playing Styles (AI)'}
+                {playingStyleCountry === 'all'
+                  ? 'Generate All Playing Styles (AI)' 
+                  : `Generate for ${playingStyleCountry}`}
               </>
             )}
           </Button>
