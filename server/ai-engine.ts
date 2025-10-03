@@ -535,7 +535,7 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
           },
         ],
         response_format: { type: "json_object" },
-        max_completion_tokens: 1000, // Increased to allow for detailed descriptions
+        max_completion_tokens: 8000, // Increased to allow for reasoning tokens + output
       });
       console.log("OpenAI response received:", JSON.stringify(response, null, 2));
 
