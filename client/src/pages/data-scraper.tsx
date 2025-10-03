@@ -36,6 +36,7 @@ export default function DataScraper() {
   const [importType, setImportType] = useState<'athletes' | 'competitions'>('athletes');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [isBatchScraping, setIsBatchScraping] = useState(false);
+  const [playingStyleCountry, setPlayingStyleCountry] = useState<string>('');
   const { toast } = useToast();
 
   // Country scraping mutation
@@ -184,13 +185,14 @@ export default function DataScraper() {
 
   // Mutation for generating playing styles for all athletes
   const generatePlayingStylesMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (country?: string) => {
       const response = await fetch('/api/generate/playing-styles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify({ country: country || undefined }),
       });
 
       if (!response.ok) {
@@ -339,7 +341,7 @@ export default function DataScraper() {
   };
 
   const handleGenerateAllPlayingStyles = () => {
-    generatePlayingStylesMutation.mutate();
+    generatePlayingStylesMutation.mutate(playingStyleCountry || undefined);
   };
 
   const toggleCountrySelection = (countryCode: string) => {
@@ -635,14 +637,40 @@ export default function DataScraper() {
             <span>AI Playing Style Generation</span>
           </CardTitle>
           <CardDescription>
-            Generate playing styles for all athletes using AI. This can take a while.
+            Generate playing styles for all athletes or filter by specific country using AI.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Filter by Country (Optional)</Label>
+            <Select value={playingStyleCountry} onValueChange={setPlayingStyleCountry}>
+              <SelectTrigger>
+                <SelectValue placeholder="All countries (no filter)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All countries</SelectItem>
+                {Object.entries(commonCountries).map(([code, name]) => {
+                  const countryName = name.replace(/ 🥇| 🥈| 🥉/g, '').trim();
+                  return (
+                    <SelectItem key={code} value={countryName}>
+                      {name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              {playingStyleCountry 
+                ? `Will generate playing styles only for athletes from ${playingStyleCountry}`
+                : 'Will generate playing styles for all athletes in the database'}
+            </p>
+          </div>
+
           <Button
             onClick={handleGenerateAllPlayingStyles}
             disabled={generatePlayingStylesMutation.isPending}
             className="w-full"
+            data-testid="button-generate-playing-styles"
           >
             {generatePlayingStylesMutation.isPending ? (
               <>
@@ -652,7 +680,9 @@ export default function DataScraper() {
             ) : (
               <>
                 <Brain className="h-4 w-4 mr-2" />
-                Generate All Playing Styles (AI)
+                {playingStyleCountry 
+                  ? `Generate for ${playingStyleCountry}` 
+                  : 'Generate All Playing Styles (AI)'}
               </>
             )}
           </Button>
