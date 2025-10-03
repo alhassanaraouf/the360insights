@@ -1004,7 +1004,15 @@ export async function importJsonAthletes(
     athletesByUserId.get(userId)!.push(item);
   }
 
-  for (const [userId, athleteEntries] of athletesByUserId) {
+  // Process athletes in parallel batches
+  const BATCH_SIZE = 20;
+  const userIds = Array.from(athletesByUserId.keys());
+  
+  for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+    const batchUserIds = userIds.slice(i, i + BATCH_SIZE);
+    
+    await Promise.all(batchUserIds.map(async (userId) => {
+      const athleteEntries = athletesByUserId.get(userId)!;
     try {
       // Use the first entry for basic athlete info
       const primaryEntry = athleteEntries[0];
@@ -1067,47 +1075,33 @@ export async function importJsonAthletes(
           `✓ Updated athlete: ${primaryEntry.name || primaryEntry.full_name} (${primaryEntry.country})`,
         );
 
-        // Upload profile image if available (check both profilePic and photo_url fields)
+        // Queue image upload to happen asynchronously (don't await)
         const imageUrl = primaryEntry.profilePic || primaryEntry.photo_url;
         if (imageUrl && imageUrl !== "N/A") {
-          try {
-            console.log(
-              `📷 Uploading profile image for ${primaryEntry.name || primaryEntry.full_name}`,
-            );
-            const { bucketStorage } = await import("./bucket-storage");
-            const imageResult = await bucketStorage.uploadFromUrl(
-              athleteId,
-              imageUrl,
-            );
+          // Fire and forget - upload happens in background
+          (async () => {
+            try {
+              const { bucketStorage } = await import("./bucket-storage");
+              const imageResult = await bucketStorage.uploadFromUrl(
+                athleteId,
+                imageUrl,
+              );
 
-            // Update athlete with uploaded image URL
-            await db
-              .update(schema.athletes)
-              .set({ profileImage: imageResult.url })
-              .where(eq(schema.athletes.id, athleteId));
+              await db
+                .update(schema.athletes)
+                .set({ profileImage: imageResult.url })
+                .where(eq(schema.athletes.id, athleteId));
 
-            console.log(
-              `✅ Successfully uploaded profile image for ${primaryEntry.name || primaryEntry.full_name}`,
-            );
-          } catch (imageError) {
-            console.warn(
-              `⚠️ Failed to upload profile image for ${primaryEntry.name || primaryEntry.full_name}:`,
-              imageError.message,
-            );
-            // Set to null on failure
-            await db
-              .update(schema.athletes)
-              .set({ profileImage: null })
-              .where(eq(schema.athletes.id, athleteId));
-          }
-        } else {
-          console.log(
-            `📷 No profile image URL available for ${primaryEntry.name || primaryEntry.full_name}`,
-          );
-          await db
-            .update(schema.athletes)
-            .set({ profileImage: null })
-            .where(eq(schema.athletes.id, athleteId));
+              console.log(
+                `✅ Successfully uploaded profile image for ${primaryEntry.name || primaryEntry.full_name}`,
+              );
+            } catch (imageError) {
+              console.warn(
+                `⚠️ Failed to upload profile image for ${primaryEntry.name || primaryEntry.full_name}:`,
+                imageError.message,
+              );
+            }
+          })();
         }
       } else {
         // Create new athlete
@@ -1171,40 +1165,30 @@ export async function importJsonAthletes(
         }
       }
 
-      // Process ranking data for each weight category
+      // Process ranking data for each weight category - collect then batch insert
+      const rankingsToInsert: any[] = [];
+      const rankingsToUpdate: any[] = [];
+      
       for (const entry of athleteEntries) {
         try {
           const ranking = parseDisplayRanking(entry.display_ranking);
 
-          console.log(
-            `Processing ranking for ${entry.name || entry.full_name}:`,
-            {
-              display_ranking: entry.display_ranking,
-              parsed_ranking: ranking,
-              weight_division: entry.weight_division,
-              month: entry.month,
-              year: entry.year,
-            },
-          );
-
           if (ranking > 0) {
-            // Parse rank change from the JSON data
             const rankChange = parseRankChange(entry.change);
-
-            // Convert month to number
             const monthNum = monthToNumber[entry.month] || 1;
             const rankingDate = `${entry.year}-${monthNum.toString().padStart(2, "0")}-01`;
 
-            console.log(`Inserting ranking data:`, {
-              athleteId,
-              ranking,
-              rankChange,
-              rankingType,
-              category: entry.weight_division || null,
-              rankingDate,
-            });
+            // Extract points
+            let points = null;
+            const pointsFields = ["points", "pts", "score", "total_points", "ranking_points", "current_points"];
+            for (const field of pointsFields) {
+              if (entry[field] && entry[field] !== "" && entry[field] !== "N/A") {
+                points = parseFloat(entry[field].toString());
+                if (!isNaN(points)) break;
+              }
+            }
 
-            // Check if ranking already exists for this athlete, type, category, and date
+            // Check existing ranking
             const existingRanking = await db.query.athleteRanks.findFirst({
               where: and(
                 eq(athleteRanks.athleteId, athleteId),
@@ -1214,117 +1198,53 @@ export async function importJsonAthletes(
               ),
             });
 
-            // Extract points from JSON data - check multiple possible field names
-            let points = null;
+            if (existingRanking && (existingRanking.ranking !== ranking || existingRanking.rankChange !== rankChange)) {
+              rankingsToUpdate.push({
+                id: existingRanking.id,
+                ranking,
+                rankChange,
+                points: points ? points.toString() : null,
+              });
+            } else if (!existingRanking) {
+              const previousRankingRecord = await db.query.athleteRanks.findFirst({
+                where: and(
+                  eq(athleteRanks.athleteId, athleteId),
+                  eq(athleteRanks.rankingType, rankingType),
+                  eq(athleteRanks.category, entry.weight_division || null),
+                ),
+                orderBy: [desc(athleteRanks.rankingDate), desc(athleteRanks.id)],
+              });
 
-            // Try different field names where points might be stored
-            const pointsFields = [
-              "points",
-              "pts",
-              "score",
-              "total_points",
-              "ranking_points",
-              "current_points",
-            ];
-            for (const field of pointsFields) {
-              if (
-                entry[field] &&
-                entry[field] !== "" &&
-                entry[field] !== "N/A"
-              ) {
-                points = parseFloat(entry[field].toString());
-                if (!isNaN(points)) {
-                  console.log(
-                    `📊 Found points data in field '${field}': ${points} for ${entry.name || entry.full_name}`,
-                  );
-                  break;
-                }
-              }
-            }
-
-            // Log the JSON structure for debugging if no points found
-            if (!points && Math.random() < 0.01) {
-              // Log 1% of records for debugging
-              console.log(
-                `🔍 DEBUG: JSON structure for ${entry.name || entry.full_name}:`,
-                Object.keys(entry),
-              );
-            }
-
-            if (existingRanking) {
-              // Update existing ranking if it's different
-              if (
-                existingRanking.ranking !== ranking ||
-                existingRanking.rankChange !== rankChange ||
-                (points !== null &&
-                  existingRanking.points !== points.toString())
-              ) {
-                await db
-                  .update(athleteRanks)
-                  .set({
-                    ranking,
-                    rankChange,
-                    points: points ? points.toString() : null,
-                  })
-                  .where(eq(athleteRanks.id, existingRanking.id));
-                console.log(
-                  `✓ Updated ${rankingType} ranking for ${entry.name || entry.full_name}: #${ranking} (${points ? points + " pts" : "no pts"}) (${rankChange ? (rankChange > 0 ? "+" + rankChange : rankChange) : "no change"}) in ${entry.weight_division}`,
-                );
-              } else {
-                console.log(
-                  `⚠ Ranking already exists for ${entry.name || entry.full_name}: #${ranking} in ${entry.weight_division}`,
-                );
-              }
-            } else {
-              // Query for the most recent existing ranking for this athlete/category/type to use as previousRanking
-              const previousRankingRecord =
-                await db.query.athleteRanks.findFirst({
-                  where: and(
-                    eq(athleteRanks.athleteId, athleteId),
-                    eq(athleteRanks.rankingType, rankingType),
-                    eq(athleteRanks.category, entry.weight_division || null),
-                  ),
-                  orderBy: [
-                    desc(athleteRanks.rankingDate),
-                    desc(athleteRanks.id),
-                  ],
-                });
-
-              const previousRanking = previousRankingRecord
-                ? previousRankingRecord.ranking
-                : null;
-
-              // Insert new ranking data with previous ranking and points
-              await db.insert(athleteRanks).values({
+              rankingsToInsert.push({
                 athleteId,
                 ranking,
-                previousRanking,
+                previousRanking: previousRankingRecord?.ranking || null,
                 rankChange,
                 points: points ? points.toString() : null,
                 rankingType,
                 category: entry.weight_division || null,
                 rankingDate,
               });
-
-              const prevRankText = previousRanking
-                ? ` (was #${previousRanking})`
-                : " (new entry)";
-              console.log(
-                `✓ Added ${rankingType} ranking for ${entry.name || entry.full_name}: #${ranking} (${points ? points + " pts" : "no pts"}) (${rankChange ? (rankChange > 0 ? "+" + rankChange : rankChange) : "new"}) in ${entry.weight_division}${prevRankText}`,
-              );
             }
-          } else {
-            console.log(
-              `⚠ Skipping ranking for ${entry.name || entry.full_name} - invalid ranking: ${entry.display_ranking}`,
-            );
           }
         } catch (rankingError) {
-          console.error(
-            `✗ Failed to process ranking for ${entry.name || entry.full_name}:`,
-            rankingError,
-          );
+          console.error(`✗ Failed to process ranking for ${entry.name || entry.full_name}:`, rankingError);
           errors++;
         }
+      }
+
+      // Batch insert rankings
+      if (rankingsToInsert.length > 0) {
+        await db.insert(athleteRanks).values(rankingsToInsert);
+        console.log(`✓ Inserted ${rankingsToInsert.length} rankings for ${primaryEntry.name || primaryEntry.full_name}`);
+      }
+
+      // Batch update rankings
+      for (const update of rankingsToUpdate) {
+        await db.update(athleteRanks).set(update).where(eq(athleteRanks.id, update.id));
+      }
+      if (rankingsToUpdate.length > 0) {
+        console.log(`✓ Updated ${rankingsToUpdate.length} rankings for ${primaryEntry.name || primaryEntry.full_name}`);
       }
 
       // Process competition/career events data if available
@@ -1479,6 +1399,7 @@ export async function importJsonAthletes(
       );
       errors++;
     }
+    }));
   }
 
   return {
