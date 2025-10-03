@@ -47,6 +47,7 @@ export const athletes = pgTable("athletes", {
   worldCategory: text("world_category"), // Weight division like "M-54 kg"
   worldPoints: decimal("world_points", { precision: 10, scale: 2 }), // World ranking points
   olympicPoints: decimal("olympic_points", { precision: 10, scale: 2 }), // Olympic ranking points
+  playingStyle: text("playing_style"), // AI-generated playing style description
   coachId: integer("coach_id").references(() => coaches.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
