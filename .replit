@@ -52,10 +52,6 @@ externalPort = 80
 localPort = 34457
 externalPort = 3000
 
-[[ports]]
-localPort = 44751
-externalPort = 3001
-
 [agent]
 integrations = ["javascript_openai:1.0.0"]
 expertMode = true
