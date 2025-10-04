@@ -239,6 +239,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all ranks for an athlete
+  app.get("/api/athletes/:id/ranks", async (req, res) => {
+    try {
+      const athleteId = parseInt(req.params.id);
+      
+      if (!athleteId) {
+        return res.status(400).json({ error: "Invalid athlete ID" });
+      }
+
+      const ranks = await storage.getAthleteRanksByAthleteId(athleteId);
+      res.json(ranks);
+    } catch (error) {
+      console.error("Error fetching athlete ranks:", error);
+      res.status(500).json({ error: "Failed to fetch athlete ranks" });
+    }
+  });
 
   // Serve athlete images from object storage
   app.get("/api/athletes/:id/image", async (req, res) => {

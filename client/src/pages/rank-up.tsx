@@ -288,31 +288,48 @@ export default function RankUp() {
     enabled: !!selectedAthleteId,
   });
 
-  // Get available ranking types for selected athlete
+  // Fetch all ranks for the selected athlete
+  const { data: athleteRanks = [] } = useQuery({
+    queryKey: ["/api/athletes", selectedAthleteId, "ranks"],
+    queryFn: async () => {
+      if (!selectedAthleteId) return [];
+      const response = await fetch(`/api/athletes/${selectedAthleteId}/ranks`);
+      if (!response.ok) throw new Error('Failed to fetch athlete ranks');
+      return response.json();
+    },
+    enabled: !!selectedAthleteId,
+  });
+
+  // Get available ranking types for selected athlete based on their actual ranks
   const availableRankingTypes = useMemo(() => {
-    if (!selectedAthlete) return [];
+    if (!athleteRanks || athleteRanks.length === 0) return [];
     
     const types = [];
-    if (selectedAthlete.worldRank) types.push({ value: "world", label: "World Rankings" });
-    if (selectedAthlete.olympicRank) types.push({ value: "olympic", label: "Olympic Rankings" });
+    const hasWorldRanks = athleteRanks.some((rank: any) => rank.rankingType === "world");
+    const hasOlympicRanks = athleteRanks.some((rank: any) => rank.rankingType === "olympic");
+    
+    if (hasWorldRanks) types.push({ value: "world", label: "World Rankings" });
+    if (hasOlympicRanks) types.push({ value: "olympic", label: "Olympic Rankings" });
     
     return types;
-  }, [selectedAthlete]);
+  }, [athleteRanks]);
 
-  // Get categories specific to selected athlete and ranking type
+  // Get categories specific to selected athlete and ranking type from their actual ranks
   const categories = useMemo(() => {
-    if (!selectedAthlete || !rankingType) return [];
+    if (!athleteRanks || athleteRanks.length === 0 || !rankingType) return [];
     
+    // Filter ranks by ranking type and extract unique categories
+    const relevantRanks = athleteRanks.filter((rank: any) => rank.rankingType === rankingType);
     const cats = new Set<string>();
-    if (rankingType === "world" && selectedAthlete.worldCategory) {
-      cats.add(selectedAthlete.worldCategory);
-    }
-    if (rankingType === "olympic" && selectedAthlete.olympicCategory) {
-      cats.add(selectedAthlete.olympicCategory);
-    }
+    
+    relevantRanks.forEach((rank: any) => {
+      if (rank.category) {
+        cats.add(rank.category);
+      }
+    });
     
     return Array.from(cats).sort();
-  }, [selectedAthlete, rankingType]);
+  }, [athleteRanks, rankingType]);
 
   // Reset states when athlete changes (but not when just availableRankingTypes recalculates)
   useEffect(() => {
@@ -357,14 +374,17 @@ export default function RankUp() {
     prevCategoriesRef.current = categories;
   }, [categories, category]);
 
-  // Get current athlete's ranking for the selected ranking type
-  const getCurrentRanking = (athlete: Athlete, type: string) => {
-    if (type === 'world') return athlete.worldRank;
-    if (type === 'olympic') return athlete.olympicRank;
-    return null;
-  };
-
-  const selectedAthleteCurrentRank = selectedAthlete ? getCurrentRanking(selectedAthlete, rankingType) : null;
+  // Get current athlete's ranking for the selected ranking type and category
+  const selectedAthleteCurrentRank = useMemo(() => {
+    if (!athleteRanks || athleteRanks.length === 0 || !rankingType || !category) return null;
+    
+    // Find the rank entry that matches both ranking type and category
+    const matchingRank = athleteRanks.find(
+      (rank: any) => rank.rankingType === rankingType && rank.category === category
+    );
+    
+    return matchingRank?.ranking || null;
+  }, [athleteRanks, rankingType, category]);
   const isAlreadyTopRank = selectedAthleteCurrentRank === 1;
 
   // Calculate rank up requirements
