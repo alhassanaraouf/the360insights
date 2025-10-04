@@ -47,6 +47,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Recent Changes (October 4, 2025)
 
+- **Performance Analysis Caching**: Implemented intelligent caching system for AI-powered performance analysis
+  - Created `performance_analysis_cache` table to store analysis results for each athlete
+  - Cache expires after 30 days (1 month), reducing unnecessary AI API calls
+  - Route checks cache before calling OpenAI API, returning cached results when valid
+  - Added validation to handle invalid athlete IDs with proper 400 error responses
+  - Significant cost savings by avoiding duplicate AI analyses for the same athlete within 30 days
+  - Performance improvement by serving cached results instantly instead of waiting for AI processing
+
 - **Auto-Generate Playing Styles on Opponent Selection**: Implemented automatic playing style generation when selecting opponents
   - Created new endpoint `/api/generate/playing-style/:athleteId` for single athlete playing style generation
   - Updated opponent selection handler to detect missing playing styles and auto-generate them using OpenAI GPT-5
