@@ -123,15 +123,15 @@ export default function Dashboard() {
     userCompetitionPreferences.filter((pref: any) => pref.isSelected)?.length || 0 : 0;
 
   return (
-    <>
+    <div className="w-full max-w-full overflow-x-hidden">
       <Header
         title={`${sportConfig.name}`}
         description="Comprehensive analytics for coaches, managers, and scouts"
       />
 
-      <div className="mobile-padding mobile-space-y">
+      <div className="mobile-padding mobile-space-y w-full max-w-full">
         {/* Modern Stats Overview */}
-        <div className="mobile-grid">
+        <div className="mobile-grid w-full">
           <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
@@ -230,24 +230,24 @@ export default function Dashboard() {
         </div>
 
         {/* Top Ranked Athletes Section */}
-        <div className="space-y-6 !mt-12 sm:!mt-8">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4 sm:space-y-6 !mt-8 sm:!mt-12 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
                 Featured Athletes
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Elite performers in world and Olympic rankings
               </p>
             </div>
-            <Badge variant="outline" className="px-3 py-1">
+            <Badge variant="outline" className="px-3 py-1 w-fit">
               <Activity className="h-3 w-3 mr-1" />
               Live Rankings
             </Badge>
           </div>
           
           {topAthletes?.athletes?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
               {topAthletes.athletes.slice(0, 6).map((athlete: any) => (
                 <Card key={athlete.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardContent className="p-6">
@@ -296,17 +296,17 @@ export default function Dashboard() {
         </div>
 
         {/* Enhanced Rankings Section */}
-        <div className="space-y-6 !mt-12 sm:!mt-8">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4 sm:space-y-6 !mt-8 sm:!mt-12 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
                 Global Rankings
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 World and Olympic standings across all categories
               </p>
             </div>
-            <Badge variant="outline" className="px-3 py-1">
+            <Badge variant="outline" className="px-3 py-1 w-fit">
               <Activity className="h-3 w-3 mr-1" />
               Live Data
             </Badge>
@@ -315,7 +315,7 @@ export default function Dashboard() {
         </div>
 
         {/* Competition Calendar */}
-        <div className="mt-8 sm:mt-6">
+        <div className="mt-6 sm:mt-8 w-full">
           <CompetitionCalendar
             competitions={[]}
             allCompetitions={Array.isArray(globalCompetitions) ? globalCompetitions : []}
@@ -325,6 +325,6 @@ export default function Dashboard() {
 
 
       </div>
-    </>
+    </div>
   );
 }

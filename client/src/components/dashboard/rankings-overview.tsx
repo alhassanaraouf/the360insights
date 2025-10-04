@@ -62,7 +62,7 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
     navigate(`/athlete360?athlete=${athleteId}`);
   };
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full max-w-full">
       {/* World Rankings */}
       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-900 dark:to-blue-950/20">
         <CardHeader className="pb-4">

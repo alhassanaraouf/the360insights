@@ -131,13 +131,13 @@ export default function Header({ title, description }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mobile-padding">
-      <div className="mobile-flex-col items-start lg:items-center lg:justify-between">
+    <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mobile-padding w-full overflow-hidden">
+      <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between w-full">
         <div className="min-w-0 flex-1 w-full lg:w-auto">
           <h2 className="mobile-heading text-gray-900 dark:text-white truncate">{title}</h2>
           <p className="mobile-text text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{description}</p>
         </div>
-        <div className="mobile-flex-col w-full lg:w-auto lg:flex-row lg:items-center lg:space-y-0 lg:space-x-4">
+        <div className="flex flex-col space-y-2 w-full lg:w-auto lg:flex-row lg:items-center lg:space-y-0 lg:space-x-4">
           {/* Egyptian Taekwondo Athletes Search */}
           <div className="w-full lg:w-auto lg:min-w-[280px]">
             <AthleteSearch 
@@ -145,14 +145,14 @@ export default function Header({ title, description }: HeaderProps) {
               placeholder="Search athletes..."
             />
           </div>
-          <div className="flex items-center mobile-space-x w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             {/* Sport Switcher */}
-            <div className="mr-2">
+            <div className="flex-shrink-0">
               <SportSwitcher />
             </div>
             {/* Egypt/Global Toggle - always visible */}
-            <div className="flex items-center space-x-2 px-3 py-1 bg-blue-50 dark:bg-blue-950 rounded-lg mr-2">
-              <Label htmlFor="header-egypt-filter" className="text-xs font-medium text-blue-700 dark:text-blue-300">
+            <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 bg-blue-50 dark:bg-blue-950 rounded-lg flex-shrink-0">
+              <Label htmlFor="header-egypt-filter" className="text-xs font-medium text-blue-700 dark:text-blue-300 whitespace-nowrap">
                 Egypt
               </Label>
               <Switch
@@ -161,14 +161,16 @@ export default function Header({ title, description }: HeaderProps) {
                 onCheckedChange={(checked) => setShowEgyptianOnly(!checked)}
                 className="scale-75"
               />
-              <Label htmlFor="header-egypt-filter" className="text-xs font-medium text-blue-700 dark:text-blue-300">
+              <Label htmlFor="header-egypt-filter" className="text-xs font-medium text-blue-700 dark:text-blue-300 whitespace-nowrap">
                 Global
               </Label>
             </div>
-            <LanguageSwitcher />
+            <div className="flex-shrink-0">
+              <LanguageSwitcher />
+            </div>
             {!shouldHideExportButton() && (
               <Button 
-                className="flex-1 lg:flex-none mobile-button touch-target"
+                className="mobile-button touch-target w-full sm:w-auto flex-shrink-0"
                 onClick={handleExportReport}
                 disabled={isExporting}
               >

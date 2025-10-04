@@ -89,7 +89,7 @@ export default function CompetitionCalendar({ competitions, allCompetitions, use
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
       {/* Upcoming Competitions */}
       <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-900 dark:to-emerald-950/10">
         <CardHeader className="pb-4">
