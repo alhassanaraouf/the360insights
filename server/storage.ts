@@ -36,6 +36,9 @@ import {
   type UpsertUser,
   type RankUpCalculationCache,
   type InsertRankUpCalculationCache,
+  performanceAnalysisCache,
+  type PerformanceAnalysisCache,
+  type InsertPerformanceAnalysisCache,
   sponsorshipBids,
   type SponsorshipBid,
   type InsertSponsorshipBid,
@@ -224,6 +227,10 @@ export interface IStorage {
   createSponsorshipBid(bid: InsertSponsorshipBid): Promise<SponsorshipBid>;
   updateSponsorshipBidStatus(id: number, status: 'PENDING' | 'ACCEPTED' | 'REJECTED'): Promise<SponsorshipBid>;
   getAthletesWithBids(): Promise<(Athlete & { bidsCount: number })[]>;
+
+  // Performance Analysis Cache
+  getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
+  savePerformanceAnalysisCache(cache: InsertPerformanceAnalysisCache): Promise<PerformanceAnalysisCache>;
 
 }
 
@@ -1665,6 +1672,33 @@ export class DatabaseStorage implements IStorage {
       ...result,
       bidsCount: bidCounts.find(bc => bc.athleteId === result.id)?.count || 0
     }));
+  }
+
+  async getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined> {
+    const [cache] = await db
+      .select()
+      .from(performanceAnalysisCache)
+      .where(
+        and(
+          eq(performanceAnalysisCache.athleteId, athleteId),
+          gte(performanceAnalysisCache.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(performanceAnalysisCache.createdAt))
+      .limit(1);
+    return cache;
+  }
+
+  async savePerformanceAnalysisCache(cache: InsertPerformanceAnalysisCache): Promise<PerformanceAnalysisCache> {
+    await db
+      .delete(performanceAnalysisCache)
+      .where(eq(performanceAnalysisCache.athleteId, cache.athleteId));
+    
+    const [newCache] = await db
+      .insert(performanceAnalysisCache)
+      .values(cache)
+      .returning();
+    return newCache;
   }
 }
 
