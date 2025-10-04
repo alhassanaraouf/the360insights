@@ -732,16 +732,18 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(athleteRanks.rankingDate))
       .limit(1);
 
-    return {
+    const result = {
       worldRank: worldRankingData[0]?.ranking,
       olympicRank: olympicRankingData[0]?.ranking,
       worldCategory: worldRankingData[0]?.category || undefined,
       olympicCategory: olympicRankingData[0]?.category || undefined,
-      worldPreviousRank: worldRankingData[0]?.previousRanking || undefined,
-      olympicPreviousRank: olympicRankingData[0]?.previousRanking || undefined,
-      worldRankChange: worldRankingData[0]?.rankChange || undefined,
-      olympicRankChange: olympicRankingData[0]?.rankChange || undefined,
+      worldPreviousRank: worldRankingData[0]?.previousRanking ?? undefined,
+      olympicPreviousRank: olympicRankingData[0]?.previousRanking ?? undefined,
+      worldRankChange: worldRankingData[0]?.rankChange ?? undefined,
+      olympicRankChange: olympicRankingData[0]?.rankChange ?? undefined,
     };
+    
+    return result;
   }
 
 
