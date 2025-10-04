@@ -45,7 +45,27 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
 - **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 
-### Recent Changes (October 3, 2025)
+### Recent Changes (October 4, 2025)
+
+- **Auto-Generate Playing Styles on Opponent Selection**: Implemented automatic playing style generation when selecting opponents
+  - Created new endpoint `/api/generate/playing-style/:athleteId` for single athlete playing style generation
+  - Updated opponent selection handler to detect missing playing styles and auto-generate them using OpenAI GPT-5
+  - System checks for empty, null, or whitespace-only playing styles and generates concise labels (e.g., "Aggressive Counter-Puncher")
+  - Auto-generated playing styles are saved to database for future use
+  - Query cache is invalidated to ensure UI reflects newly generated playing styles
+  
+- **Opponent Profile Picture Display**: Enhanced Opponent Profile section with athlete profile pictures
+  - Added large circular avatar (24x24) displaying opponent's profile picture
+  - Integrated with Replit Object Storage for profile images
+  - Fallback to user icon when profile picture is unavailable
+  - Centered display above opponent name and details
+
+- **Fixed OpenAI API Compatibility**: Resolved GPT-5 parameter error
+  - Changed `max_tokens` to `max_completion_tokens` in playing style generation
+  - Fixes "Unsupported parameter" error from OpenAI API
+  - Ensures proper AI-powered playing style generation
+
+### Previous Changes (October 3, 2025)
 
 - **Fixed Object Storage Bucket Initialization**: Resolved issue where profile pictures were uploaded to production bucket during dev imports
   - Root cause: Client was initialized with `new Client()` without passing bucketId parameter, defaulting to production bucket
