@@ -1393,6 +1393,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get saved rank up analyses for an athlete
+  app.get("/api/athletes/:id/rank-up-analyses", async (req, res) => {
+    try {
+      const athleteId = parseInt(req.params.id);
+      
+      if (!athleteId) {
+        return res.status(400).json({ error: "Invalid athlete ID" });
+      }
+
+      const analyses = await storage.getSavedRankUpAnalyses(athleteId);
+      res.json(analyses);
+    } catch (error) {
+      console.error("Error fetching saved rank up analyses:", error);
+      res.status(500).json({ error: "Failed to fetch saved analyses" });
+    }
+  });
+
   // Competition Preferences Routes
   app.get("/api/competition-preferences/:userId", isAuthenticated, async (req, res) => {
     try {

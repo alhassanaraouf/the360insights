@@ -232,6 +232,9 @@ export interface IStorage {
   getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
   savePerformanceAnalysisCache(cache: InsertPerformanceAnalysisCache): Promise<PerformanceAnalysisCache>;
 
+  // Rank Up Analyses
+  getSavedRankUpAnalyses(athleteId: number): Promise<RankUpCalculationCache[]>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1699,6 +1702,16 @@ export class DatabaseStorage implements IStorage {
       .values(cache)
       .returning();
     return newCache;
+  }
+
+  async getSavedRankUpAnalyses(athleteId: number): Promise<RankUpCalculationCache[]> {
+    const analyses = await db
+      .select()
+      .from(rankUpCalculationCache)
+      .where(eq(rankUpCalculationCache.athleteId, athleteId))
+      .orderBy(desc(rankUpCalculationCache.createdAt));
+    
+    return analyses;
   }
 }
 
