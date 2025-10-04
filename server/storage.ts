@@ -857,11 +857,11 @@ export class DatabaseStorage implements IStorage {
       }
 
       const athleteData = athlete[0];
-      const athleteRanks = await db.select().from(athleteRanks)
+      const fetchedAthleteRanks = await db.select().from(athleteRanks)
         .where(eq(athleteRanks.athleteId, athleteId))
         .limit(1);
 
-      const worldRank = athleteRanks.find(rank => rank.rankingType === 'world');
+      const worldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
 
       if (!worldRank || !athleteData.worldCategory) {
         return { opponents: [], total: 0 };
@@ -872,38 +872,47 @@ export class DatabaseStorage implements IStorage {
       const maxRank = athleteRanking + 10;
 
       // Build optimized query with JOIN
-      let query = db
+      let baseQuery = db
         .select({
           id: athletes.id,
           name: athletes.name,
+          sport: athletes.sport,
           nationality: athletes.nationality,
-          worldCategory: athletes.worldCategory,
-          olympicCategory: athletes.olympicCategory,
+          gender: athletes.gender,
           profileImage: athletes.profileImage,
+          worldCategory: athletes.worldCategory,
+          worldPoints: athletes.worldPoints,
+          olympicPoints: athletes.olympicPoints,
           playingStyle: athletes.playingStyle,
+          coachId: athletes.coachId,
+          createdAt: athletes.createdAt,
           worldRank: athleteRanks.ranking
         })
         .from(athletes)
         .innerJoin(athleteRanks, and(
           eq(athleteRanks.athleteId, athletes.id),
           eq(athleteRanks.rankingType, 'world')
-        ))
-        .where(and(
-          eq(athletes.worldCategory, athleteData.worldCategory),
-          ne(athletes.id, athleteId),
-          gte(athleteRanks.ranking, minRank),
-          lte(athleteRanks.ranking, maxRank)
         ));
+
+      let conditions = and(
+        eq(athletes.worldCategory, athleteData.worldCategory),
+        ne(athletes.id, athleteId),
+        gte(athleteRanks.ranking, minRank),
+        lte(athleteRanks.ranking, maxRank)
+      );
 
       // Add search filter if provided
       if (searchTerm && searchTerm.trim()) {
-        query = query.where(
+        conditions = and(
+          conditions,
           or(
             ilike(athletes.name, `%${searchTerm}%`),
             ilike(athletes.nationality, `%${searchTerm}%`)
           )
         );
       }
+
+      const query = baseQuery.where(conditions);
 
       // Get total count
       const countQuery = db
@@ -930,7 +939,13 @@ export class DatabaseStorage implements IStorage {
       const opponentsWithThreat = opponents.map(opponent => ({
         ...opponent,
         threatLevel: calculateThreatLevel(athleteRanking, opponent.worldRank)
-      }));
+      })) as (Athlete & {
+        worldRank?: number;
+        olympicRank?: number;
+        worldCategory?: string;
+        olympicCategory?: string;
+        threatLevel?: string;
+      })[];
 
       return { opponents: opponentsWithThreat, total };
     } catch (error) {
@@ -962,37 +977,53 @@ export class DatabaseStorage implements IStorage {
         return { opponents: [], total: 0 };
       }
 
+      // Get athlete's rank for threat level calculation
+      const fetchedAthleteRanks = await db.select().from(athleteRanks)
+        .where(eq(athleteRanks.athleteId, athleteId))
+        .limit(1);
+      const athleteWorldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
+      const athleteRanking = athleteWorldRank?.ranking || 999;
+
       // Build optimized query with JOIN
-      let query = db
+      let baseQuery = db
         .select({
           id: athletes.id,
           name: athletes.name,
+          sport: athletes.sport,
           nationality: athletes.nationality,
-          worldCategory: athletes.worldCategory,
-          olympicCategory: athletes.olympicCategory,
+          gender: athletes.gender,
           profileImage: athletes.profileImage,
+          worldCategory: athletes.worldCategory,
+          worldPoints: athletes.worldPoints,
+          olympicPoints: athletes.olympicPoints,
           playingStyle: athletes.playingStyle,
+          coachId: athletes.coachId,
+          createdAt: athletes.createdAt,
           worldRank: athleteRanks.ranking
         })
         .from(athletes)
         .leftJoin(athleteRanks, and(
           eq(athleteRanks.athleteId, athletes.id),
           eq(athleteRanks.rankingType, 'world')
-        ))
-        .where(and(
-          eq(athletes.worldCategory, athleteData.worldCategory),
-          ne(athletes.id, athleteId)
         ));
+
+      let conditions = and(
+        eq(athletes.worldCategory, athleteData.worldCategory),
+        ne(athletes.id, athleteId)
+      );
 
       // Add search filter if provided
       if (searchTerm && searchTerm.trim()) {
-        query = query.where(
+        conditions = and(
+          conditions,
           or(
             ilike(athletes.name, `%${searchTerm}%`),
             ilike(athletes.nationality, `%${searchTerm}%`)
           )
         );
       }
+
+      const query = baseQuery.where(conditions);
 
       // Get total count
       const countQuery = db
@@ -1013,10 +1044,16 @@ export class DatabaseStorage implements IStorage {
       const opponentsWithThreat = opponents.map(opponent => ({
         ...opponent,
         threatLevel: opponent.worldRank ? calculateThreatLevel(
-          athleteData.worldRank || 999,
+          athleteRanking,
           opponent.worldRank
         ) : 'Unknown'
-      }));
+      })) as (Athlete & {
+        worldRank?: number;
+        olympicRank?: number;
+        worldCategory?: string;
+        olympicCategory?: string;
+        threatLevel?: string;
+      })[];
 
       return { opponents: opponentsWithThreat, total };
     } catch (error) {
