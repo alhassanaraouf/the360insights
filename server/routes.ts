@@ -124,26 +124,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const search = req.query.search as string;
-      
-      const allOpponents = await storage.getOpponentsByWeightClass(athleteId);
-      
-      // Apply search filter if provided
-      let filteredOpponents = allOpponents;
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredOpponents = allOpponents.filter((opponent: any) =>
-          opponent.name?.toLowerCase().includes(searchLower) ||
-          opponent.nationality?.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      // Apply pagination
-      const total = filteredOpponents.length;
       const offset = (page - 1) * limit;
-      const paginatedOpponents = filteredOpponents.slice(offset, offset + limit);
+      
+      const { opponents, total } = await storage.getOpponentsByWeightClass(athleteId, limit, offset, search);
       
       res.json({
-        opponents: paginatedOpponents,
+        opponents,
         total,
         page,
         limit,
@@ -162,26 +148,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const search = req.query.search as string;
-      
-      const allOpponents = await storage.getAllOpponentsByWeightClass(athleteId);
-      
-      // Apply search filter if provided
-      let filteredOpponents = allOpponents;
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredOpponents = allOpponents.filter((opponent: any) =>
-          opponent.name?.toLowerCase().includes(searchLower) ||
-          opponent.nationality?.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      // Apply pagination
-      const total = filteredOpponents.length;
       const offset = (page - 1) * limit;
-      const paginatedOpponents = filteredOpponents.slice(offset, offset + limit);
+      
+      const { opponents, total } = await storage.getAllOpponentsByWeightClass(athleteId, limit, offset, search);
       
       res.json({
-        opponents: paginatedOpponents,
+        opponents,
         total,
         page,
         limit,

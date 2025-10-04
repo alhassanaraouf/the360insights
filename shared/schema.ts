@@ -50,7 +50,11 @@ export const athletes = pgTable("athletes", {
   playingStyle: text("playing_style"), // AI-generated playing style description
   coachId: integer("coach_id").references(() => coaches.id),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  worldCategoryIdx: index("athletes_world_category_idx").on(table.worldCategory),
+  nationalityIdx: index("athletes_nationality_idx").on(table.nationality),
+  nameIdx: index("athletes_name_idx").on(table.name)
+}));
 
 export const kpiMetrics = pgTable("kpi_metrics", {
   id: serial("id").primaryKey(),
@@ -81,15 +85,18 @@ export const weaknesses = pgTable("weaknesses", {
 
 export const athleteRanks = pgTable("athlete_ranks", {
   id: serial("id").primaryKey(),
-  athleteId: integer("athlete_id").references(() => athletes.id),
+  athleteId: integer("athlete_id").notNull().references(() => athletes.id),
+  rankingType: varchar("ranking_type", { length: 50 }).notNull(), // 'world' or 'olympic'
+  category: varchar("category", { length: 100 }).notNull(),
   ranking: integer("ranking").notNull(),
-  previousRanking: integer("previous_ranking"), // Previous ranking position for change calculation
-  rankChange: integer("rank_change"), // Rank change indicator from the original data source (e.g., -2, +1)
-  points: decimal("points", { precision: 10, scale: 2 }), // Ranking points (e.g., 61.92)
-  rankingType: varchar("ranking_type", { length: 50 }).notNull(), // 'world', 'olympic', 'national', etc.
-  category: text("category"), // e.g., "-68kg", "-80kg" for weight categories
-  rankingDate: text("ranking_date").notNull(), // Date when ranking was recorded
-});
+  points: integer("points").default(0),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull()
+}, (table) => ({
+  athleteIdIdx: index("athlete_ranks_athlete_id_idx").on(table.athleteId),
+  rankingTypeIdx: index("athlete_ranks_ranking_type_idx").on(table.rankingType),
+  categoryIdx: index("athlete_ranks_category_idx").on(table.category),
+  rankingIdx: index("athlete_ranks_ranking_idx").on(table.ranking)
+}));
 
 export const competitions = pgTable("competitions", {
   id: serial("id").primaryKey(),

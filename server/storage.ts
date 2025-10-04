@@ -47,10 +47,20 @@ import {
   trainingPlans,
   rankUpCalculationCache
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, isNotNull } from "drizzle-orm";
+import { eq, and, desc, asc, sql, isNotNull, ne, gte, lte, or, ilike } from "drizzle-orm";
 import { db, withRetry } from "./db";
 import { getCompetitionRecommendations, type CompetitionRecommendation } from "./openai-service";
 // Removed hardcoded data population imports
+
+// Helper function to calculate threat level (example implementation)
+function calculateThreatLevel(athleteRank: number | undefined, opponentRank: number | undefined): string {
+  if (!athleteRank || !opponentRank) return 'Unknown';
+  const rankDiff = Math.abs(athleteRank - opponentRank);
+  if (rankDiff <= 3) return 'High';
+  if (rankDiff <= 7) return 'Medium';
+  if (rankDiff <= 10) return 'Low';
+  return 'Unknown';
+}
 
 export interface IStorage {
   // User operations (required for authentication)
@@ -133,30 +143,26 @@ export interface IStorage {
       olympicRankChange?: number;
     })[]
   >;
-  getOpponentsByWeightClass(athleteId: number): Promise<
-    (Athlete & {
+  getOpponentsByWeightClass(athleteId: number, limit?: number, offset?: number, searchTerm?: string): Promise<{
+    opponents: (Athlete & {
       worldRank?: number;
       olympicRank?: number;
       worldCategory?: string;
       olympicCategory?: string;
-      worldPreviousRank?: number;
-      olympicPreviousRank?: number;
-      worldRankChange?: number;
-      olympicRankChange?: number;
-    })[]
-  >;
-  getAllOpponentsByWeightClass(athleteId: number): Promise<
-    (Athlete & {
+      threatLevel?: string;
+    })[];
+    total: number;
+  }>;
+  getAllOpponentsByWeightClass(athleteId: number, limit?: number, offset?: number, searchTerm?: string): Promise<{
+    opponents: (Athlete & {
       worldRank?: number;
       olympicRank?: number;
       worldCategory?: string;
       olympicCategory?: string;
-      worldPreviousRank?: number;
-      olympicPreviousRank?: number;
-      worldRankChange?: number;
-      olympicRankChange?: number;
-    })[]
-  >;
+      threatLevel?: string;
+    })[];
+    total: number;
+  }>;
 
 
   // Athlete Rankings
@@ -189,7 +195,7 @@ export interface IStorage {
   createCompetition(competition: InsertCompetition): Promise<Competition>;
   updateCompetition(id: number, updates: Partial<InsertCompetition>): Promise<Competition>;
   deleteCompetition(id: number): Promise<void>;
-  
+
   // Rank Up functionality
   getCompetitionsByCategory(category?: string, competitionType?: string): Promise<Competition[]>;
   calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string): Promise<{
@@ -443,7 +449,7 @@ export class DatabaseStorage implements IStorage {
   async getAthletesByCountry(country: string): Promise<Athlete[]> {
     try {
       console.log(`DatabaseStorage: Getting athletes for country: ${country}`);
-      const result = await withRetry(() => 
+      const result = await withRetry(() =>
         db.select()
           .from(athletes)
           .where(eq(athletes.nationality, country))
@@ -463,23 +469,23 @@ export class DatabaseStorage implements IStorage {
   }> {
     // Build base query conditions
     const conditions = [];
-    
+
     if (sportFilter) {
-      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' : 
+      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' :
                        sportFilter === 'karate' ? 'Karate' : sportFilter;
       conditions.push(eq(athletes.sport, sportName));
     }
-    
+
     if (egyptOnly) {
       conditions.push(eq(athletes.nationality, 'Egypt'));
     }
-    
+
     // Get total athletes count
     const totalResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(athletes)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
-    
+
     // Get world ranked athletes count
     const worldRankedResult = await db
       .select({ count: sql<number>`count(DISTINCT ${athletes.id})` })
@@ -490,7 +496,7 @@ export class DatabaseStorage implements IStorage {
         isNotNull(athleteRanks.ranking),
         ...(conditions.length > 0 ? conditions : [])
       ));
-    
+
     // Get Olympic qualified athletes count
     const olympicResult = await db
       .select({ count: sql<number>`count(DISTINCT ${athletes.id})` })
@@ -501,7 +507,7 @@ export class DatabaseStorage implements IStorage {
         isNotNull(athleteRanks.ranking),
         ...(conditions.length > 0 ? conditions : [])
       ));
-    
+
     return {
       totalAthletes: totalResult[0]?.count || 0,
       worldRankedAthletes: worldRankedResult[0]?.count || 0,
@@ -534,36 +540,36 @@ export class DatabaseStorage implements IStorage {
     totalPages: number;
   }> {
     const { searchTerm, sportFilter, nationalityFilter, genderFilter, topRankedOnly, sortBy, limit, offset } = params;
-    
+
     // Build query conditions
     const conditions = [];
-    
+
     if (sportFilter) {
-      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' : 
+      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' :
                        sportFilter === 'karate' ? 'Karate' : sportFilter;
       conditions.push(eq(athletes.sport, sportName));
     }
-    
+
     if (nationalityFilter && nationalityFilter !== 'all') {
       conditions.push(eq(athletes.nationality, nationalityFilter));
     }
-    
+
     if (genderFilter && genderFilter !== 'all') {
       conditions.push(eq(athletes.gender, genderFilter));
     }
-    
+
     if (searchTerm) {
       conditions.push(
         sql`(${athletes.name} ILIKE ${`%${searchTerm}%`} OR ${athletes.nationality} ILIKE ${`%${searchTerm}%`})`
       );
     }
-    
+
     // Get ALL athletes matching filters (we'll sort and paginate after adding rankings)
     let allAthletesList = await db
       .select()
       .from(athletes)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
-    
+
     // Get rankings for ALL athletes (needed for sorting and topRankedOnly filter)
     const batchSize = 50;
     const athletesWithRankings: (Athlete & {
@@ -576,7 +582,7 @@ export class DatabaseStorage implements IStorage {
       worldRankChange?: number;
       olympicRankChange?: number;
     })[] = [];
-    
+
     for (let i = 0; i < allAthletesList.length; i += batchSize) {
       const batch = allAthletesList.slice(i, i + batchSize);
       const batchWithRankings = await Promise.all(
@@ -587,7 +593,7 @@ export class DatabaseStorage implements IStorage {
       );
       athletesWithRankings.push(...batchWithRankings);
     }
-    
+
     // Handle topRankedOnly filter
     let filteredAthletes = athletesWithRankings;
     if (topRankedOnly) {
@@ -595,7 +601,7 @@ export class DatabaseStorage implements IStorage {
         athlete => athlete.worldRank && athlete.worldRank <= 10
       );
     }
-    
+
     // Apply sorting to ALL filtered athletes
     if (sortBy === 'rank') {
       filteredAthletes.sort((a, b) => {
@@ -621,15 +627,15 @@ export class DatabaseStorage implements IStorage {
       // Default: sort by name (A-Z)
       filteredAthletes.sort((a, b) => a.name.localeCompare(b.name));
     }
-    
+
     // Calculate totals after filtering
     const total = filteredAthletes.length;
     const totalPages = Math.ceil(total / limit);
     const currentPage = Math.floor(offset / limit) + 1;
-    
+
     // Apply pagination to sorted results
     const paginatedAthletes = filteredAthletes.slice(offset, offset + limit);
-    
+
     return {
       athletes: paginatedAthletes,
       total,
@@ -640,19 +646,19 @@ export class DatabaseStorage implements IStorage {
 
   async getAthleteNationalities(sportFilter?: string): Promise<string[]> {
     const conditions = [];
-    
+
     if (sportFilter) {
-      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' : 
+      const sportName = sportFilter === 'taekwondo' ? 'Taekwondo' :
                        sportFilter === 'karate' ? 'Karate' : sportFilter;
       conditions.push(eq(athletes.sport, sportName));
     }
-    
+
     const result = await db
       .selectDistinct({ nationality: athletes.nationality })
       .from(athletes)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(asc(athletes.nationality));
-    
+
     return result.map(row => row.nationality).filter(Boolean);
   }
 
@@ -727,14 +733,14 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
 
     // Compute previous ranks when missing (fallback: ranking + rank_change)
-    const worldPreviousRank = worldRankingData[0]?.previousRanking || 
-      (worldRankingData[0]?.ranking && worldRankingData[0]?.rankChange 
-        ? worldRankingData[0].ranking + worldRankingData[0].rankChange 
+    const worldPreviousRank = worldRankingData[0]?.previousRanking ||
+      (worldRankingData[0]?.ranking && worldRankingData[0]?.rankChange
+        ? worldRankingData[0].ranking + worldRankingData[0].rankChange
         : undefined);
-    
-    const olympicPreviousRank = olympicRankingData[0]?.previousRanking || 
-      (olympicRankingData[0]?.ranking && olympicRankingData[0]?.rankChange 
-        ? olympicRankingData[0].ranking + olympicRankingData[0].rankChange 
+
+    const olympicPreviousRank = olympicRankingData[0]?.previousRanking ||
+      (olympicRankingData[0]?.ranking && olympicRankingData[0]?.rankChange
+        ? olympicRankingData[0].ranking + olympicRankingData[0].rankChange
         : undefined);
 
     return {
@@ -764,7 +770,7 @@ export class DatabaseStorage implements IStorage {
   > {
 
     const athletesList = await this.getAllAthletes();
-    
+
     // Process athletes in batches to avoid overwhelming the database connection pool
     const batchSize = 10;
     const athletesWithRankings: (Athlete & {
@@ -777,7 +783,7 @@ export class DatabaseStorage implements IStorage {
       worldRankChange?: number;
       olympicRankChange?: number;
     })[] = [];
-    
+
     for (let i = 0; i < athletesList.length; i += batchSize) {
       const batch = athletesList.slice(i, i + batchSize);
       const batchResults = await Promise.all(
@@ -832,219 +838,202 @@ export class DatabaseStorage implements IStorage {
         })
       );
       athletesWithRankings.push(...batchResults);
-      
+
       // Small delay between batches to prevent connection spam
       if (i + batchSize < athletesList.length) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
-    
+
     return athletesWithRankings;
   }
 
 
 
-  async getCompetitorsByRank(athleteId: number, rankingType: 'world' | 'olympic' = 'world'): Promise<
-    (Athlete & {
+  async getOpponentsByWeightClass(athleteId: number, limit: number = 20, offset: number = 0, searchTerm?: string): Promise<{
+    opponents: (Athlete & {
       worldRank?: number;
       olympicRank?: number;
       worldCategory?: string;
       olympicCategory?: string;
-    })[]
-  > {
-    // Get all athletes with rankings
-    const allAthletes = await this.getAllAthletesWithRankings();
-    
-    // Find the current athlete's rank and details
-    const currentAthlete = allAthletes.find(a => a.id === athleteId);
-    if (!currentAthlete) return [];
-    
-    const currentRank = rankingType === 'world' ? currentAthlete.worldRank : currentAthlete.olympicRank;
-    if (!currentRank) return [];
-    
-    // Get current athlete's weight category and gender
-    const currentWeightCategory = rankingType === 'world' ? currentAthlete.worldCategory : currentAthlete.olympicCategory;
-    const currentGender = currentAthlete.gender;
-    
-    // Filter athletes with ranks in the same ranking type, weight class, and gender
-    const rankedAthletes = allAthletes.filter(athlete => {
-      const rank = rankingType === 'world' ? athlete.worldRank : athlete.olympicRank;
-      const weightCategory = rankingType === 'world' ? athlete.worldCategory : athlete.olympicCategory;
-      
-      // Must have a valid rank
-      if (!rank || rank <= 0) return false;
-      
-      // Must have same gender
-      if (athlete.gender !== currentGender) return false;
-      
-      // Must have matching weight category
-      if (!currentWeightCategory || !weightCategory) return false;
-      
-      // Use the existing weight class matching logic
-      return this.isMatchingWeightClass(currentWeightCategory, weightCategory);
-    });
-    
-    // Sort by rank
-    const sortedAthletes = rankedAthletes.sort((a, b) => {
-      const aRank = rankingType === 'world' ? a.worldRank! : a.olympicRank!;
-      const bRank = rankingType === 'world' ? b.worldRank! : b.olympicRank!;
-      return aRank - bRank;
-    });
-    
-    // Find current athlete index
-    const currentIndex = sortedAthletes.findIndex(a => a.id === athleteId);
-    if (currentIndex === -1) return [];
-    
-    // Get closest competitors
-    const competitors: typeof allAthletes = [];
-    
-    // Try to get 2 higher and 2 lower ranked athletes
-    const higherRanked = sortedAthletes.slice(Math.max(0, currentIndex - 2), currentIndex);
-    const lowerRanked = sortedAthletes.slice(currentIndex + 1, currentIndex + 3);
-    
-    // If not enough higher ranked athletes, get more lower ranked ones
-    if (higherRanked.length < 2) {
-      const needed = 2 - higherRanked.length;
-      const extraLower = sortedAthletes.slice(currentIndex + 3, currentIndex + 3 + needed);
-      competitors.push(...higherRanked, currentAthlete, ...lowerRanked, ...extraLower);
-    } else {
-      competitors.push(...higherRanked, currentAthlete, ...lowerRanked);
-    }
-    
-    return competitors.slice(0, 5); // Return at most 5 athletes (including current)
-  }
+      threatLevel?: string;
+    })[];
+    total: number;
+  }> {
+    try {
+      const athlete = await db.select().from(athletes).where(eq(athletes.id, athleteId)).limit(1);
 
-  async getOpponentsByWeightClass(athleteId: number): Promise<
-    (Athlete & {
-      worldRank?: number;
-      olympicRank?: number;
-      worldCategory?: string;
-      olympicCategory?: string;
-    })[]
-  > {
-
-    // First get the selected athlete's data
-    const selectedAthlete = await this.getAthlete(athleteId);
-    if (!selectedAthlete) return [];
-
-    // Get the athlete's weight categories from their rankings
-    const athleteRankings = await this.getAthleteRankings(athleteId);
-    const athleteWeightCategories = [
-      athleteRankings.worldCategory,
-      athleteRankings.olympicCategory,
-    ].filter(Boolean);
-
-    // If athlete has no weight categories, return all other athletes (excluding same nationality)
-    if (athleteWeightCategories.length === 0) {
-      const allAthletes = await this.getAllAthletesWithRankings();
-      return allAthletes.filter(
-        (athlete) =>
-          athlete.id !== athleteId &&
-          athlete.nationality !== selectedAthlete.nationality,
-      );
-    }
-
-    // Get all athletes with rankings and filter by matching weight categories, different nationality, and rank proximity
-    const allAthletes = await this.getAllAthletesWithRankings();
-    return allAthletes.filter((athlete) => {
-      if (athlete.id === athleteId) return false; // Exclude the athlete themselves
-      if (athlete.nationality === selectedAthlete.nationality) return false; // Exclude same nationality
-
-      const opponentCategories = [
-        athlete.worldCategory,
-        athlete.olympicCategory,
-      ].filter(Boolean);
-      // Check if any of the opponent's categories match any of the athlete's categories
-      const hasMatchingWeightClass = opponentCategories.some(
-        (opponentCategory) =>
-          athleteWeightCategories.some(
-            (athleteCategory) =>
-              athleteCategory &&
-              opponentCategory &&
-              this.isMatchingWeightClass(athleteCategory, opponentCategory),
-          ),
-      );
-
-      if (!hasMatchingWeightClass) return false;
-
-      // Check rank proximity - within 10 ranks difference
-      const selectedAthleteWorldRank = athleteRankings.worldRank;
-      const selectedAthleteOlympicRank = athleteRankings.olympicRank;
-
-      // Check if either world or Olympic rank is within 10 positions
-      let isWithinRankRange = false;
-
-      if (selectedAthleteWorldRank && athlete.worldRank) {
-        const worldRankDiff = Math.abs(
-          selectedAthleteWorldRank - athlete.worldRank,
-        );
-        if (worldRankDiff <= 10) isWithinRankRange = true;
+      if (!athlete || athlete.length === 0) {
+        return { opponents: [], total: 0 };
       }
 
-      if (selectedAthleteOlympicRank && athlete.olympicRank) {
-        const olympicRankDiff = Math.abs(
-          selectedAthleteOlympicRank - athlete.olympicRank,
-        );
-        if (olympicRankDiff <= 10) isWithinRankRange = true;
+      const athleteData = athlete[0];
+      const athleteRanks = await db.select().from(athleteRanks)
+        .where(eq(athleteRanks.athleteId, athleteId))
+        .limit(1);
+
+      const worldRank = athleteRanks.find(rank => rank.rankingType === 'world');
+
+      if (!worldRank || !athleteData.worldCategory) {
+        return { opponents: [], total: 0 };
       }
 
-      return isWithinRankRange;
-    });
+      const athleteRanking = worldRank.ranking;
+      const minRank = Math.max(1, athleteRanking - 10);
+      const maxRank = athleteRanking + 10;
+
+      // Build optimized query with JOIN
+      let query = db
+        .select({
+          id: athletes.id,
+          name: athletes.name,
+          nationality: athletes.nationality,
+          worldCategory: athletes.worldCategory,
+          olympicCategory: athletes.olympicCategory,
+          profileImage: athletes.profileImage,
+          playingStyle: athletes.playingStyle,
+          worldRank: athleteRanks.ranking
+        })
+        .from(athletes)
+        .innerJoin(athleteRanks, and(
+          eq(athleteRanks.athleteId, athletes.id),
+          eq(athleteRanks.rankingType, 'world')
+        ))
+        .where(and(
+          eq(athletes.worldCategory, athleteData.worldCategory),
+          ne(athletes.id, athleteId),
+          gte(athleteRanks.ranking, minRank),
+          lte(athleteRanks.ranking, maxRank)
+        ));
+
+      // Add search filter if provided
+      if (searchTerm && searchTerm.trim()) {
+        query = query.where(
+          or(
+            ilike(athletes.name, `%${searchTerm}%`),
+            ilike(athletes.nationality, `%${searchTerm}%`)
+          )
+        );
+      }
+
+      // Get total count
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(athletes)
+        .innerJoin(athleteRanks, and(
+          eq(athleteRanks.athleteId, athletes.id),
+          eq(athleteRanks.rankingType, 'world')
+        ))
+        .where(and(
+          eq(athletes.worldCategory, athleteData.worldCategory),
+          ne(athletes.id, athleteId),
+          gte(athleteRanks.ranking, minRank),
+          lte(athleteRanks.ranking, maxRank)
+        ));
+
+      const [totalResult, opponents] = await Promise.all([
+        countQuery,
+        query.orderBy(asc(athleteRanks.ranking)).limit(limit).offset(offset)
+      ]);
+
+      const total = totalResult[0]?.count || 0;
+
+      const opponentsWithThreat = opponents.map(opponent => ({
+        ...opponent,
+        threatLevel: calculateThreatLevel(athleteRanking, opponent.worldRank)
+      }));
+
+      return { opponents: opponentsWithThreat, total };
+    } catch (error) {
+      console.error("Error fetching opponents by weight class:", error);
+      return { opponents: [], total: 0 };
+    }
   }
 
-  async getAllOpponentsByWeightClass(athleteId: number): Promise<
-    (Athlete & {
+  async getAllOpponentsByWeightClass(athleteId: number, limit: number = 20, offset: number = 0, searchTerm?: string): Promise<{
+    opponents: (Athlete & {
       worldRank?: number;
       olympicRank?: number;
       worldCategory?: string;
       olympicCategory?: string;
-    })[]
-  > {
-    // First get the selected athlete's data
-    const selectedAthlete = await this.getAthlete(athleteId);
-    if (!selectedAthlete) return [];
+      threatLevel?: string;
+    })[];
+    total: number;
+  }> {
+    try {
+      const athlete = await db.select().from(athletes).where(eq(athletes.id, athleteId)).limit(1);
 
-    // Get the athlete's weight categories from their rankings
-    const athleteRankings = await this.getAthleteRankings(athleteId);
-    const athleteWeightCategories = [
-      athleteRankings.worldCategory,
-      athleteRankings.olympicCategory,
-    ].filter(Boolean);
+      if (!athlete || athlete.length === 0) {
+        return { opponents: [], total: 0 };
+      }
 
-    // If athlete has no weight categories, return all other athletes (excluding same nationality)
-    if (athleteWeightCategories.length === 0) {
-      const allAthletes = await this.getAllAthletesWithRankings();
-      return allAthletes.filter(
-        (athlete) =>
-          athlete.id !== athleteId &&
-          athlete.nationality !== selectedAthlete.nationality,
-      );
+      const athleteData = athlete[0];
+
+      if (!athleteData.worldCategory) {
+        return { opponents: [], total: 0 };
+      }
+
+      // Build optimized query with JOIN
+      let query = db
+        .select({
+          id: athletes.id,
+          name: athletes.name,
+          nationality: athletes.nationality,
+          worldCategory: athletes.worldCategory,
+          olympicCategory: athletes.olympicCategory,
+          profileImage: athletes.profileImage,
+          playingStyle: athletes.playingStyle,
+          worldRank: athleteRanks.ranking
+        })
+        .from(athletes)
+        .leftJoin(athleteRanks, and(
+          eq(athleteRanks.athleteId, athletes.id),
+          eq(athleteRanks.rankingType, 'world')
+        ))
+        .where(and(
+          eq(athletes.worldCategory, athleteData.worldCategory),
+          ne(athletes.id, athleteId)
+        ));
+
+      // Add search filter if provided
+      if (searchTerm && searchTerm.trim()) {
+        query = query.where(
+          or(
+            ilike(athletes.name, `%${searchTerm}%`),
+            ilike(athletes.nationality, `%${searchTerm}%`)
+          )
+        );
+      }
+
+      // Get total count
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(athletes)
+        .where(and(
+          eq(athletes.worldCategory, athleteData.worldCategory),
+          ne(athletes.id, athleteId)
+        ));
+
+      const [totalResult, opponents] = await Promise.all([
+        countQuery,
+        query.orderBy(asc(athleteRanks.ranking)).limit(limit).offset(offset)
+      ]);
+
+      const total = totalResult[0]?.count || 0;
+
+      const opponentsWithThreat = opponents.map(opponent => ({
+        ...opponent,
+        threatLevel: opponent.worldRank ? calculateThreatLevel(
+          athleteData.worldRank || 999,
+          opponent.worldRank
+        ) : 'Unknown'
+      }));
+
+      return { opponents: opponentsWithThreat, total };
+    } catch (error) {
+      console.error("Error fetching all opponents by weight class:", error);
+      return { opponents: [], total: 0 };
     }
-
-    // Get all athletes with rankings and filter by matching weight categories and different nationality (no rank restrictions)
-    const allAthletes = await this.getAllAthletesWithRankings();
-    return allAthletes.filter((athlete) => {
-      if (athlete.id === athleteId) return false; // Exclude the athlete themselves
-      if (athlete.nationality === selectedAthlete.nationality) return false; // Exclude same nationality
-
-      const opponentCategories = [
-        athlete.worldCategory,
-        athlete.olympicCategory,
-      ].filter(Boolean);
-      
-      // Check if any of the opponent's categories match any of the athlete's categories
-      const hasMatchingWeightClass = opponentCategories.some(
-        (opponentCategory) =>
-          athleteWeightCategories.some(
-            (athleteCategory) =>
-              athleteCategory &&
-              opponentCategory &&
-              this.isMatchingWeightClass(athleteCategory, opponentCategory),
-          ),
-      );
-
-      return hasMatchingWeightClass; // No rank restrictions
-    });
   }
 
   private isMatchingWeightClass(category1: string, category2: string): boolean {
@@ -1157,7 +1146,7 @@ export class DatabaseStorage implements IStorage {
         .from(competitions)
         .orderBy(desc(competitions.pointsAvailable));
     }
-    
+
     // Add backward compatibility fields that frontend expects
     return results.map(comp => ({
       ...comp,
@@ -1270,7 +1259,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log(`Calculating new rank-up requirements for athlete ${athleteId}`);
-    
+
     // First, get athlete's points from the main athletes table
     const [athlete] = await db
       .select()
@@ -1331,19 +1320,18 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(athleteRanks)
       .where(and(
-        eq(athleteRanks.ranking, targetRank),
         eq(athleteRanks.rankingType, rankingType),
         eq(athleteRanks.category, category),
         isNotNull(athleteRanks.points) // Only get records that have points data
       ))
-      .orderBy(desc(athleteRanks.rankingDate))
+      .orderBy(sql`ABS(${athleteRanks.ranking} - ${targetRank})`) // Order by proximity to target rank
       .limit(1);
 
     let targetPoints = 0;
-    
+
     if (!targetRanking) {
       console.log(`❌ No athlete with points found at target rank ${targetRank} in ${category} ${rankingType}`);
-      
+
       // Try to find the closest ranked athlete with points data for better estimation
       const [closestAthleteWithPoints] = await db
         .select()
@@ -1361,11 +1349,11 @@ export class DatabaseStorage implements IStorage {
         const closestPoints = Number(closestAthleteWithPoints.points);
         const closestRank = closestAthleteWithPoints.ranking;
         const rankDifference = targetRank - closestRank;
-        
+
         // Estimate: each rank improvement typically requires 15% more points
         const pointsMultiplier = rankDifference < 0 ? 1.15 : 0.85; // Higher rank = more points needed
         targetPoints = Math.max(1, closestPoints * Math.pow(pointsMultiplier, Math.abs(rankDifference)));
-        
+
         console.log(`📊 Estimated target points: ${targetPoints.toFixed(1)} (based on closest athlete with points: rank ${closestRank} = ${closestPoints} points)`);
       } else {
         // Last resort: simple estimation based on current athlete
@@ -1393,14 +1381,14 @@ export class DatabaseStorage implements IStorage {
     // Get suitable competitions that can provide enough points
     let availableCompetitions = await this.getCompetitionsByCategory(category);
     console.log(`Found ${availableCompetitions.length} competitions for category: ${category}`);
-    
+
     // If no competitions found for specific category, get all competitions as fallback
     if (availableCompetitions.length === 0) {
       console.log(`No competitions found for category ${category}, getting all competitions as fallback`);
       availableCompetitions = await this.getCompetitionsByCategory();
       console.log(`Fallback: Found ${availableCompetitions.length} total competitions`);
     }
-    
+
     // Filter for upcoming competitions only
     const upcomingCompetitions = availableCompetitions.filter(comp => comp.status === 'upcoming');
     console.log(`Filtered to ${upcomingCompetitions.length} upcoming competitions`);
@@ -1408,7 +1396,7 @@ export class DatabaseStorage implements IStorage {
     // Get AI recommendations for strategic competition planning (primary approach)
     let aiRecommendations: CompetitionRecommendation;
     let suggestedCompetitions: (Competition & { cumulativePoints: number })[] = [];
-    
+
     try {
       aiRecommendations = await getCompetitionRecommendations(
         upcomingCompetitions,
@@ -1419,7 +1407,7 @@ export class DatabaseStorage implements IStorage {
         rankingType,
         targetDate
       );
-      
+
       // Convert AI recommendations to suggestedCompetitions format
       // Match by name since AI doesn't know the correct database IDs
       suggestedCompetitions = aiRecommendations.priorityCompetitions.map(aiComp => {
@@ -1433,15 +1421,15 @@ export class DatabaseStorage implements IStorage {
         console.warn(`Could not find competition: ${aiComp.name}`);
         return null;
       }).filter(Boolean) as (Competition & { cumulativePoints: number })[];
-      
+
       console.log(`Converted ${suggestedCompetitions.length} AI recommendations to suggested competitions`);
-      
+
     } catch (error) {
       console.warn("AI recommendations failed, using algorithmic fallback:", error);
       // Fallback to algorithmic approach when AI fails
       const fallbackCompetitions = this.findOptimalCompetitions(upcomingCompetitions, pointsNeeded);
       suggestedCompetitions = fallbackCompetitions;
-      
+
       // Provide a safe fallback when AI fails
       aiRecommendations = {
         strategy: "Basic strategy: Focus on highest-point competitions that fit your schedule and training level.",
@@ -1517,23 +1505,23 @@ export class DatabaseStorage implements IStorage {
   private findOptimalCompetitions(competitions: Competition[], pointsNeeded: number): (Competition & { cumulativePoints: number })[] {
     // Sort by points available descending
     const sorted = competitions.sort((a, b) => Number(b.pointsAvailable) - Number(a.pointsAvailable));
-    
+
     const result: (Competition & { cumulativePoints: number })[] = [];
     let cumulativePoints = 0;
-    
+
     for (const comp of sorted) {
       if (cumulativePoints >= pointsNeeded) break;
-      
+
       cumulativePoints += Number(comp.pointsAvailable);
       result.push({
         ...comp,
         cumulativePoints
       });
     }
-    
+
     return result;
   }
-  
+
   // Training Plans
   async getTrainingPlansByAthleteId(
     athleteId: number,
@@ -1632,7 +1620,7 @@ export class DatabaseStorage implements IStorage {
       .from(athletes)
       .innerJoin(sponsorshipBids, eq(athletes.id, sponsorshipBids.athleteId))
       .groupBy(athletes.id, athletes.name, athletes.sport, athletes.nationality, athletes.gender, athletes.profileImage, athletes.worldCategory, athletes.coachId, athletes.createdAt);
-    
+
     // Get bid counts for each athlete
     const athleteIds = results.map(r => r.id);
     const bidCounts = await Promise.all(
@@ -1644,7 +1632,7 @@ export class DatabaseStorage implements IStorage {
         return { athleteId, count: count.length };
       })
     );
-    
+
     return results.map(result => ({
       ...result,
       bidsCount: bidCounts.find(bc => bc.athleteId === result.id)?.count || 0
