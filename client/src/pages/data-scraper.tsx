@@ -37,6 +37,7 @@ export default function DataScraper() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [isBatchScraping, setIsBatchScraping] = useState(false);
   const [playingStyleCountry, setPlayingStyleCountry] = useState<string>('all');
+  const [strengthsWeaknessesCountry, setStrengthsWeaknessesCountry] = useState<string>('all');
   const { toast } = useToast();
 
   // Country scraping mutation
@@ -203,7 +204,7 @@ export default function DataScraper() {
       return await response.json();
     },
     onSuccess: (data) => {
-      setScrapeResults(data); // Assuming results structure is similar for display
+      setScrapeResults(data);
       toast({
         title: "Playing Styles Generated",
         description: `Successfully generated playing styles for ${data.results?.total || 0} athletes.`,
@@ -213,6 +214,41 @@ export default function DataScraper() {
       toast({
         title: "Playing Style Generation Failed",
         description: error.message || "Failed to generate playing styles. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for generating strengths/weaknesses for all athletes
+  const generateStrengthsWeaknessesMutation = useMutation({
+    mutationFn: async (country?: string) => {
+      const response = await fetch('/api/generate/strengths-weaknesses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ country: country || undefined }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Strengths/weaknesses generation failed');
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setScrapeResults(data);
+      toast({
+        title: "Strengths & Weaknesses Generated",
+        description: `Successfully generated analysis for ${data.results?.total || 0} athletes.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "AI Analysis Failed",
+        description: error.message || "Failed to generate strengths and weaknesses. Please try again.",
         variant: "destructive",
       });
     },
@@ -345,6 +381,11 @@ export default function DataScraper() {
     generatePlayingStylesMutation.mutate(playingStyleCountry === 'all' ? undefined : playingStyleCountry);
   };
 
+  const handleGenerateStrengthsWeaknesses = () => {
+    // Only send country if it's not "all"
+    generateStrengthsWeaknessesMutation.mutate(strengthsWeaknessesCountry === 'all' ? undefined : strengthsWeaknessesCountry);
+  };
+
   const toggleCountrySelection = (countryCode: string) => {
     setSelectedCountries(prev => 
       prev.includes(countryCode)
@@ -353,7 +394,7 @@ export default function DataScraper() {
     );
   };
 
-  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping || generatePlayingStylesMutation.isPending;
+  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping || generatePlayingStylesMutation.isPending || generateStrengthsWeaknessesMutation.isPending;
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -705,6 +746,92 @@ export default function DataScraper() {
         </CardContent>
       </Card>
 
+      {/* Button to Generate Strengths & Weaknesses */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Brain className="h-5 w-5" />
+            <span>AI Strengths & Weaknesses Generation</span>
+          </CardTitle>
+          <CardDescription>
+            Generate detailed strengths and weaknesses analysis for athletes using AI.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Filter by Country (Optional)</Label>
+            <Select value={strengthsWeaknessesCountry} onValueChange={setStrengthsWeaknessesCountry}>
+              <SelectTrigger>
+                <SelectValue placeholder="All countries (no filter)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All countries</SelectItem>
+                {Object.entries(commonCountries).map(([code, name]) => {
+                  const countryName = name.replace(/ 🥇| 🥈| 🥉/g, '').trim();
+                  return (
+                    <SelectItem key={code} value={countryName}>
+                      {name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              {strengthsWeaknessesCountry === 'all'
+                ? 'Will generate strengths & weaknesses for all athletes in the database'
+                : `Will generate analysis only for athletes from ${strengthsWeaknessesCountry}`}
+            </p>
+          </div>
+
+          <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+            <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-2">
+              AI Analysis Details:
+            </h4>
+            <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1 list-disc list-inside">
+              <li>Analyzes athlete career history and performance data</li>
+              <li>Identifies 3-5 key strengths with descriptions</li>
+              <li>Highlights 3-5 areas for improvement</li>
+              <li>Processes in batches to optimize performance</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={handleGenerateStrengthsWeaknesses}
+            disabled={generateStrengthsWeaknessesMutation.isPending}
+            className="w-full"
+            data-testid="button-generate-strengths-weaknesses"
+          >
+            {generateStrengthsWeaknessesMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Generating AI Analysis...
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4 mr-2" />
+                {strengthsWeaknessesCountry === 'all'
+                  ? 'Generate All Strengths & Weaknesses (AI)' 
+                  : `Generate for ${strengthsWeaknessesCountry}`}
+              </>
+            )}
+          </Button>
+
+          {generateStrengthsWeaknessesMutation.data && (
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Results:</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                ✅ Successful: {generateStrengthsWeaknessesMutation.data.results?.successful || 0}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                ❌ Failed: {generateStrengthsWeaknessesMutation.data.results?.failed || 0}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                📊 Total: {generateStrengthsWeaknessesMutation.data.results?.total || 0}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Results Display */}
       {scrapeResults && (

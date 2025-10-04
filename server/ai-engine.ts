@@ -67,7 +67,7 @@ Respond with ONLY the playing style label, nothing else.`;
             content: prompt,
           },
         ],
-        max_completion_tokens: 20,
+        max_completion_tokens: 5000,
       });
 
       const playingStyle = response.choices[0].message.content?.trim() || "Unknown";
@@ -643,7 +643,7 @@ Each name should be 2-4 words, and each description should be 1-2 sentences expl
           },
         ],
         response_format: { type: "json_object" },
-        max_completion_tokens: 1000, // Increased to allow for detailed descriptions
+        max_completion_tokens: 5000, // Increased to allow for detailed descriptions
       });
       console.log(
         "OpenAI response received:",

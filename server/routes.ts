@@ -1831,6 +1831,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate strengths and weaknesses for all athletes with optional country filter
+  app.post("/api/generate/strengths-weaknesses", async (req, res) => {
+    try {
+      const { country } = req.body;
+      console.log("Starting strengths/weaknesses generation...");
+      if (country) {
+        console.log(`Filtering by country: ${country}`);
+      }
+      
+      // Get all athletes or filter by country
+      const allAthletes = country 
+        ? await storage.getAthletesByCountry(country)
+        : await storage.getAllAthletes();
+      
+      console.log(`Found ${allAthletes.length} athletes to process`);
+      
+      const results = {
+        total: allAthletes.length,
+        successful: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+      
+      // Process athletes in batches of 3 (slower than playing styles due to more complex AI analysis)
+      const batchSize = 3;
+      for (let i = 0; i < allAthletes.length; i += batchSize) {
+        const batch = allAthletes.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allAthletes.length / batchSize)}`);
+        
+        // Process batch in parallel
+        const batchPromises = batch.map(async (athlete) => {
+          try {
+            // Generate AI analysis
+            const analysis = await aiEngine.analyzeAthleteStrengthsWeaknesses(athlete.id);
+            
+            // Clear existing strengths and weaknesses
+            await storage.clearStrengthsByAthleteId(athlete.id);
+            await storage.clearWeaknessesByAthleteId(athlete.id);
+            
+            // Save new strengths
+            for (let j = 0; j < analysis.strengths.length; j++) {
+              const strengthItem = analysis.strengths[j];
+              const strengthName = typeof strengthItem === 'string' ? strengthItem : (strengthItem as any).name || strengthItem;
+              const strengthDescription = typeof strengthItem === 'string' ? `AI-identified strength in ${strengthName.toLowerCase()}` : (strengthItem as any).description || `AI-identified strength in ${strengthName.toLowerCase()}`;
+              
+              await storage.createStrength({
+                athleteId: athlete.id,
+                name: strengthName,
+                score: 85 + Math.floor(Math.random() * 15),
+                description: strengthDescription
+              });
+            }
+            
+            // Save new weaknesses
+            for (let j = 0; j < analysis.weaknesses.length; j++) {
+              const weaknessItem = analysis.weaknesses[j];
+              const weaknessName = typeof weaknessItem === 'string' ? weaknessItem : (weaknessItem as any).name || weaknessItem;
+              const weaknessDescription = typeof weaknessItem === 'string' ? `AI-identified area for improvement in ${weaknessName.toLowerCase()}` : (weaknessItem as any).description || `AI-identified area for improvement in ${weaknessName.toLowerCase()}`;
+              
+              await storage.createWeakness({
+                athleteId: athlete.id,
+                name: weaknessName,
+                score: 40 + Math.floor(Math.random() * 30),
+                description: weaknessDescription
+              });
+            }
+            
+            results.successful++;
+            console.log(`✅ Generated strengths/weaknesses for ${athlete.name}: ${analysis.strengths.length} strengths, ${analysis.weaknesses.length} weaknesses`);
+            return { success: true, athlete: athlete.name, strengthsCount: analysis.strengths.length, weaknessesCount: analysis.weaknesses.length };
+          } catch (error) {
+            results.failed++;
+            const errorMsg = `Failed to generate strengths/weaknesses for ${athlete.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            results.errors.push(errorMsg);
+            console.error(`❌ ${errorMsg}`);
+            return { success: false, athlete: athlete.name, error: errorMsg };
+          }
+        });
+        
+        // Wait for all promises in the batch to complete
+        await Promise.all(batchPromises);
+        
+        // Delay between batches to avoid rate limiting (longer delay due to more complex processing)
+        if (i + batchSize < allAthletes.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      console.log(`Batch generation complete: ${results.successful} successful, ${results.failed} failed`);
+      
+      res.json({
+        success: true,
+        message: country 
+          ? `Strengths/weaknesses generation complete for ${country}`
+          : `Strengths/weaknesses generation complete`,
+        results
+      });
+    } catch (error) {
+      console.error("Strengths/weaknesses generation error:", error);
+      res.status(500).json({ error: "Failed to generate strengths and weaknesses" });
+    }
+  });
+
   // Generate and save strengths and weaknesses to database
   app.post("/api/ai/generate-and-save-strengths-weaknesses/:athleteId", async (req, res) => {
     try {
