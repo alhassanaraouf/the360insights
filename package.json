@@ -11,6 +11,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:setup-prod": "tsx scripts/setup-production-db.ts",
     "db:seed-prod": "tsx scripts/seed-production-db.ts",
