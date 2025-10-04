@@ -871,7 +871,7 @@ export class DatabaseStorage implements IStorage {
       const minRank = Math.max(1, athleteRanking - 10);
       const maxRank = athleteRanking + 10;
 
-      // Build optimized query with JOIN
+      // Build optimized query with JOIN using athleteRanks table directly
       let baseQuery = db
         .select({
           id: athletes.id,
@@ -886,7 +886,7 @@ export class DatabaseStorage implements IStorage {
           playingStyle: athletes.playingStyle,
           coachId: athletes.coachId,
           createdAt: athletes.createdAt,
-          worldRank: athleteRanks.ranking
+          worldRank: sql<number>`${athleteRanks.ranking}`
         })
         .from(athletes)
         .innerJoin(athleteRanks, and(
@@ -984,7 +984,7 @@ export class DatabaseStorage implements IStorage {
       const athleteWorldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
       const athleteRanking = athleteWorldRank?.ranking || 999;
 
-      // Build optimized query with JOIN
+      // Build optimized query with JOIN using athleteRanks table directly
       let baseQuery = db
         .select({
           id: athletes.id,
@@ -999,7 +999,7 @@ export class DatabaseStorage implements IStorage {
           playingStyle: athletes.playingStyle,
           coachId: athletes.coachId,
           createdAt: athletes.createdAt,
-          worldRank: athleteRanks.ranking
+          worldRank: sql<number | null>`${athleteRanks.ranking}`
         })
         .from(athletes)
         .leftJoin(athleteRanks, and(
