@@ -64,7 +64,7 @@ Respond with ONLY the playing style label, nothing else.`;
             content: prompt,
           },
         ],
-        max_tokens: 20,
+        max_completion_tokens: 20,
       });
 
       const playingStyle = response.choices[0].message.content?.trim() || "Unknown";

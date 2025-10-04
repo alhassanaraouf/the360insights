@@ -172,9 +172,29 @@ export default function OpponentAnalysis() {
     };
   }, [opponentSelectorOpen, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleOpponentSelect = (opponentId: string) => {
+  const handleOpponentSelect = async (opponentId: string) => {
     setSelectedOpponent(opponentId);
     setOpponentSelectorOpen(false);
+    
+    // Check if opponent has a playing style, if not generate one
+    const opponent = opponents?.find((o) => o.id.toString() === opponentId);
+    if (opponent) {
+      const playingStyleNormalized = opponent.playingStyle?.trim().toLowerCase() || "";
+      const needsGeneration = !opponent.playingStyle || playingStyleNormalized === "";
+      
+      if (needsGeneration) {
+        console.log(`Generating playing style for opponent: ${opponent.name}`);
+        try {
+          const response = await apiRequest("POST", `/api/generate/playing-style/${opponentId}`, {});
+          const data = await response.json();
+          console.log(`✓ Generated playing style: ${data.playingStyle}`);
+          // Invalidate queries to refresh the opponent data
+          queryClient.invalidateQueries({ queryKey: [`/api/athletes/${selectedAthleteId}/opponents`] });
+        } catch (error) {
+          console.error("Failed to generate playing style:", error);
+        }
+      }
+    }
   };
 
   const selectedOpponentData = opponents?.find((o) => o.id.toString() === selectedOpponent);
@@ -380,6 +400,12 @@ export default function OpponentAnalysis() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
+                  <Avatar className="h-24 w-24 mx-auto mb-3">
+                    <AvatarImage src={selectedOpponentData.profileImage} alt={selectedOpponentData.name} />
+                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-2xl">
+                      <User className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                    </AvatarFallback>
+                  </Avatar>
                   <h3 className="font-bold text-lg">{selectedOpponentData.name}</h3>
                   <p className="text-gray-600">{selectedOpponentData.nationality}</p>
                   <Badge variant="outline" className="mt-2">
