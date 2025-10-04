@@ -164,22 +164,20 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                       }`}
                     />
                   )}
-                  {athlete.worldRank && (
+                  {athlete.worldRankChange !== undefined && athlete.worldRankChange !== 0 && (
                     <div className="flex items-center">
                       {(() => {
-                        const rankChange = calculateRankChange(athlete.worldRank, athlete.worldPreviousRank);
-                        if (!rankChange) return null;
-                        
+                        const change = athlete.worldRankChange!;
                         const iconClass = "h-3 w-3";
-                        const Icon = rankChange.direction === 'up' ? TrendingUp 
-                          : rankChange.direction === 'down' ? TrendingDown 
-                          : rankChange.direction === 'new' ? Star
-                          : Minus;
+                        const Icon = change > 0 ? TrendingUp : TrendingDown;
+                        const colorClass = change > 0 
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
                         
                         return (
-                          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${getRankChangeClasses(rankChange.color)}`}>
+                          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${colorClass}`}>
                             <Icon className={iconClass} />
-                            <span>{rankChange.displayText}</span>
+                            <span>{Math.abs(change)}</span>
                           </div>
                         );
                       })()} 
@@ -305,22 +303,20 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                       }`}
                     />
                   )}
-                  {athlete.olympicRank && (
+                  {athlete.olympicRankChange !== undefined && athlete.olympicRankChange !== 0 && (
                     <div className="flex items-center">
                       {(() => {
-                        const rankChange = calculateRankChange(athlete.olympicRank, athlete.olympicPreviousRank);
-                        if (!rankChange) return null;
-                        
+                        const change = athlete.olympicRankChange!;
                         const iconClass = "h-3 w-3";
-                        const Icon = rankChange.direction === 'up' ? TrendingUp 
-                          : rankChange.direction === 'down' ? TrendingDown 
-                          : rankChange.direction === 'new' ? Star
-                          : Minus;
+                        const Icon = change > 0 ? TrendingUp : TrendingDown;
+                        const colorClass = change > 0 
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
                         
                         return (
-                          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${getRankChangeClasses(rankChange.color)}`}>
+                          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${colorClass}`}>
                             <Icon className={iconClass} />
-                            <span>{rankChange.displayText}</span>
+                            <span>{Math.abs(change)}</span>
                           </div>
                         );
                       })()} 
