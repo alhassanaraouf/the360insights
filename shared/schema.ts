@@ -239,6 +239,21 @@ export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
   cacheUnique: unique().on(table.athleteId, table.targetRank, table.rankingType, table.category),
 }));
 
+// Performance analysis cache table
+export const performanceAnalysisCache = pgTable("performance_analysis_cache", {
+  id: serial("id").primaryKey(),
+  athleteId: integer("athlete_id").notNull().references(() => athletes.id),
+  trend: varchar("trend", { length: 20 }).notNull(),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull(),
+  keyMetrics: jsonb("key_metrics").notNull(),
+  recommendations: jsonb("recommendations").notNull(),
+  riskFactors: jsonb("risk_factors").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  athleteUnique: unique().on(table.athleteId),
+}));
+
 // Insert schemas
 export const insertCoachSchema = createInsertSchema(coaches).omit({
   id: true,
@@ -312,6 +327,11 @@ export const insertRankUpCalculationCacheSchema = createInsertSchema(rankUpCalcu
   createdAt: true,
 });
 
+export const insertPerformanceAnalysisCacheSchema = createInsertSchema(performanceAnalysisCache).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSponsorshipBidSchema = createInsertSchema(sponsorshipBids).omit({
   id: true,
   createdAt: true,
@@ -354,6 +374,9 @@ export type InsertCompetitionParticipant = z.infer<typeof insertCompetitionParti
 
 export type RankUpCalculationCache = typeof rankUpCalculationCache.$inferSelect;
 export type InsertRankUpCalculationCache = z.infer<typeof insertRankUpCalculationCacheSchema>;
+
+export type PerformanceAnalysisCache = typeof performanceAnalysisCache.$inferSelect;
+export type InsertPerformanceAnalysisCache = z.infer<typeof insertPerformanceAnalysisCacheSchema>;
 
 export type SponsorshipBid = typeof sponsorshipBids.$inferSelect;
 export type InsertSponsorshipBid = z.infer<typeof insertSponsorshipBidSchema>;
