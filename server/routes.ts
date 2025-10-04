@@ -1592,6 +1592,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const athleteId = parseInt(req.params.athleteId);
       
+      if (!athleteId || isNaN(athleteId)) {
+        return res.status(400).json({ error: "Valid athlete ID is required" });
+      }
+      
       const cachedAnalysis = await storage.getPerformanceAnalysisCache(athleteId);
       if (cachedAnalysis) {
         console.log(`[PerformanceAnalysis] Using cached analysis for athlete ${athleteId}`);
