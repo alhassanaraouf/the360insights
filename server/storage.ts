@@ -717,7 +717,7 @@ export class DatabaseStorage implements IStorage {
           eq(athleteRanks.rankingType, "world"),
         ),
       )
-      .orderBy(desc(athleteRanks.rankingDate))
+      .orderBy(desc(athleteRanks.lastUpdated))
       .limit(1);
 
     const olympicRankingData = await db
@@ -729,29 +729,18 @@ export class DatabaseStorage implements IStorage {
           eq(athleteRanks.rankingType, "olympic"),
         ),
       )
-      .orderBy(desc(athleteRanks.rankingDate))
+      .orderBy(desc(athleteRanks.lastUpdated))
       .limit(1);
-
-    // Compute previous ranks when missing (fallback: ranking + rank_change)
-    const worldPreviousRank = worldRankingData[0]?.previousRanking ||
-      (worldRankingData[0]?.ranking && worldRankingData[0]?.rankChange
-        ? worldRankingData[0].ranking + worldRankingData[0].rankChange
-        : undefined);
-
-    const olympicPreviousRank = olympicRankingData[0]?.previousRanking ||
-      (olympicRankingData[0]?.ranking && olympicRankingData[0]?.rankChange
-        ? olympicRankingData[0].ranking + olympicRankingData[0].rankChange
-        : undefined);
 
     return {
       worldRank: worldRankingData[0]?.ranking,
       olympicRank: olympicRankingData[0]?.ranking,
       worldCategory: worldRankingData[0]?.category || undefined,
       olympicCategory: olympicRankingData[0]?.category || undefined,
-      worldPreviousRank,
-      olympicPreviousRank,
-      worldRankChange: worldRankingData[0]?.rankChange || undefined,
-      olympicRankChange: olympicRankingData[0]?.rankChange || undefined,
+      worldPreviousRank: undefined,
+      olympicPreviousRank: undefined,
+      worldRankChange: undefined,
+      olympicRankChange: undefined,
     };
   }
 
@@ -1280,7 +1269,7 @@ export class DatabaseStorage implements IStorage {
         eq(athleteRanks.rankingType, rankingType),
         eq(athleteRanks.category, category)
       ))
-      .orderBy(desc(athleteRanks.rankingDate))
+      .orderBy(desc(athleteRanks.lastUpdated))
       .limit(1);
 
     if (!currentRanking) {
