@@ -164,11 +164,20 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                       }`}
                     />
                   )}
-                  {athlete.worldRankChange !== undefined && athlete.worldRankChange !== 0 && (
+                  {athlete.worldRankChange !== undefined && (
                     <div className="flex items-center">
                       {(() => {
                         const change = athlete.worldRankChange!;
                         const iconClass = "h-3 w-3";
+                        
+                        if (change === 0) {
+                          return (
+                            <div className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400">
+                              <Minus className={iconClass} />
+                            </div>
+                          );
+                        }
+                        
                         const Icon = change > 0 ? TrendingUp : TrendingDown;
                         const colorClass = change > 0 
                           ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -303,11 +312,20 @@ export default function RankingsOverview({ athletes }: RankingsOverviewProps) {
                       }`}
                     />
                   )}
-                  {athlete.olympicRankChange !== undefined && athlete.olympicRankChange !== 0 && (
+                  {athlete.olympicRankChange !== undefined && (
                     <div className="flex items-center">
                       {(() => {
                         const change = athlete.olympicRankChange!;
                         const iconClass = "h-3 w-3";
+                        
+                        if (change === 0) {
+                          return (
+                            <div className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400">
+                              <Minus className={iconClass} />
+                            </div>
+                          );
+                        }
+                        
                         const Icon = change > 0 ? TrendingUp : TrendingDown;
                         const colorClass = change > 0 
                           ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"

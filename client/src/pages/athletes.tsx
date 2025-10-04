@@ -23,6 +23,8 @@ import {
   Trophy,
   MapPin,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Users,
   Eye,
   BarChart3,
@@ -48,6 +50,8 @@ interface Athlete {
   olympicCategory?: string;
   worldPreviousRank?: number;
   olympicPreviousRank?: number;
+  worldRankChange?: number;
+  olympicRankChange?: number;
   winRate?: number;
   category?: string;
   weight?: string;
@@ -523,13 +527,32 @@ export default function Athletes() {
                         <span className="text-lg font-bold text-primary">#{athlete.worldRank || 'N/R'}</span>
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-300">World Rank</div>
-                      {athlete.worldRank && (
-                        <div className="mt-1">
-                          <RankChangeIndicator 
-                            currentRank={athlete.worldRank} 
-                            previousRank={athlete.worldPreviousRank}
-                            size="sm"
-                          />
+                      {athlete.worldRankChange !== undefined && (
+                        <div className="mt-1 flex justify-center">
+                          {(() => {
+                            const change = athlete.worldRankChange!;
+                            const iconClass = "h-3 w-3";
+                            
+                            if (change === 0) {
+                              return (
+                                <div className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400">
+                                  <Minus className={iconClass} />
+                                </div>
+                              );
+                            }
+                            
+                            const Icon = change > 0 ? TrendingUp : TrendingDown;
+                            const colorClass = change > 0 
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+                            
+                            return (
+                              <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${colorClass}`}>
+                                <Icon className={iconClass} />
+                                <span>{Math.abs(change)}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                       {athlete.worldCategory && (
@@ -543,13 +566,32 @@ export default function Athletes() {
                         <span className="text-lg font-bold text-orange-600">#{athlete.olympicRank || 'N/R'}</span>
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-300">Olympic Rank</div>
-                      {athlete.olympicRank && (
-                        <div className="mt-1">
-                          <RankChangeIndicator 
-                            currentRank={athlete.olympicRank} 
-                            previousRank={athlete.olympicPreviousRank}
-                            size="sm"
-                          />
+                      {athlete.olympicRankChange !== undefined && (
+                        <div className="mt-1 flex justify-center">
+                          {(() => {
+                            const change = athlete.olympicRankChange!;
+                            const iconClass = "h-3 w-3";
+                            
+                            if (change === 0) {
+                              return (
+                                <div className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400">
+                                  <Minus className={iconClass} />
+                                </div>
+                              );
+                            }
+                            
+                            const Icon = change > 0 ? TrendingUp : TrendingDown;
+                            const colorClass = change > 0 
+                              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+                            
+                            return (
+                              <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md ${colorClass}`}>
+                                <Icon className={iconClass} />
+                                <span>{Math.abs(change)}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                       {(athlete.olympicCategory || athlete.worldCategory) && (
