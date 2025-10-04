@@ -149,16 +149,16 @@ export default function Sidebar() {
         className={`
         ${isOpen ? "translate-x-0" : "-translate-x-full"} 
         lg:translate-x-0 
-        fixed lg:static 
+        absolute lg:relative
         inset-y-0 left-0 
+        w-72 lg:flex-shrink-0
         bg-white dark:bg-gray-900 shadow-lg border-r border-gray-200 dark:border-gray-700 
         flex flex-col 
         transition-transform duration-300 ease-in-out 
         z-40 lg:z-auto safe-area-left safe-area-right
-        relative
       `}
         style={{ 
-          width: window.innerWidth >= 1024 ? `${sidebarWidth}px` : '18rem' // Use dynamic width on desktop, fixed on mobile
+          width: window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined
         }}
       >
         <div className="mobile-padding border-b border-gray-200">

@@ -11,9 +11,12 @@ export default function ResponsiveLayout({ children, className = "" }: Responsiv
   const isMobile = useIsMobile();
 
   return (
-    <div className={`lg:flex h-screen overflow-hidden mobile-container ${className}`}>
+    <div className={`flex h-screen overflow-hidden mobile-container relative ${className}`}>
+      {/* Sidebar is absolute on mobile (outside flex flow), relative on desktop (in flex flow) */}
       <Sidebar />
-      <main className="flex-1 overflow-auto relative w-full max-w-full h-screen lg:h-auto">
+      
+      {/* Main content takes full width on mobile, shares with sidebar on desktop */}
+      <main className="flex-1 overflow-auto w-full max-w-full lg:w-auto">
         {/* Mobile header spacer */}
         <div className="lg:hidden h-14 safe-area-top flex-shrink-0" />
         
