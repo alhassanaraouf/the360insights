@@ -87,10 +87,12 @@ export const athleteRanks = pgTable("athlete_ranks", {
   id: serial("id").primaryKey(),
   athleteId: integer("athlete_id").notNull().references(() => athletes.id),
   rankingType: varchar("ranking_type", { length: 50 }).notNull(), // 'world' or 'olympic'
-  category: varchar("category", { length: 100 }).notNull(),
+  category: text("category").notNull(),
   ranking: integer("ranking").notNull(),
-  points: integer("points").default(0),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull()
+  previousRanking: integer("previous_ranking"),
+  rankChange: integer("rank_change"),
+  points: decimal("points", { precision: 10, scale: 2 }),
+  rankingDate: text("ranking_date")
 }, (table) => ({
   athleteIdIdx: index("athlete_ranks_athlete_id_idx").on(table.athleteId),
   rankingTypeIdx: index("athlete_ranks_ranking_type_idx").on(table.rankingType),

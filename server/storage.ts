@@ -717,7 +717,7 @@ export class DatabaseStorage implements IStorage {
           eq(athleteRanks.rankingType, "world"),
         ),
       )
-      .orderBy(desc(athleteRanks.lastUpdated))
+      .orderBy(desc(athleteRanks.rankingDate))
       .limit(1);
 
     const olympicRankingData = await db
@@ -729,7 +729,7 @@ export class DatabaseStorage implements IStorage {
           eq(athleteRanks.rankingType, "olympic"),
         ),
       )
-      .orderBy(desc(athleteRanks.lastUpdated))
+      .orderBy(desc(athleteRanks.rankingDate))
       .limit(1);
 
     return {
@@ -737,10 +737,10 @@ export class DatabaseStorage implements IStorage {
       olympicRank: olympicRankingData[0]?.ranking,
       worldCategory: worldRankingData[0]?.category || undefined,
       olympicCategory: olympicRankingData[0]?.category || undefined,
-      worldPreviousRank: undefined,
-      olympicPreviousRank: undefined,
-      worldRankChange: undefined,
-      olympicRankChange: undefined,
+      worldPreviousRank: worldRankingData[0]?.previousRanking || undefined,
+      olympicPreviousRank: olympicRankingData[0]?.previousRanking || undefined,
+      worldRankChange: worldRankingData[0]?.rankChange || undefined,
+      olympicRankChange: olympicRankingData[0]?.rankChange || undefined,
     };
   }
 
@@ -1269,7 +1269,7 @@ export class DatabaseStorage implements IStorage {
         eq(athleteRanks.rankingType, rankingType),
         eq(athleteRanks.category, category)
       ))
-      .orderBy(desc(athleteRanks.lastUpdated))
+      .orderBy(desc(athleteRanks.rankingDate))
       .limit(1);
 
     if (!currentRanking) {
