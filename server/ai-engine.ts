@@ -52,6 +52,9 @@ Weaknesses: ${weaknesses.map((w: any) => w.name).join(", ") || "None identified"
 
 Respond with ONLY the playing style label, nothing else.`;
 
+      console.log(`[PlayingStyle] Generating for ${athlete.name} (ID: ${athleteId})`);
+      console.log(`[PlayingStyle] Strengths: ${strengths.length}, Weaknesses: ${weaknesses.length}`);
+
       const response = await openai.chat.completions.create({
         model: "gpt-5",
         messages: [
@@ -68,6 +71,7 @@ Respond with ONLY the playing style label, nothing else.`;
       });
 
       const playingStyle = response.choices[0].message.content?.trim() || "Unknown";
+      console.log(`[PlayingStyle] OpenAI Response: "${playingStyle}"`);
       
       // Update athlete with playing style
       await storage.updateAthlete(athleteId, { playingStyle });
