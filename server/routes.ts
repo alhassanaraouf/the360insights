@@ -1807,6 +1807,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate playing style for a single athlete
+  app.post("/api/generate/playing-style/:athleteId", async (req, res) => {
+    try {
+      const athleteId = parseInt(req.params.athleteId);
+      
+      if (!athleteId || isNaN(athleteId)) {
+        return res.status(400).json({ error: "Valid athlete ID is required" });
+      }
+      
+      console.log(`Generating playing style for athlete ID: ${athleteId}`);
+      
+      const playingStyle = await aiEngine.generatePlayingStyle(athleteId);
+      
+      res.json({
+        success: true,
+        playingStyle,
+        athleteId
+      });
+    } catch (error) {
+      console.error("Playing style generation error:", error);
+      res.status(500).json({ error: "Failed to generate playing style" });
+    }
+  });
+
   // Generate and save strengths and weaknesses to database
   app.post("/api/ai/generate-and-save-strengths-weaknesses/:athleteId", async (req, res) => {
     try {
