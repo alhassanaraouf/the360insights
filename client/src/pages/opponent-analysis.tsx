@@ -389,77 +389,129 @@ export default function OpponentAnalysis() {
 
         {/* AI Analysis Results */}
         {selectedOpponentData && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Opponent Profile */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Opponent Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <Avatar className="h-24 w-24 mx-auto mb-3">
-                    <AvatarImage src={selectedOpponentData.profileImage} alt={selectedOpponentData.name} />
-                    <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-2xl">
-                      <User className="h-12 w-12 text-blue-600 dark:text-blue-400" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="font-bold text-lg">{selectedOpponentData.name}</h3>
-                  <p className="text-gray-600">{selectedOpponentData.nationality}</p>
-                  <Badge variant="outline" className="mt-2">
-                    World Rank #{selectedOpponentData.worldRank}
-                  </Badge>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Threat Level:</span>
-                    <Badge variant={selectedOpponentData.threatLevel === 'High' ? 'destructive' : 'secondary'}>
-                      {selectedOpponentData.threatLevel}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Weight Class:</span>
-                    <span className="text-sm font-medium">
-                      {selectedOpponentData.worldCategory && selectedOpponentData.olympicCategory ? 
-                        `${selectedOpponentData.worldCategory} / ${selectedOpponentData.olympicCategory}` : 
-                        selectedOpponentData.worldCategory || selectedOpponentData.olympicCategory || 'Unknown'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Playing Style:</span>
-                    <span className="text-sm font-medium">{selectedOpponentData.playingStyle || 'Unknown'}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Win Probability */}
-            {analysis && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Opponent Profile */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    AI Win Prediction
+                    <Target className="h-5 w-5 text-primary" />
+                    Opponent Profile
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center space-y-4">
-                    <div className="text-4xl font-bold text-green-600">
-                      {analysis.winProbability}%
+                <CardContent className="space-y-4">
+                  <div className="text-center">
+                    <Avatar className="h-24 w-24 mx-auto mb-3">
+                      <AvatarImage src={selectedOpponentData.profileImage} alt={selectedOpponentData.name} />
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-2xl">
+                        <User className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <h3 className="font-bold text-lg">{selectedOpponentData.name}</h3>
+                    <p className="text-gray-600">{selectedOpponentData.nationality}</p>
+                    <Badge variant="outline" className="mt-2">
+                      World Rank #{selectedOpponentData.worldRank}
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Threat Level:</span>
+                      <Badge variant={selectedOpponentData.threatLevel === 'High' ? 'destructive' : 'secondary'}>
+                        {selectedOpponentData.threatLevel}
+                      </Badge>
                     </div>
-                    <Progress value={analysis.winProbability} className="w-full" />
-                    <p className="text-sm text-gray-600">
-                      Based on performance data, fighting styles, and historical patterns
-                    </p>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Weight Class:</span>
+                      <span className="text-sm font-medium">
+                        {selectedOpponentData.worldCategory && selectedOpponentData.olympicCategory ? 
+                          `${selectedOpponentData.worldCategory} / ${selectedOpponentData.olympicCategory}` : 
+                          selectedOpponentData.worldCategory || selectedOpponentData.olympicCategory || 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Playing Style:</span>
+                      <span className="text-sm font-medium">{selectedOpponentData.playingStyle || 'Unknown'}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Quick Strategy Summary */}
+              {/* AI Prediction */}
+              {analysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      AI Prediction
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center space-y-4">
+                      <div className="text-4xl font-bold text-green-600">
+                        {analysis.winProbability}%
+                      </div>
+                      <Progress value={analysis.winProbability} className="w-full" />
+                      <div className="pt-2">
+                        <p className="text-lg font-semibold">
+                          {analysis.winProbability >= 50 ? athlete?.name : selectedOpponentData.name}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Predicted to win
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Based on performance data, fighting styles, and historical patterns
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Our Athlete Profile */}
+              {athlete && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      Your Athlete
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center">
+                      <Avatar className="h-24 w-24 mx-auto mb-3">
+                        <AvatarImage src={athlete.profileImage || undefined} alt={athlete.name} />
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900/30 text-2xl">
+                          <User className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <h3 className="font-bold text-lg">{athlete.name}</h3>
+                      <p className="text-gray-600">{athlete.nationality}</p>
+                      {(athlete as any).worldRank && (
+                        <Badge variant="outline" className="mt-2">
+                          World Rank #{(athlete as any).worldRank}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm">Weight Class:</span>
+                        <span className="text-sm font-medium">
+                          {athlete.worldCategory || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Playing Style:</span>
+                        <span className="text-sm font-medium">{athlete.playingStyle || 'Unknown'}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Key Strategy Points - Below the 3 cards */}
             {analysis && (
               <Card>
                 <CardHeader>
@@ -470,7 +522,7 @@ export default function OpponentAnalysis() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {analysis.keyStrategyPoints.slice(0, 3).map((point, index) => (
+                    {analysis.keyStrategyPoints.map((point, index) => (
                       <div key={index} className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                         <p className="text-sm">{point}</p>
@@ -480,7 +532,7 @@ export default function OpponentAnalysis() {
                 </CardContent>
               </Card>
             )}
-          </div>
+          </>
         )}
 
         {/* Detailed Analysis Tabs */}
