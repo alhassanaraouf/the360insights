@@ -1666,13 +1666,16 @@ export class DatabaseStorage implements IStorage {
         gender: athletes.gender,
         profileImage: athletes.profileImage,
         worldCategory: athletes.worldCategory,
+        worldPoints: athletes.worldPoints,
+        olympicPoints: athletes.olympicPoints,
+        playingStyle: athletes.playingStyle,
         coachId: athletes.coachId,
         createdAt: athletes.createdAt,
         bidsCount: sql<number>`count(${sponsorshipBids.id})::int`,
       })
       .from(athletes)
       .innerJoin(sponsorshipBids, eq(athletes.id, sponsorshipBids.athleteId))
-      .groupBy(athletes.id, athletes.name, athletes.sport, athletes.nationality, athletes.gender, athletes.profileImage, athletes.worldCategory, athletes.coachId, athletes.createdAt);
+      .groupBy(athletes.id, athletes.name, athletes.sport, athletes.nationality, athletes.gender, athletes.profileImage, athletes.worldCategory, athletes.worldPoints, athletes.olympicPoints, athletes.playingStyle, athletes.coachId, athletes.createdAt);
 
     // Apply search filter
     if (search) {
