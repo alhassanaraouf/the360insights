@@ -229,7 +229,7 @@ export interface IStorage {
   getSponsorshipBid(id: number): Promise<SponsorshipBid | undefined>;
   createSponsorshipBid(bid: InsertSponsorshipBid): Promise<SponsorshipBid>;
   updateSponsorshipBidStatus(id: number, status: 'PENDING' | 'ACCEPTED' | 'REJECTED'): Promise<SponsorshipBid>;
-  getAthletesWithBids(): Promise<(Athlete & { bidsCount: number })[]>;
+  getAthletesWithBids(params?: { page?: number; limit?: number; search?: string; minBids?: number }): Promise<{ athletes: (Athlete & { bidsCount: number })[]; total: number; page: number; totalPages: number }>;
 
   // Bid Settings
   getBidSettings(): Promise<BidSettings>;
@@ -1649,8 +1649,15 @@ export class DatabaseStorage implements IStorage {
     return updatedBid;
   }
 
-  async getAthletesWithBids(): Promise<(Athlete & { bidsCount: number })[]> {
-    const results = await db
+  async getAthletesWithBids(params?: { page?: number; limit?: number; search?: string; minBids?: number }): Promise<{ athletes: (Athlete & { bidsCount: number })[]; total: number; page: number; totalPages: number }> {
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const search = params?.search || '';
+    const minBids = params?.minBids || 0;
+    const offset = (page - 1) * limit;
+
+    // Build the base query
+    let query = db
       .select({
         id: athletes.id,
         name: athletes.name,
@@ -1661,27 +1668,40 @@ export class DatabaseStorage implements IStorage {
         worldCategory: athletes.worldCategory,
         coachId: athletes.coachId,
         createdAt: athletes.createdAt,
+        bidsCount: sql<number>`count(${sponsorshipBids.id})::int`,
       })
       .from(athletes)
       .innerJoin(sponsorshipBids, eq(athletes.id, sponsorshipBids.athleteId))
       .groupBy(athletes.id, athletes.name, athletes.sport, athletes.nationality, athletes.gender, athletes.profileImage, athletes.worldCategory, athletes.coachId, athletes.createdAt);
 
-    // Get bid counts for each athlete
-    const athleteIds = results.map(r => r.id);
-    const bidCounts = await Promise.all(
-      athleteIds.map(async (athleteId) => {
-        const count = await db
-          .select()
-          .from(sponsorshipBids)
-          .where(eq(sponsorshipBids.athleteId, athleteId));
-        return { athleteId, count: count.length };
-      })
-    );
+    // Apply search filter
+    if (search) {
+      query = query.where(ilike(athletes.name, `%${search}%`)) as any;
+    }
 
-    return results.map(result => ({
-      ...result,
-      bidsCount: bidCounts.find(bc => bc.athleteId === result.id)?.count || 0
-    }));
+    // Apply minBids filter using having clause
+    if (minBids > 0) {
+      query = query.having(sql`count(${sponsorshipBids.id}) >= ${minBids}`) as any;
+    }
+
+    // Get total count before pagination
+    const allResults = await query;
+    const total = allResults.length;
+
+    // Apply pagination
+    const results = await query
+      .orderBy(sql`count(${sponsorshipBids.id}) DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      athletes: results,
+      total,
+      page,
+      totalPages,
+    };
   }
 
   async getBidSettings(): Promise<BidSettings> {

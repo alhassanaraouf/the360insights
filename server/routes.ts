@@ -403,8 +403,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/athletes-with-bids", async (req, res) => {
     try {
-      const athletes = await storage.getAthletesWithBids();
-      res.json(athletes);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string || '';
+      const minBids = parseInt(req.query.minBids as string) || 0;
+      
+      const result = await storage.getAthletesWithBids({ page, limit, search, minBids });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch athletes with bids" });
     }
