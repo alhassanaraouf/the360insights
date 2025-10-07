@@ -12,9 +12,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { SponsorshipBid, Athlete } from "@shared/schema";
+import type { SponsorshipBid, Athlete, BidSettings } from "@shared/schema";
 import { 
   DollarSign, 
   Calendar, 
@@ -24,7 +27,8 @@ import {
   Clock,
   Check,
   X,
-  Star
+  Star,
+  Settings
 } from "lucide-react";
 
 interface AthleteWithBids extends Athlete {
@@ -40,6 +44,7 @@ export default function SponsorshipHub() {
   const queryClient = useQueryClient();
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteWithBids | null>(null);
   const [bidDetailsOpen, setBidDetailsOpen] = useState(false);
+  const [rejectionMessage, setRejectionMessage] = useState("");
 
   // Fetch athletes with bids
   const { data: athletesWithBids, isLoading: athletesLoading } = useQuery<AthleteWithBids[]>({
@@ -50,6 +55,32 @@ export default function SponsorshipHub() {
   const { data: athleteBids, isLoading: bidsLoading } = useQuery<SponsorshipBid[]>({
     queryKey: [`/api/athletes/${selectedAthlete?.id}/bids`],
     enabled: !!selectedAthlete?.id,
+  });
+
+  // Fetch bid settings
+  const { data: bidSettings, isLoading: settingsLoading } = useQuery<BidSettings>({
+    queryKey: ['/api/bid-settings'],
+  });
+
+  // Update bid settings mutation
+  const updateBidSettingsMutation = useMutation({
+    mutationFn: async (updates: { bidsAccepted?: boolean; rejectionMessage?: string }) => {
+      return apiRequest('PATCH', '/api/bid-settings', updates);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Settings updated",
+        description: "Bid acceptance settings have been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/bid-settings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update settings",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Update bid status mutation
@@ -80,6 +111,14 @@ export default function SponsorshipHub() {
 
   const handleUpdateBidStatus = (bidId: number, status: 'ACCEPTED' | 'REJECTED') => {
     updateBidStatusMutation.mutate({ bidId, status });
+  };
+
+  const handleToggleBidsAccepted = (checked: boolean) => {
+    updateBidSettingsMutation.mutate({ bidsAccepted: checked });
+  };
+
+  const handleUpdateRejectionMessage = () => {
+    updateBidSettingsMutation.mutate({ rejectionMessage });
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -119,7 +158,72 @@ export default function SponsorshipHub() {
         title="Sponsorship Hub" 
         description="Manage sponsorship bids and partnerships"
       />
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {/* Bid Settings Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Bid Acceptance Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="bids-toggle" className="text-base">
+                  Accept New Bids
+                </Label>
+                <p className="text-sm text-gray-500">
+                  Toggle to enable or disable new sponsorship bid submissions
+                </p>
+              </div>
+              <Switch
+                id="bids-toggle"
+                checked={bidSettings?.bidsAccepted ?? true}
+                onCheckedChange={handleToggleBidsAccepted}
+                disabled={settingsLoading || updateBidSettingsMutation.isPending}
+                data-testid="toggle-bids-accepted"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rejection-message">
+                Rejection Message (Optional)
+              </Label>
+              <p className="text-sm text-gray-500">
+                Custom message shown to users when bids are disabled
+              </p>
+              <Textarea
+                id="rejection-message"
+                placeholder="e.g., We are not accepting new bids at this time. Please check back later."
+                value={rejectionMessage || bidSettings?.rejectionMessage || ""}
+                onChange={(e) => setRejectionMessage(e.target.value)}
+                disabled={settingsLoading}
+                rows={3}
+                data-testid="input-rejection-message"
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleUpdateRejectionMessage}
+                  disabled={updateBidSettingsMutation.isPending || settingsLoading}
+                  size="sm"
+                  data-testid="button-update-message"
+                >
+                  Update Message
+                </Button>
+              </div>
+            </div>
+
+            {bidSettings && !bidSettings.bidsAccepted && (
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Bids are currently disabled.</strong> Users will see the rejection message when attempting to submit a bid.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {!athletesWithBids || athletesWithBids.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
