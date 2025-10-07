@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import Header from "@/components/layout/header";
 import RankingsOverview from "@/components/dashboard/rankings-overview";
 import CompetitionCalendar from "@/components/dashboard/competition-calendar";
@@ -38,10 +39,15 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { showEgyptianOnly } = useEgyptFilter();
   const { selectedSport } = useSport();
+  const [, navigate] = useLocation();
 
   const { selectedAthleteId } = useAthlete();
   
   const sportConfig = getSportConfig(selectedSport);
+
+  const handleAthleteClick = (athleteId: number) => {
+    navigate(`/athlete360?athlete=${athleteId}`);
+  };
 
   // Optimized athlete stats for dashboard
   const { data: athleteStats, isLoading: athletesLoading } = useQuery({
@@ -249,7 +255,12 @@ export default function Dashboard() {
           {topAthletes?.athletes?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
               {topAthletes.athletes.slice(0, 6).map((athlete: any) => (
-                <Card key={athlete.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <Card 
+                  key={athlete.id} 
+                  onClick={() => handleAthleteClick(athlete.id)}
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  data-testid={`card-athlete-${athlete.id}`}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4">
                       <img 
