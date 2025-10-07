@@ -92,6 +92,33 @@ export default function CareerJourney() {
     }
   };
 
+  // Sort events by date (most recent first) and group by year
+  const groupEventsByYear = (events: any[]) => {
+    if (!events || events.length === 0) return {};
+    
+    // Sort events by date in descending order (most recent first)
+    const sortedEvents = [...events].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    // Group events by year
+    const grouped: { [year: string]: any[] } = {};
+    sortedEvents.forEach((event) => {
+      const year = new Date(event.date).getFullYear().toString();
+      if (!grouped[year]) {
+        grouped[year] = [];
+      }
+      grouped[year].push(event);
+    });
+    
+    return grouped;
+  };
+
+  const eventsByYear = groupEventsByYear(careerEvents as any[]);
+  const years = Object.keys(eventsByYear).sort((a, b) => parseInt(b) - parseInt(a)); // Sort years descending
+
   return (
     <>
       <Header 
@@ -104,29 +131,38 @@ export default function CareerJourney() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Career Timeline</h3>
-            <div className="space-y-6">
-              {(careerEvents as any[])?.length > 0 ? (
-                (careerEvents as any[])?.map((event: any, index: number) => (
-                  <div key={event.id} className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 mt-1">
-                      {getEventIcon(event.eventType)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-900">{event.title}</h4>
-                        <span className="text-sm text-gray-500">{event.date}</span>
-                      </div>
-                      <p className="text-gray-600 mt-1">{event.description}</p>
+            <div className="space-y-8">
+              {years.length > 0 ? (
+                years.map((year) => (
+                  <div key={year} className="space-y-4">
+                    <h4 className="text-2xl font-bold text-gray-900 border-b-2 border-gray-200 pb-2">
+                      {year}
+                    </h4>
+                    <div className="space-y-4 pl-4">
+                      {eventsByYear[year].map((event: any) => (
+                        <div key={event.id} className="flex items-start space-x-4">
+                          <div className="flex-shrink-0 mt-1">
+                            {getEventIcon(event.eventType)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h5 className="font-medium text-gray-900">{event.title}</h5>
+                              <span className="text-sm text-gray-500">{event.date}</span>
+                            </div>
+                            <p className="text-gray-600 mt-1">{event.description}</p>
 
-                      <div className="mt-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          event.eventType === 'achievement' ? 'bg-yellow-100 text-yellow-800' :
-                          event.eventType === 'match' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
-                        </span>
-                      </div>
+                            <div className="mt-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                event.eventType === 'achievement' ? 'bg-yellow-100 text-yellow-800' :
+                                event.eventType === 'match' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))
