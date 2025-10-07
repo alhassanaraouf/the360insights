@@ -400,6 +400,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bid Settings
+  app.get("/api/bid-settings", async (req, res) => {
+    try {
+      const settings = await storage.getBidSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch bid settings" });
+    }
+  });
+
+  app.patch("/api/bid-settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const { bidsAccepted, rejectionMessage } = req.body;
+      const updates: any = {};
+      
+      if (typeof bidsAccepted === 'boolean') {
+        updates.bidsAccepted = bidsAccepted;
+      }
+      
+      if (rejectionMessage !== undefined) {
+        updates.rejectionMessage = rejectionMessage;
+      }
+
+      const updatedSettings = await storage.updateBidSettings(updates);
+      res.json(updatedSettings);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update bid settings" });
+    }
+  });
+
   // Opponents are now treated as regular athletes - no separate endpoints needed
 
   // Opponent functionality removed - athletes can analyze against other athletes directly
