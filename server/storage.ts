@@ -42,6 +42,9 @@ import {
   sponsorshipBids,
   type SponsorshipBid,
   type InsertSponsorshipBid,
+  bidSettings,
+  type BidSettings,
+  type InsertBidSettings,
   competitionParticipants,
   type CompetitionParticipant,
   type InsertCompetitionParticipant,
@@ -227,6 +230,10 @@ export interface IStorage {
   createSponsorshipBid(bid: InsertSponsorshipBid): Promise<SponsorshipBid>;
   updateSponsorshipBidStatus(id: number, status: 'PENDING' | 'ACCEPTED' | 'REJECTED'): Promise<SponsorshipBid>;
   getAthletesWithBids(): Promise<(Athlete & { bidsCount: number })[]>;
+
+  // Bid Settings
+  getBidSettings(): Promise<BidSettings>;
+  updateBidSettings(updates: Partial<InsertBidSettings>): Promise<BidSettings>;
 
   // Performance Analysis Cache
   getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
@@ -1675,6 +1682,35 @@ export class DatabaseStorage implements IStorage {
       ...result,
       bidsCount: bidCounts.find(bc => bc.athleteId === result.id)?.count || 0
     }));
+  }
+
+  async getBidSettings(): Promise<BidSettings> {
+    const [settings] = await db
+      .select()
+      .from(bidSettings)
+      .limit(1);
+    
+    if (!settings) {
+      const [newSettings] = await db
+        .insert(bidSettings)
+        .values({ bidsAccepted: true })
+        .returning();
+      return newSettings;
+    }
+    
+    return settings;
+  }
+
+  async updateBidSettings(updates: Partial<InsertBidSettings>): Promise<BidSettings> {
+    const currentSettings = await this.getBidSettings();
+    
+    const [updatedSettings] = await db
+      .update(bidSettings)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(bidSettings.id, currentSettings.id))
+      .returning();
+    
+    return updatedSettings;
   }
 
   async getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined> {
