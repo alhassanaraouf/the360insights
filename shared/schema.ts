@@ -219,6 +219,14 @@ export const sponsorshipBids = pgTable("sponsorship_bids", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Bid settings table for controlling bid acceptance
+export const bidSettings = pgTable("bid_settings", {
+  id: serial("id").primaryKey(),
+  bidsAccepted: boolean("bids_accepted").notNull().default(true), // Whether bids are currently accepted
+  rejectionMessage: text("rejection_message"), // Optional message to display when bids are disabled
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Rank-up calculation cache table
 export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
   id: serial("id").primaryKey(),
@@ -338,6 +346,11 @@ export const insertSponsorshipBidSchema = createInsertSchema(sponsorshipBids).om
   updatedAt: true,
 });
 
+export const insertBidSettingsSchema = createInsertSchema(bidSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 export const upsertUserSchema = createInsertSchema(users);
 
 // Types
@@ -380,6 +393,9 @@ export type InsertPerformanceAnalysisCache = z.infer<typeof insertPerformanceAna
 
 export type SponsorshipBid = typeof sponsorshipBids.$inferSelect;
 export type InsertSponsorshipBid = z.infer<typeof insertSponsorshipBidSchema>;
+
+export type BidSettings = typeof bidSettings.$inferSelect;
+export type InsertBidSettings = z.infer<typeof insertBidSettingsSchema>;
 
 export type User = typeof users.$inferSelect;
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
