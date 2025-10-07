@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { BidSettings } from "@shared/schema";
+import { AlertCircle } from "lucide-react";
 import rawabtLogo from "@assets/IMG_3732_1758355775580.png";
 
 const bidFormSchema = z.object({
@@ -53,6 +56,12 @@ export function BidFormDialog({
 }: BidFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch bid settings to check if bids are accepted
+  const { data: bidSettings, isLoading: settingsLoading } = useQuery<BidSettings>({
+    queryKey: ['/api/bid-settings'],
+    enabled: open, // Only fetch when dialog is open
+  });
 
   const form = useForm<BidFormData>({
     resolver: zodResolver(bidFormSchema),
@@ -97,6 +106,8 @@ export function BidFormDialog({
     createBidMutation.mutate(data);
   };
 
+  const bidsDisabled = bidSettings && !bidSettings.bidsAccepted;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" data-testid="bid-form-dialog">
@@ -115,6 +126,15 @@ export function BidFormDialog({
             reviewed and you'll be notified of the athlete's decision.
           </DialogDescription>
         </DialogHeader>
+
+        {bidsDisabled && (
+          <Alert variant="destructive" data-testid="alert-bids-disabled">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {bidSettings.rejectionMessage || "We are not accepting new sponsorship bids at this time. Please check back later."}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -282,7 +302,7 @@ export function BidFormDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={createBidMutation.isPending}
+                disabled={createBidMutation.isPending || bidsDisabled || settingsLoading}
                 data-testid="button-submit-bid"
               >
                 {createBidMutation.isPending ? "Submitting..." : "Submit Bid"}
