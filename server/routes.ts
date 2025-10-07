@@ -340,6 +340,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/athletes/:id/bids", isAuthenticated, async (req: any, res) => {
     try {
+      // Check if bids are currently accepted
+      const bidSettings = await storage.getBidSettings();
+      
+      if (!bidSettings.bidsAccepted) {
+        return res.status(403).json({ 
+          error: "Bids are not currently being accepted",
+          message: bidSettings.rejectionMessage || "We are not accepting new sponsorship bids at this time. Please check back later."
+        });
+      }
+
       const athleteId = parseInt(req.params.id);
       let sponsorUserId;
       
