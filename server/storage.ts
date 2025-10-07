@@ -933,7 +933,7 @@ export class DatabaseStorage implements IStorage {
 
       const query = baseQuery.where(conditions);
 
-      // Get total count
+      // Get total count - must match the same conditions as the main query
       const countQuery = db
         .select({ count: sql<number>`count(*)` })
         .from(athletes)
@@ -941,12 +941,7 @@ export class DatabaseStorage implements IStorage {
           eq(athleteRanks.athleteId, athletes.id),
           eq(athleteRanks.rankingType, 'world')
         ))
-        .where(and(
-          eq(athletes.worldCategory, athleteData.worldCategory),
-          ne(athletes.id, athleteId),
-          gte(athleteRanks.ranking, minRank),
-          lte(athleteRanks.ranking, maxRank)
-        ));
+        .where(conditions);
 
       const [totalResult, opponents] = await Promise.all([
         countQuery,
@@ -1044,14 +1039,11 @@ export class DatabaseStorage implements IStorage {
 
       const query = baseQuery.where(conditions);
 
-      // Get total count
+      // Get total count - must match the same conditions as the main query
       const countQuery = db
         .select({ count: sql<number>`count(*)` })
         .from(athletes)
-        .where(and(
-          eq(athletes.worldCategory, athleteData.worldCategory),
-          ne(athletes.id, athleteId)
-        ));
+        .where(conditions);
 
       const [totalResult, opponents] = await Promise.all([
         countQuery,
