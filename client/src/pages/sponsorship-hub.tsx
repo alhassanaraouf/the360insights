@@ -67,6 +67,23 @@ export default function SponsorshipHub() {
     mutationFn: async (updates: { bidsAccepted?: boolean; rejectionMessage?: string }) => {
       return apiRequest('PATCH', '/api/bid-settings', updates);
     },
+    onMutate: async (updates) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/bid-settings'] });
+      
+      // Snapshot the previous value
+      const previousSettings = queryClient.getQueryData<BidSettings>(['/api/bid-settings']);
+      
+      // Optimistically update to the new value
+      if (previousSettings) {
+        queryClient.setQueryData<BidSettings>(['/api/bid-settings'], {
+          ...previousSettings,
+          ...updates,
+        });
+      }
+      
+      return { previousSettings };
+    },
     onSuccess: () => {
       toast({
         title: "Settings updated",
@@ -74,7 +91,11 @@ export default function SponsorshipHub() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/bid-settings'] });
     },
-    onError: (error: any) => {
+    onError: (error: any, _updates, context) => {
+      // Rollback on error
+      if (context?.previousSettings) {
+        queryClient.setQueryData(['/api/bid-settings'], context.previousSettings);
+      }
       toast({
         title: "Failed to update settings",
         description: error.message || "Something went wrong. Please try again.",
@@ -161,21 +182,18 @@ export default function SponsorshipHub() {
       <div className="p-6 space-y-6">
         {/* Bid Settings Card */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Bid Acceptance Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="bids-toggle" className="text-base">
-                  Accept New Bids
-                </Label>
-                <p className="text-sm text-gray-500">
-                  Toggle to enable or disable new sponsorship bid submissions
-                </p>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Settings className="w-5 h-5 text-gray-500" />
+                <div>
+                  <Label htmlFor="bids-toggle" className="text-sm font-semibold cursor-pointer">
+                    Accept New Bids
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    {bidSettings?.bidsAccepted ? 'Accepting sponsorship bids' : 'Not accepting bids'}
+                  </p>
+                </div>
               </div>
               <Switch
                 id="bids-toggle"
@@ -186,39 +204,31 @@ export default function SponsorshipHub() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="rejection-message">
-                Rejection Message (Optional)
-              </Label>
-              <p className="text-sm text-gray-500">
-                Custom message shown to users when bids are disabled
-              </p>
-              <Textarea
-                id="rejection-message"
-                placeholder="e.g., We are not accepting new bids at this time. Please check back later."
-                value={rejectionMessage || bidSettings?.rejectionMessage || ""}
-                onChange={(e) => setRejectionMessage(e.target.value)}
-                disabled={settingsLoading}
-                rows={3}
-                data-testid="input-rejection-message"
-              />
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleUpdateRejectionMessage}
-                  disabled={updateBidSettingsMutation.isPending || settingsLoading}
-                  size="sm"
-                  data-testid="button-update-message"
-                >
-                  Update Message
-                </Button>
-              </div>
-            </div>
-
             {bidSettings && !bidSettings.bidsAccepted && (
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <strong>Bids are currently disabled.</strong> Users will see the rejection message when attempting to submit a bid.
-                </p>
+              <div className="mt-3 pt-3 border-t space-y-2">
+                <Label htmlFor="rejection-message" className="text-sm">
+                  Rejection Message
+                </Label>
+                <Textarea
+                  id="rejection-message"
+                  placeholder="e.g., We are not accepting new bids at this time. Please check back later."
+                  value={rejectionMessage || bidSettings?.rejectionMessage || ""}
+                  onChange={(e) => setRejectionMessage(e.target.value)}
+                  disabled={settingsLoading}
+                  rows={2}
+                  className="text-sm"
+                  data-testid="input-rejection-message"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleUpdateRejectionMessage}
+                    disabled={updateBidSettingsMutation.isPending || settingsLoading}
+                    size="sm"
+                    data-testid="button-update-message"
+                  >
+                    Update Message
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
