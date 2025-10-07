@@ -15,6 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { SponsorshipBid, Athlete, BidSettings } from "@shared/schema";
@@ -28,7 +30,11 @@ import {
   Check,
   X,
   Star,
-  Settings
+  Settings,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface AthleteWithBids extends Athlete {
@@ -45,11 +51,21 @@ export default function SponsorshipHub() {
   const [selectedAthlete, setSelectedAthlete] = useState<AthleteWithBids | null>(null);
   const [bidDetailsOpen, setBidDetailsOpen] = useState(false);
   const [rejectionMessage, setRejectionMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [minBids, setMinBids] = useState(0);
 
   // Fetch athletes with bids
-  const { data: athletesWithBids, isLoading: athletesLoading } = useQuery<AthleteWithBids[]>({
-    queryKey: ['/api/athletes-with-bids'],
+  const { data: athletesData, isLoading: athletesLoading } = useQuery<{
+    athletes: AthleteWithBids[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>({
+    queryKey: ['/api/athletes-with-bids', { page, search, minBids }],
   });
+
+  const athletesWithBids = athletesData?.athletes || [];
 
   // Fetch bids for selected athlete
   const { data: athleteBids, isLoading: bidsLoading } = useQuery<SponsorshipBid[]>({
@@ -234,6 +250,48 @@ export default function SponsorshipHub() {
           </CardContent>
         </Card>
 
+        {/* Search and Filter */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search athletes by name..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-9"
+                  data-testid="input-search-athletes"
+                />
+              </div>
+              <div className="flex items-center gap-2 sm:w-64">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <Select
+                  value={minBids.toString()}
+                  onValueChange={(value) => {
+                    setMinBids(parseInt(value));
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger data-testid="select-min-bids">
+                    <SelectValue placeholder="Filter by bids" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">All bids</SelectItem>
+                    <SelectItem value="1">1+ bids</SelectItem>
+                    <SelectItem value="3">3+ bids</SelectItem>
+                    <SelectItem value="5">5+ bids</SelectItem>
+                    <SelectItem value="10">10+ bids</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {!athletesWithBids || athletesWithBids.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
@@ -300,6 +358,44 @@ export default function SponsorshipHub() {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Pagination */}
+        {athletesData && athletesData.totalPages > 1 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {((athletesData.page - 1) * 10) + 1} to {Math.min(athletesData.page * 10, athletesData.total)} of {athletesData.total} athletes
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                  <div className="text-sm font-medium">
+                    Page {athletesData.page} of {athletesData.totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === athletesData.totalPages}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Bid Details Dialog */}
