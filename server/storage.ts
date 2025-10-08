@@ -894,8 +894,9 @@ export class DatabaseStorage implements IStorage {
       const maxRank = athleteRanking + 10;
 
       // Build optimized query with JOIN using athleteRanks table directly
+      // Use DISTINCT ON to ensure each athlete appears only once
       let baseQuery = db
-        .select({
+        .selectDistinctOn([athletes.id], {
           id: athletes.id,
           name: athletes.name,
           sport: athletes.sport,
@@ -937,8 +938,9 @@ export class DatabaseStorage implements IStorage {
       const query = baseQuery.where(conditions);
 
       // Get total count - must match the same conditions as the main query
+      // Use DISTINCT to count unique athletes only
       const countQuery = db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`count(DISTINCT ${athletes.id})` })
         .from(athletes)
         .innerJoin(athleteRanks, and(
           eq(athleteRanks.athleteId, athletes.id),
@@ -948,7 +950,7 @@ export class DatabaseStorage implements IStorage {
 
       const [totalResult, opponents] = await Promise.all([
         countQuery,
-        query.orderBy(asc(athleteRanks.ranking)).limit(limit).offset(offset)
+        query.orderBy(asc(athletes.id), asc(athleteRanks.ranking)).limit(limit).offset(offset)
       ]);
 
       const total = totalResult[0]?.count || 0;
@@ -1002,8 +1004,9 @@ export class DatabaseStorage implements IStorage {
       const athleteRanking = athleteWorldRank?.ranking || 999;
 
       // Build optimized query with JOIN using athleteRanks table directly
+      // Use DISTINCT ON to ensure each athlete appears only once
       let baseQuery = db
-        .select({
+        .selectDistinctOn([athletes.id], {
           id: athletes.id,
           name: athletes.name,
           sport: athletes.sport,
@@ -1050,7 +1053,7 @@ export class DatabaseStorage implements IStorage {
 
       const [totalResult, opponents] = await Promise.all([
         countQuery,
-        query.orderBy(asc(athleteRanks.ranking)).limit(limit).offset(offset)
+        query.orderBy(asc(athletes.id), asc(athleteRanks.ranking)).limit(limit).offset(offset)
       ]);
 
       const total = totalResult[0]?.count || 0;

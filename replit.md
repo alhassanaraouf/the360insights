@@ -55,12 +55,22 @@ Preferred communication style: Simple, everyday language.
   - Significant performance improvement and cost savings by avoiding redundant AI API calls
   - Monthly expiration ensures strategic insights stay relevant with automatic refresh
 
-- **Opponent List Bug Fix**: Fixed opponent list displaying inverted results when toggling weight class filter
-  - Issue: Toggle OFF showed "No opponents found", toggle ON showed results (opposite of expected UX)
+- **Opponent List Bug Fixes**: Fixed two critical issues with opponent list display
+  
+  **Issue 1 - Inverted Toggle Behavior**:
+  - Problem: Toggle OFF showed "No opponents found", toggle ON showed results (opposite of expected UX)
   - Root cause: Top-ranked athletes (e.g., rank #1) had 0 opponents within ±10 ranks filter
   - Solution: Changed default toggle state to ON (show all weight class) instead of OFF (filtered)
   - New behavior: Users see all opponents by default, can toggle OFF to filter to ±10 ranks
   - Each toggle state maintains distinct, predictable datasets without silent data swapping
+  
+  **Issue 2 - Duplicate Athletes in List**:
+  - Problem: Some athletes appeared multiple times in the opponent list
+  - Root cause: Athletes with multiple rank records (e.g., Moataz has 3 world ranks) created duplicate rows when joining with athleteRanks table
+  - Solution: Implemented PostgreSQL DISTINCT ON to ensure each athlete appears exactly once
+  - Technical fix: Added `selectDistinctOn([athletes.id])` with proper ORDER BY clause starting with athletes.id
+  - Count queries updated to use `count(DISTINCT athletes.id)` for accurate pagination totals
+  - Result: Each opponent now appears exactly once regardless of how many rank records exist
 
 ### Previous Changes (October 4, 2025)
 
