@@ -569,13 +569,33 @@ export default function OpponentAnalysis() {
             <CardContent>
               <Tabs defaultValue="tactical" className="w-full">
                 <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 bg-gray-200 dark:bg-gray-800 p-1">
-                  <TabsTrigger value="tactical" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Tactics</TabsTrigger>
-                  <TabsTrigger value="weaknesses" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Weaknesses</TabsTrigger>
-                  <TabsTrigger value="technical" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Technical</TabsTrigger>
-                  <TabsTrigger value="mental" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Mental</TabsTrigger>
+                  <TabsTrigger 
+                    value="tactical" 
+                    className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center transition-all duration-300 data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md"
+                  >
+                    Tactics
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="weaknesses" 
+                    className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center transition-all duration-300 data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md"
+                  >
+                    Weaknesses
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="technical" 
+                    className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center transition-all duration-300 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md"
+                  >
+                    Technical
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="mental" 
+                    className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center transition-all duration-300 data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:font-bold data-[state=active]:shadow-md"
+                  >
+                    Mental
+                  </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="tactical" className="mt-4">
+                <TabsContent value="tactical" className="mt-4 animate-in fade-in-50 duration-300">
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Zap className="h-4 w-4" />
@@ -583,7 +603,7 @@ export default function OpponentAnalysis() {
                     </h4>
                     <div className="grid gap-3">
                       {analysis.tacticalRecommendations.map((rec, index) => (
-                        <div key={index} className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                        <div key={index} className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border-l-4 border-blue-500">
                           <p className="text-sm">{rec}</p>
                         </div>
                       ))}
@@ -591,7 +611,7 @@ export default function OpponentAnalysis() {
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="weaknesses" className="mt-4">
+                <TabsContent value="weaknesses" className="mt-4 animate-in fade-in-50 duration-300">
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Target className="h-4 w-4" />
@@ -599,7 +619,7 @@ export default function OpponentAnalysis() {
                     </h4>
                     <div className="grid gap-3">
                       {analysis.weaknessExploitation.map((weakness, index) => (
-                        <div key={index} className="p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+                        <div key={index} className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border-l-4 border-red-500">
                           <p className="text-sm">{weakness}</p>
                         </div>
                       ))}
@@ -607,7 +627,7 @@ export default function OpponentAnalysis() {
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="technical" className="mt-4">
+                <TabsContent value="technical" className="mt-4 animate-in fade-in-50 duration-300">
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Activity className="h-4 w-4" />
@@ -615,7 +635,7 @@ export default function OpponentAnalysis() {
                     </h4>
                     <div className="grid gap-3">
                       {analysis.technicalFocus.map((focus, index) => (
-                        <div key={index} className="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+                        <div key={index} className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border-l-4 border-green-500">
                           <p className="text-sm">{focus}</p>
                         </div>
                       ))}
@@ -623,7 +643,7 @@ export default function OpponentAnalysis() {
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="mental" className="mt-4">
+                <TabsContent value="mental" className="mt-4 animate-in fade-in-50 duration-300">
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Shield className="h-4 w-4" />
@@ -631,7 +651,7 @@ export default function OpponentAnalysis() {
                     </h4>
                     <div className="grid gap-3">
                       {analysis.mentalPreparation.map((prep, index) => (
-                        <div key={index} className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+                        <div key={index} className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border-l-4 border-purple-500">
                           <p className="text-sm">{prep}</p>
                         </div>
                       ))}
