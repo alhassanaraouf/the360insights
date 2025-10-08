@@ -1658,7 +1658,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const athleteId = parseInt(req.params.athleteId);
       const opponentId = parseInt(req.params.opponentId);
       
+      // Check cache first
+      const cachedAnalysis = await storage.getOpponentAnalysisCache(athleteId, opponentId);
+      if (cachedAnalysis) {
+        console.log(`[OpponentAnalysis] Using cached analysis for athlete ${athleteId} vs opponent ${opponentId}`);
+        return res.json({
+          weaknessExploitation: cachedAnalysis.weaknessExploitation,
+          tacticalRecommendations: cachedAnalysis.tacticalRecommendations,
+          winProbability: cachedAnalysis.winProbability,
+          keyStrategyPoints: cachedAnalysis.keyStrategyPoints,
+          mentalPreparation: cachedAnalysis.mentalPreparation,
+          technicalFocus: cachedAnalysis.technicalFocus,
+        });
+      }
+      
+      console.log(`[OpponentAnalysis] Generating new analysis for athlete ${athleteId} vs opponent ${opponentId}`);
       const analysis = await aiEngine.analyzeOpponent(athleteId, opponentId);
+      
+      // Calculate expiration date (1st of next month)
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      expiresAt.setDate(1);
+      expiresAt.setHours(0, 0, 0, 0);
+      
+      // Save to cache
+      await storage.saveOpponentAnalysisCache({
+        athleteId,
+        opponentId,
+        weaknessExploitation: analysis.weaknessExploitation,
+        tacticalRecommendations: analysis.tacticalRecommendations,
+        winProbability: analysis.winProbability,
+        keyStrategyPoints: analysis.keyStrategyPoints,
+        mentalPreparation: analysis.mentalPreparation,
+        technicalFocus: analysis.technicalFocus,
+        expiresAt,
+      });
+      
       res.json(analysis);
     } catch (error) {
       console.error("Opponent analysis error:", error);

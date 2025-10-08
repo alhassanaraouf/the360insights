@@ -39,6 +39,9 @@ import {
   performanceAnalysisCache,
   type PerformanceAnalysisCache,
   type InsertPerformanceAnalysisCache,
+  opponentAnalysisCache,
+  type OpponentAnalysisCache,
+  type InsertOpponentAnalysisCache,
   sponsorshipBids,
   type SponsorshipBid,
   type InsertSponsorshipBid,
@@ -1763,6 +1766,39 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(rankUpCalculationCache.createdAt));
     
     return analyses;
+  }
+
+  async getOpponentAnalysisCache(athleteId: number, opponentId: number): Promise<OpponentAnalysisCache | undefined> {
+    const [cache] = await db
+      .select()
+      .from(opponentAnalysisCache)
+      .where(
+        and(
+          eq(opponentAnalysisCache.athleteId, athleteId),
+          eq(opponentAnalysisCache.opponentId, opponentId),
+          gte(opponentAnalysisCache.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(opponentAnalysisCache.createdAt))
+      .limit(1);
+    return cache;
+  }
+
+  async saveOpponentAnalysisCache(cache: InsertOpponentAnalysisCache): Promise<OpponentAnalysisCache> {
+    await db
+      .delete(opponentAnalysisCache)
+      .where(
+        and(
+          eq(opponentAnalysisCache.athleteId, cache.athleteId),
+          eq(opponentAnalysisCache.opponentId, cache.opponentId)
+        )
+      );
+    
+    const [newCache] = await db
+      .insert(opponentAnalysisCache)
+      .values(cache)
+      .returning();
+    return newCache;
   }
 }
 

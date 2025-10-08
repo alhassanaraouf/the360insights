@@ -262,6 +262,23 @@ export const performanceAnalysisCache = pgTable("performance_analysis_cache", {
   athleteUnique: unique().on(table.athleteId),
 }));
 
+// Opponent analysis cache table
+export const opponentAnalysisCache = pgTable("opponent_analysis_cache", {
+  id: serial("id").primaryKey(),
+  athleteId: integer("athlete_id").notNull().references(() => athletes.id),
+  opponentId: integer("opponent_id").notNull().references(() => athletes.id),
+  weaknessExploitation: jsonb("weakness_exploitation").notNull(),
+  tacticalRecommendations: jsonb("tactical_recommendations").notNull(),
+  winProbability: integer("win_probability").notNull(),
+  keyStrategyPoints: jsonb("key_strategy_points").notNull(),
+  mentalPreparation: jsonb("mental_preparation").notNull(),
+  technicalFocus: jsonb("technical_focus").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  analysisUnique: unique().on(table.athleteId, table.opponentId),
+}));
+
 // Insert schemas
 export const insertCoachSchema = createInsertSchema(coaches).omit({
   id: true,
@@ -340,6 +357,11 @@ export const insertPerformanceAnalysisCacheSchema = createInsertSchema(performan
   createdAt: true,
 });
 
+export const insertOpponentAnalysisCacheSchema = createInsertSchema(opponentAnalysisCache).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSponsorshipBidSchema = createInsertSchema(sponsorshipBids).omit({
   id: true,
   createdAt: true,
@@ -390,6 +412,9 @@ export type InsertRankUpCalculationCache = z.infer<typeof insertRankUpCalculatio
 
 export type PerformanceAnalysisCache = typeof performanceAnalysisCache.$inferSelect;
 export type InsertPerformanceAnalysisCache = z.infer<typeof insertPerformanceAnalysisCacheSchema>;
+
+export type OpponentAnalysisCache = typeof opponentAnalysisCache.$inferSelect;
+export type InsertOpponentAnalysisCache = z.infer<typeof insertOpponentAnalysisCacheSchema>;
 
 export type SponsorshipBid = typeof sponsorshipBids.$inferSelect;
 export type InsertSponsorshipBid = z.infer<typeof insertSponsorshipBidSchema>;
