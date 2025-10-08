@@ -452,7 +452,7 @@ export default function OpponentAnalysis() {
                   ) : analysis ? (
                     <div className="space-y-4">
                       {/* Win probability bar */}
-                      <div className="relative h-16 rounded-full overflow-hidden flex items-center">
+                      <div className="relative h-10 rounded-full overflow-hidden flex items-center">
                         <div 
                           className="absolute left-0 h-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-bold transition-all duration-500"
                           style={{ width: `${analysis.winProbability}%` }}
