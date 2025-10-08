@@ -424,10 +424,6 @@ export default function OpponentAnalysis() {
                           {athlete.worldCategory || 'Unknown'}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Playing Style:</span>
-                        <span className="text-sm font-medium">{athlete.playingStyle || 'Unknown'}</span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -522,22 +518,12 @@ export default function OpponentAnalysis() {
                   
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm">Threat Level:</span>
-                      <Badge variant={selectedOpponentData.threatLevel === 'High' ? 'destructive' : 'secondary'}>
-                        {selectedOpponentData.threatLevel}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-sm">Weight Class:</span>
                       <span className="text-sm font-medium">
                         {selectedOpponentData.worldCategory && selectedOpponentData.olympicCategory ? 
                           `${selectedOpponentData.worldCategory} / ${selectedOpponentData.olympicCategory}` : 
                           selectedOpponentData.worldCategory || selectedOpponentData.olympicCategory || 'Unknown'}
                       </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Playing Style:</span>
-                      <span className="text-sm font-medium">{selectedOpponentData.playingStyle || 'Unknown'}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -582,11 +568,11 @@ export default function OpponentAnalysis() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="tactical" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4">
-                  <TabsTrigger value="tactical" className="h-8 py-0 leading-none data-[state=active]:shadow-none px-1 sm:px-3 text-xs sm:text-sm text-center">Tactics</TabsTrigger>
-                  <TabsTrigger value="weaknesses" className="h-8 py-0 leading-none data-[state=active]:shadow-none px-1 sm:px-3 text-xs sm:text-sm text-center">Weaknesses</TabsTrigger>
-                  <TabsTrigger value="technical" className="h-8 py-0 leading-none data-[state=active]:shadow-none px-1 sm:px-3 text-xs sm:text-sm text-center">Technical</TabsTrigger>
-                  <TabsTrigger value="mental" className="h-8 py-0 leading-none data-[state=active]:shadow-none px-1 sm:px-3 text-xs sm:text-sm text-center">Mental</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 bg-gray-200 dark:bg-gray-800 p-1">
+                  <TabsTrigger value="tactical" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Tactics</TabsTrigger>
+                  <TabsTrigger value="weaknesses" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Weaknesses</TabsTrigger>
+                  <TabsTrigger value="technical" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Technical</TabsTrigger>
+                  <TabsTrigger value="mental" className="h-10 py-2 px-1 sm:px-3 text-xs sm:text-sm text-center data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:font-bold data-[state=active]:shadow-md">Mental</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="tactical" className="mt-4">
