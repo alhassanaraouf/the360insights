@@ -45,7 +45,24 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
 - **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 
-### Recent Changes (October 4, 2025)
+### Recent Changes (October 8, 2025)
+
+- **Opponent Analysis Caching**: Implemented intelligent caching system for AI-powered opponent analysis
+  - Created `opponent_analysis_cache` table to store analysis results with unique athlete-opponent pair constraint
+  - Cache expires on the 1st of each month at 00:00:00 for monthly refresh of tactical insights
+  - Route checks cache before calling OpenAI API, returning instant results when cached
+  - Stores all analysis data: weaknesses, tactics, win probability, strategies, mental prep, technical focus
+  - Significant performance improvement and cost savings by avoiding redundant AI API calls
+  - Monthly expiration ensures strategic insights stay relevant with automatic refresh
+
+- **Opponent List Bug Fix**: Fixed opponent list displaying inverted results when toggling weight class filter
+  - Issue: Toggle OFF showed "No opponents found", toggle ON showed results (opposite of expected UX)
+  - Root cause: Top-ranked athletes (e.g., rank #1) had 0 opponents within ±10 ranks filter
+  - Solution: Changed default toggle state to ON (show all weight class) instead of OFF (filtered)
+  - New behavior: Users see all opponents by default, can toggle OFF to filter to ±10 ranks
+  - Each toggle state maintains distinct, predictable datasets without silent data swapping
+
+### Previous Changes (October 4, 2025)
 
 - **Performance Analysis Caching**: Implemented intelligent caching system for AI-powered performance analysis
   - Created `performance_analysis_cache` table to store analysis results for each athlete
