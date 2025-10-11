@@ -261,6 +261,7 @@ export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
   pointsNeeded: decimal("points_needed", { precision: 10, scale: 2 }).notNull(),
   suggestedCompetitions: jsonb("suggested_competitions").notNull(),
   aiRecommendations: jsonb("ai_recommendations").notNull(),
+  aiPrompt: text("ai_prompt"), // Store the AI prompt to show the model's thinking
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({

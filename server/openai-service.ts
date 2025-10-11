@@ -17,6 +17,7 @@ export interface CompetitionRecommendation {
   timelineToTarget: string;
   riskAssessment: string;
   alternativeStrategies: string[];
+  aiPrompt?: string; // Add the AI prompt to show the model's thinking
 }
 
 export async function getCompetitionRecommendations(
@@ -218,6 +219,7 @@ Provide your response in JSON format with the following structure:
       alternativeStrategies: Array.isArray(result.alternativeStrategies)
         ? result.alternativeStrategies
         : [],
+      aiPrompt: prompt, // Include the prompt to show the model's thinking
     };
   } catch (error) {
     console.error("OpenAI API error:", error);

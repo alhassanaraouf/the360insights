@@ -1566,6 +1566,7 @@ export class DatabaseStorage implements IStorage {
         pointsNeeded: pointsNeeded.toString(),
         suggestedCompetitions: suggestedCompetitions as any,
         aiRecommendations: aiRecommendations as any,
+        aiPrompt: aiRecommendations.aiPrompt || null,
         expiresAt: expirationDate
       }).onConflictDoUpdate({
         target: [
@@ -1581,6 +1582,7 @@ export class DatabaseStorage implements IStorage {
           pointsNeeded: pointsNeeded.toString(),
           suggestedCompetitions: suggestedCompetitions as any,
           aiRecommendations: aiRecommendations as any,
+          aiPrompt: aiRecommendations.aiPrompt || null,
           expiresAt: expirationDate
         }
       });

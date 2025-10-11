@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tansta
 import { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +82,7 @@ interface AIRecommendations {
   timelineToTarget: string;
   riskAssessment: string;
   alternativeStrategies: string[];
+  aiPrompt?: string; // The AI prompt to show the model's thinking
 }
 
 interface RankUpResult {
@@ -1000,6 +1002,30 @@ export default function RankUp() {
                       <h4 className="font-semibold mb-2 text-blue-600 dark:text-blue-400">Strategy Overview</h4>
                       <p className="text-gray-700 dark:text-gray-300">{rankUpResult.aiRecommendations.strategy}</p>
                     </div>
+
+                    {/* AI Thought Process */}
+                    {rankUpResult.aiRecommendations.aiPrompt && (
+                      <Accordion type="single" collapsible className="border rounded-lg">
+                        <AccordionItem value="ai-thinking" className="border-0">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Brain className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                              <span className="text-purple-600 dark:text-purple-400">View AI's Thought Process</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                This is the detailed prompt that was sent to the AI model, showing exactly what context and instructions were provided:
+                              </p>
+                              <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-white dark:bg-gray-800 p-3 rounded border border-gray-300 dark:border-gray-600 max-h-96 overflow-y-auto">
+                                {rankUpResult.aiRecommendations.aiPrompt}
+                              </pre>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
 
                     {/* Priority Competitions */}
                     {rankUpResult.aiRecommendations.priorityCompetitions && rankUpResult.aiRecommendations.priorityCompetitions.length > 0 && (
