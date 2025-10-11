@@ -119,8 +119,8 @@ export default function OpponentAnalysis() {
     return opponentsData?.pages.flatMap(page => page.opponents || []) || [];
   }, [opponentsData]);
 
-  // Check if we're waiting for debounce or loading
-  const isSearching = searchInput !== debouncedSearch || opponentsLoading || isOpponentsFetching;
+  // Check if we're waiting for debounce or initial loading (not for pagination)
+  const isSearching = searchInput !== debouncedSearch || opponentsLoading;
 
   const { data: performanceInsight, isLoading: performanceLoading } = useQuery<PerformanceInsight>({
     queryKey: [`/api/ai/performance-insight/${selectedAthleteId}`],
