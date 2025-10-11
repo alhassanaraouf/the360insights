@@ -913,7 +913,7 @@ export default function MatchAnalysis() {
                     (player, idx) => (
                       <Card key={idx}>
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             {player.name
                               .toLowerCase()
                               .split(" ")
@@ -922,6 +922,11 @@ export default function MatchAnalysis() {
                                   word.charAt(0).toUpperCase() + word.slice(1),
                               )
                               .join(" ")}
+                            <span
+                              className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                            >
+                              {idx === 0 ? "- blue" : "- red"}
+                            </span>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -935,12 +940,12 @@ export default function MatchAnalysis() {
                             {player.events?.map((event, eventIdx) => (
                               <div
                                 key={eventIdx}
-                                className="flex justify-between items-center p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-sm"
+                                className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
                               >
-                                <span className="font-medium text-yellow-700 dark:text-yellow-300">
+                                <span className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}>
                                   {event.timestamp}
                                 </span>
-                                <span className="text-yellow-600 dark:text-yellow-400">
+                                <span className={idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}>
                                   {event.description}
                                 </span>
                               </div>
