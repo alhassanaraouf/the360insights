@@ -165,6 +165,7 @@ export class GeminiVideoAnalysis {
       onProgress("Analyzing match dynamics...", 30);
       let matchAnalysisText = '';
       let playerNames = ["Player 1", "Player 2"];
+      let matchAnalysisError: string | null = null;
       
       try {
         const matchPrompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
@@ -203,6 +204,7 @@ Provide a detailed narrative that captures the essence of the competition.`;
         console.log(`Extracted player names: ${playerNames[0]} vs ${playerNames[1]}`);
       } catch (error: any) {
         console.error('Match analysis error:', error.message);
+        matchAnalysisError = error.message;
       }
 
       // Run all other analyses in parallel with consistent player names
@@ -581,8 +583,9 @@ Rules:
 
       onProgress("Finalizing analysis...", 95);
 
-      // Extract results
-      const [matchResult, scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
+      // Extract results (5 promises: score, punch, kick, violation, advice)
+      // Note: matchAnalysisText was generated separately before these promises
+      const [scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
 
       const processingTime = Date.now() - startTime;
       
@@ -598,7 +601,7 @@ Rules:
         processedAt: new Date().toISOString(),
         processingTimeMs: processingTime,
         errors: {
-          match: matchResult.status === 'fulfilled' ? matchResult.value.error : (matchResult as PromiseRejectedResult).reason,
+          match: matchAnalysisError,
           score: scoreResult.status === 'fulfilled' ? scoreResult.value.error : (scoreResult as PromiseRejectedResult).reason,
           punch: punchResult.status === 'fulfilled' ? punchResult.value.error : (punchResult as PromiseRejectedResult).reason,
           kick: kickResult.status === 'fulfilled' ? kickResult.value.error : (kickResult as PromiseRejectedResult).reason,
