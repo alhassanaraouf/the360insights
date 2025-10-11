@@ -880,20 +880,24 @@ export class DatabaseStorage implements IStorage {
 
       const athleteData = athlete[0];
       const fetchedAthleteRanks = await db.select().from(athleteRanks)
-        .where(eq(athleteRanks.athleteId, athleteId))
-        .limit(1);
+        .where(eq(athleteRanks.athleteId, athleteId));
 
       const worldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
+      const olympicRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'olympic');
 
-      if (!worldRank || !athleteData.worldCategory) {
+      if (!athleteData.worldCategory) {
         return { opponents: [], total: 0 };
       }
 
-      const athleteRanking = worldRank.ranking;
-      const minRank = Math.max(1, athleteRanking - 10);
-      const maxRank = athleteRanking + 10;
+      // Calculate ±10 range for both world and Olympic rankings
+      const worldMinRank = worldRank ? Math.max(1, worldRank.ranking - 10) : null;
+      const worldMaxRank = worldRank ? worldRank.ranking + 10 : null;
+      const olympicMinRank = olympicRank ? Math.max(1, olympicRank.ranking - 10) : null;
+      const olympicMaxRank = olympicRank ? olympicRank.ranking + 10 : null;
+      
+      const athleteRanking = worldRank?.ranking || 999;
 
-      // Build optimized query with JOIN using athleteRanks table directly
+      // Build optimized query checking BOTH world and Olympic rankings
       // Use DISTINCT ON to ensure each athlete appears only once
       let baseQuery = db
         .selectDistinctOn([athletes.id], {
@@ -912,16 +916,33 @@ export class DatabaseStorage implements IStorage {
           worldRank: sql<number>`${athleteRanks.ranking}`
         })
         .from(athletes)
-        .innerJoin(athleteRanks, and(
-          eq(athleteRanks.athleteId, athletes.id),
-          eq(athleteRanks.rankingType, 'world')
-        ));
+        .innerJoin(athleteRanks, eq(athleteRanks.athleteId, athletes.id));
+
+      // Build rank conditions for world OR Olympic ranking
+      let rankConditions = [];
+      if (worldMinRank && worldMaxRank) {
+        rankConditions.push(
+          and(
+            eq(athleteRanks.rankingType, 'world'),
+            gte(athleteRanks.ranking, worldMinRank),
+            lte(athleteRanks.ranking, worldMaxRank)
+          )
+        );
+      }
+      if (olympicMinRank && olympicMaxRank) {
+        rankConditions.push(
+          and(
+            eq(athleteRanks.rankingType, 'olympic'),
+            gte(athleteRanks.ranking, olympicMinRank),
+            lte(athleteRanks.ranking, olympicMaxRank)
+          )
+        );
+      }
 
       let conditions = and(
         eq(athletes.worldCategory, athleteData.worldCategory),
         ne(athletes.id, athleteId),
-        gte(athleteRanks.ranking, minRank),
-        lte(athleteRanks.ranking, maxRank)
+        rankConditions.length > 0 ? or(...rankConditions) : undefined
       );
 
       // Add search filter if provided
@@ -942,10 +963,7 @@ export class DatabaseStorage implements IStorage {
       const countQuery = db
         .select({ count: sql<number>`count(DISTINCT ${athletes.id})` })
         .from(athletes)
-        .innerJoin(athleteRanks, and(
-          eq(athleteRanks.athleteId, athletes.id),
-          eq(athleteRanks.rankingType, 'world')
-        ))
+        .innerJoin(athleteRanks, eq(athleteRanks.athleteId, athletes.id))
         .where(conditions);
 
       const [totalResult, opponents] = await Promise.all([
