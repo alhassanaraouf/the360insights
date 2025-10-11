@@ -60,6 +60,7 @@ export default function OpponentAnalysis() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const observerTarget = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { selectedAthleteId } = useAthlete();
@@ -147,30 +148,45 @@ export default function OpponentAnalysis() {
     }
   });
 
-  // Setup intersection observer for infinite scroll
+  // Setup intersection observer for infinite scroll within ScrollArea
   useEffect(() => {
     if (!opponentSelectorOpen) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+    
+    // Add delay to ensure DOM is ready after list renders
+    const timer = setTimeout(() => {
+      // Find the scroll container (ScrollArea viewport)
+      const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+            console.log('[Infinite Scroll] Triggering fetchNextPage');
+            fetchNextPage();
+          }
+        },
+        { 
+          root: scrollContainer, // Observe within the ScrollArea, not viewport
+          threshold: 0.1 
         }
-      },
-      { threshold: 0.1 }
-    );
+      );
 
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
+      const currentTarget = observerTarget.current;
       if (currentTarget) {
-        observer.unobserve(currentTarget);
+        observer.observe(currentTarget);
+        console.log('[Infinite Scroll] Observer attached, hasNextPage:', hasNextPage, 'scrollContainer:', !!scrollContainer);
+      } else {
+        console.log('[Infinite Scroll] Observer target not found');
       }
-    };
-  }, [opponentSelectorOpen, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+      return () => {
+        if (currentTarget) {
+          observer.unobserve(currentTarget);
+        }
+      };
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [opponentSelectorOpen, hasNextPage, isFetchingNextPage, fetchNextPage, opponents.length]);
 
   const handleOpponentSelect = async (opponentId: string) => {
     setSelectedOpponent(opponentId);
@@ -282,7 +298,7 @@ export default function OpponentAnalysis() {
                     onValueChange={setSearchInput}
                   />
                   <CommandList>
-                    <ScrollArea className="h-[300px]">
+                    <ScrollArea ref={scrollAreaRef} className="h-[300px]">
                       {isOpponentsError ? (
                         <div className="p-4 text-center text-sm text-muted-foreground">
                           Failed to load opponents
