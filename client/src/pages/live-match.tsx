@@ -739,7 +739,7 @@ export default function MatchAnalysis() {
                     <Card key={idx} className="border-yellow-200 dark:border-yellow-800 bg-yellow-50/30 dark:bg-yellow-950/20">
                       <CardHeader className="bg-yellow-100 dark:bg-yellow-900/30">
                         <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
-                          {player.name}
+                          <span>{player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</span>
                           <AlertCircle className="h-5 w-5 text-yellow-500" />
                         </CardTitle>
                       </CardHeader>

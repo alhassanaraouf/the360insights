@@ -398,36 +398,58 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         (async () => {
           try {
             onProgress("Generating player advice...", 90);
-            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
+            const prompt = `IMPORTANT: Return ONLY valid JSON with no text before or after. Do not include any commentary.
 
 Analyze ${roundText} and provide coaching advice for each player.
 
-Return this EXACT JSON format:
+Return EXACTLY this JSON structure with actual data:
 {
   "players": [
     {
-      "name": "Actual Player Name",
+      "name": "Player Full Name",
       "tactical_advice": {
-        "issues": ["List of tactical mistakes"],
-        "improvements": ["Specific tactical recommendations"]
+        "issues": ["tactical issue 1", "tactical issue 2", "tactical issue 3"],
+        "improvements": ["tactical improvement 1", "tactical improvement 2", "tactical improvement 3"]
       },
       "technical_advice": {
-        "issues": ["Technical mistakes observed"],
-        "improvements": ["Skills to work on"]
+        "issues": ["technical issue 1", "technical issue 2", "technical issue 3"],
+        "improvements": ["technical improvement 1", "technical improvement 2", "technical improvement 3"]
       },
       "mental_advice": {
-        "issues": ["Mental/psychological issues"],
-        "improvements": ["Mental training recommendations"]
+        "issues": ["mental issue 1", "mental issue 2"],
+        "improvements": ["mental improvement 1", "mental improvement 2", "mental improvement 3"]
+      }
+    },
+    {
+      "name": "Player Full Name",
+      "tactical_advice": {
+        "issues": ["tactical issue 1", "tactical issue 2", "tactical issue 3"],
+        "improvements": ["tactical improvement 1", "tactical improvement 2", "tactical improvement 3"]
+      },
+      "technical_advice": {
+        "issues": ["technical issue 1", "technical issue 2", "technical issue 3"],
+        "improvements": ["technical improvement 1", "technical improvement 2", "technical improvement 3"]
+      },
+      "mental_advice": {
+        "issues": ["mental issue 1", "mental issue 2"],
+        "improvements": ["mental improvement 1", "mental improvement 2", "mental improvement 3"]
       }
     }
   ]
-}`;
+}
+
+Rules:
+- Include both players
+- Each category (tactical, technical, mental) must have at least 2-3 items in issues and improvements arrays
+- Use actual player names from the match
+- Return ONLY the JSON object`;
 
             const result = await genAI.models.generateContent({
               model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
+                responseMimeType: "application/json"
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
@@ -435,9 +457,20 @@ Return this EXACT JSON format:
               ])
             });
 
-            const cleaned = cleanJsonResponse(result.text || '');
-            return { data: JSON.parse(cleaned), error: null };
+            const responseText = result.text || '';
+            console.log('Raw advice response:', responseText.substring(0, 500));
+            
+            const cleaned = cleanJsonResponse(responseText);
+            const parsed = JSON.parse(cleaned);
+            
+            // Validate that we have proper data
+            if (!parsed.players || parsed.players.length === 0) {
+              throw new Error('Invalid advice structure');
+            }
+            
+            return { data: parsed, error: null };
           } catch (error: any) {
+            console.error('Advice analysis error:', error.message);
             return { data: getFallbackAdviceStructure(), error: error.message };
           }
         })()
