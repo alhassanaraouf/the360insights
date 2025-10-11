@@ -436,7 +436,19 @@ export default function RankUp() {
     }
 
     setIsCalculating(true);
+    
+    // Show initial loading toast
+    const loadingToast = toast({
+      title: "Calculating...",
+      description: "Analyzing competitions and generating AI recommendations. This may take 15-30 seconds.",
+      duration: 30000,
+    });
+
     try {
+      // Add timeout for long-running requests (45 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
+
       const response = await fetch("/api/rank-up/calculate", {
         method: "POST",
         body: JSON.stringify({
@@ -449,13 +461,20 @@ export default function RankUp() {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       setRankUpResult(await response.json());
+      
+      // Dismiss loading toast
+      loadingToast.dismiss?.();
+      
       toast({
         title: "Calculation Complete",
         description: isAlreadyTopRank 
@@ -464,6 +483,10 @@ export default function RankUp() {
       });
     } catch (error) {
       console.error("Calculation error:", error);
+      
+      // Dismiss loading toast
+      loadingToast.dismiss?.();
+      
       toast({
         title: "Calculation Failed",
         description: "Failed to calculate rank up requirements",
@@ -645,14 +668,25 @@ export default function RankUp() {
                 </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-4 flex gap-4">
                 <Button 
-                onClick={calculateRankUp}
-                disabled={isCalculating || !selectedAthleteId || !rankingType || !category || (!isAlreadyTopRank && !targetRank)}
-                className="w-full md:w-auto px-8 py-2"
-              >
-                {isCalculating ? "Calculating..." : isAlreadyTopRank ? "Get Maintenance Strategy" : "Calculate Requirements"}
+                  onClick={calculateRankUp}
+                  disabled={isCalculating || !selectedAthleteId || !rankingType || !category || (!isAlreadyTopRank && !targetRank)}
+                  className="px-8 py-2"
+                >
+                  {isCalculating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : isAlreadyTopRank ? "Get Maintenance Strategy" : "Calculate Requirements"}
                 </Button>
+                {isCalculating && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                    Generating AI recommendations...
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

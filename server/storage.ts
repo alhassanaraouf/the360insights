@@ -1318,22 +1318,25 @@ export class DatabaseStorage implements IStorage {
     suggestedCompetitions: (Competition & { cumulativePoints: number })[];
     aiRecommendations: CompetitionRecommendation;
   }> {
-    // Check for cached result first
-    const [cachedResult] = await db
+    // Check for cached result first (with index optimization)
+    const cachedQuery = db
       .select()
       .from(rankUpCalculationCache)
       .where(and(
         eq(rankUpCalculationCache.athleteId, athleteId),
         eq(rankUpCalculationCache.targetRank, targetRank),
         eq(rankUpCalculationCache.rankingType, rankingType),
-        eq(rankUpCalculationCache.category, category)
+        eq(rankUpCalculationCache.category, category),
+        sql`${rankUpCalculationCache.expiresAt} > NOW()` // Filter expired in query
       ))
       .orderBy(desc(rankUpCalculationCache.createdAt))
       .limit(1);
 
+    const [cachedResult] = await cachedQuery;
+
     // Check if cache exists and is not expired
     if (cachedResult && cachedResult.expiresAt > new Date()) {
-      console.log(`Using cached rank-up calculation for athlete ${athleteId}`);
+      console.log(`✅ Using cached rank-up calculation for athlete ${athleteId}`);
       return {
         currentRank: cachedResult.currentRank,
         currentPoints: Number(cachedResult.currentPoints),
@@ -1343,6 +1346,8 @@ export class DatabaseStorage implements IStorage {
         aiRecommendations: cachedResult.aiRecommendations as CompetitionRecommendation
       };
     }
+
+    console.log(`🔄 No valid cache found, calculating fresh rank-up requirements...`);
 
     console.log(`Calculating new rank-up requirements for athlete ${athleteId}`);
 

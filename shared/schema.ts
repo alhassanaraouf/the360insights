@@ -245,6 +245,9 @@ export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
 }, (table) => ({
   // Unique constraint to prevent duplicate calculations for same parameters
   cacheUnique: unique().on(table.athleteId, table.targetRank, table.rankingType, table.category),
+  // Index for faster cache lookups
+  athleteRankingIdx: index("athlete_ranking_idx").on(table.athleteId, table.rankingType, table.category),
+  expiresAtIdx: index("expires_at_idx").on(table.expiresAt),
 }));
 
 // Performance analysis cache table
