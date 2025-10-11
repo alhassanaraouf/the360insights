@@ -660,7 +660,7 @@ export default function MatchAnalysis() {
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {player.name}
+                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -688,7 +688,7 @@ export default function MatchAnalysis() {
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {player.name}
+                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -715,7 +715,7 @@ export default function MatchAnalysis() {
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {player.name}
+                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -774,7 +774,7 @@ export default function MatchAnalysis() {
                         <CardHeader className="pb-3">
                           <CardTitle className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}>
                             <Target className="h-5 w-5" />
-                            {player.name} - Coaching Advice
+                            {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} - Coaching Advice
                           </CardTitle>
                         </CardHeader>
                       <CardContent className="space-y-4">
