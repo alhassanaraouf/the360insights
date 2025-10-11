@@ -18,6 +18,14 @@ function cleanJsonResponse(responseText: string): string {
   cleanedText = cleanedText.replace(/^```json\s*/m, '').replace(/\s*```$/m, '');
   cleanedText = cleanedText.replace(/^```\s*/m, '').replace(/\s*```$/m, '');
   
+  // Extract JSON object from text (handle responses like "Okay, here's the JSON: {...}")
+  const firstBrace = cleanedText.indexOf('{');
+  const lastBrace = cleanedText.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+  }
+  
   // Parse and reformat
   try {
     const parsed = JSON.parse(cleanedText);
@@ -32,22 +40,38 @@ function cleanJsonResponse(responseText: string): string {
       return JSON.stringify(parsed);
     } catch (e) {
       console.error("Failed to parse JSON:", cleanedText);
-      return cleanedText;
+      throw new Error('Failed to parse JSON response');
     }
   }
 }
 
+// Extract player names from match analysis text
+function extractPlayerNames(matchAnalysis: string): string[] {
+  // Try to find player names in patterns like "Name (COUNTRY)" or just "Name"
+  const pattern = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+\([A-Z]{2,3}\))?)/g;
+  const matches = matchAnalysis.match(pattern);
+  
+  if (matches && matches.length >= 2) {
+    // Return first two unique names
+    const uniqueNames = Array.from(new Set(matches));
+    return uniqueNames.slice(0, 2);
+  }
+  
+  return ["Player 1", "Player 2"];
+}
+
 // Fallback JSON structure for errors
-function getFallbackPlayerStructure() {
+function getFallbackPlayerStructure(matchAnalysis?: string) {
+  const names = matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"];
   return {
     players: [
       {
-        name: "Player 1",
+        name: names[0],
         total: 0,
         events: []
       },
       {
-        name: "Player 2",
+        name: names[1],
         total: 0,
         events: []
       }
@@ -55,17 +79,18 @@ function getFallbackPlayerStructure() {
   };
 }
 
-function getFallbackAdviceStructure() {
+function getFallbackAdviceStructure(matchAnalysis?: string) {
+  const names = matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"];
   return {
     players: [
       {
-        name: "Player 1",
+        name: names[0],
         tactical_advice: { issues: [], improvements: [] },
         technical_advice: { issues: [], improvements: [] },
         mental_advice: { issues: [], improvements: [] }
       },
       {
-        name: "Player 2",
+        name: names[1],
         tactical_advice: { issues: [], improvements: [] },
         technical_advice: { issues: [], improvements: [] },
         mental_advice: { issues: [], improvements: [] }
@@ -185,9 +210,9 @@ Provide a detailed narrative that captures the essence of the competition.`;
         (async () => {
           try {
             onProgress("Identifying scoring patterns...", 50);
-            const prompt = `Watch ${roundText} only. Identify when a player scored using the scoreboard. Focus on scoreboard changes for accuracy. Listen to commentators - they help reference which player scored how many points.
+            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
-Write your response in English.
+Watch ${roundText} only. Identify when a player scored using the scoreboard. Focus on scoreboard changes for accuracy. Listen to commentators - they help reference which player scored how many points.
 
 Return this EXACT JSON format:
 {
@@ -235,7 +260,9 @@ CRITICAL:
         (async () => {
           try {
             onProgress("Analyzing techniques...", 60);
-            const prompt = `Track all punches thrown in ${roundText}. Count every attempt (successful or blocked).
+            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
+
+Track all punches thrown in ${roundText}. Count every attempt (successful or blocked).
 
 Return this EXACT JSON format:
 {
@@ -279,7 +306,9 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         (async () => {
           try {
             onProgress("Counting kicks and punches...", 70);
-            const prompt = `Track all kicks executed in ${roundText}. Count every kick attempt regardless of success.
+            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
+
+Track all kicks executed in ${roundText}. Count every kick attempt regardless of success.
 
 Return this EXACT JSON format:
 {
@@ -323,7 +352,9 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         (async () => {
           try {
             onProgress("Reviewing violations...", 80);
-            const prompt = `Watch the scoreboard for referee signals indicating yellow cards, warnings, or penalties in ${roundText}.
+            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
+
+Watch the scoreboard for referee signals indicating yellow cards, warnings, or penalties in ${roundText}.
 
 Return this EXACT JSON format:
 {
@@ -367,7 +398,9 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         (async () => {
           try {
             onProgress("Generating player advice...", 90);
-            const prompt = `Analyze ${roundText} and provide coaching advice for each player.
+            const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
+
+Analyze ${roundText} and provide coaching advice for each player.
 
 Return this EXACT JSON format:
 {
@@ -419,13 +452,15 @@ Return this EXACT JSON format:
 
       const processingTime = Date.now() - startTime;
 
+      const matchAnalysisText = matchResult.status === 'fulfilled' ? matchResult.value.data : null;
+      
       return {
-        match_analysis: matchResult.status === 'fulfilled' ? matchResult.value.data : null,
-        score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(),
-        punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(),
-        kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(),
-        yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(),
-        advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(),
+        match_analysis: matchAnalysisText,
+        score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(matchAnalysisText),
         sport: "Taekwondo",
         roundAnalyzed: round,
         processedAt: new Date().toISOString(),
