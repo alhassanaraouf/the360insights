@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MatchAnalysisResult {
   id: number;
@@ -346,9 +348,11 @@ export default function MatchAnalysis() {
               <CardContent>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap" data-testid="text-match-analysis">
-                      {matchResult.match_analysis}
-                    </p>
+                    <div className="text-gray-700 dark:text-gray-300" data-testid="text-match-analysis">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {matchResult.match_analysis}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -584,9 +588,11 @@ export default function MatchAnalysis() {
               </div>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap" data-testid="text-clip-analysis">
-                    {clipResult.analysis}
-                  </p>
+                  <div className="text-gray-700 dark:text-gray-300" data-testid="text-clip-analysis">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {clipResult.analysis}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </CardContent>
