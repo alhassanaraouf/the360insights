@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
-import { apiRequest, getInfiniteQueryFn } from "@/lib/queryClient";
+import { apiRequest, getInfiniteQueryFn, queryClient } from "@/lib/queryClient";
 import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import { useSport } from "@/lib/sport-context";
 import { getCountryFlagWithFallback } from "@/lib/country-flags";
@@ -31,7 +31,11 @@ import {
   ChevronsUpDown,
   Loader2,
   User as UserIcon,
-  CheckCircle2
+  CheckCircle2,
+  History,
+  Eye,
+  RefreshCw,
+  Trash2
 } from "lucide-react";
 
 interface Athlete {
@@ -720,49 +724,153 @@ export default function RankUp() {
                 </Button>
               </div>
 
-              {/* Progress Indicator */}
+              {/* Progress Indicator - Compact */}
               {isCalculating && calculationProgress.step > 0 && (
-                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-pulse" />
-                        AI Analysis in Progress
-                      </h3>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Step {calculationProgress.step} of 7
+                <div className="mt-4 p-3 bg-blue-50/50 dark:bg-gray-800/50 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Brain className="h-4 w-4 text-blue-600 dark:text-blue-400 animate-pulse flex-shrink-0" />
+                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{calculationProgress.message}</p>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                        {calculationProgress.step}/7
                       </span>
                     </div>
                     
                     {/* Progress Bar */}
-                    <div className="relative w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div className="relative w-full h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div 
                         className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out"
                         style={{ width: `${(calculationProgress.step / 7) * 100}%` }}
                       />
                     </div>
 
-                    {/* Current Step Message */}
-                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
-                      <p className="text-sm font-medium">{calculationProgress.message}</p>
-                    </div>
-
-                    {/* Estimated Time */}
-                    <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        ⏱️ This process typically takes 3-5 minutes. The AI is analyzing complex ranking data and competition strategies to give you the best recommendations.
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Typically takes 3-5 minutes
+                    </p>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Saved Analyses Section */}
+          {selectedAthleteId && savedAnalyses && savedAnalyses.length > 0 && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Saved Analyses ({savedAnalyses.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {savedAnalyses.map((analysis: any) => (
+                    <div 
+                      key={analysis.id} 
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                      data-testid={`saved-analysis-${analysis.id}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {analysis.rankingType === "world" ? "World" : "Olympic"} Rankings - {analysis.category}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            #{analysis.currentRank} → #{analysis.targetRank}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                          <span>{parseFloat(analysis.pointsNeeded).toFixed(1)} points needed</span>
+                          <span>•</span>
+                          <span>{new Date(analysis.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Load the saved analysis
+                            setRankUpResult({
+                              currentRank: analysis.currentRank,
+                              currentPoints: parseFloat(analysis.currentPoints),
+                              targetRank: analysis.targetRank,
+                              targetPoints: parseFloat(analysis.targetPoints),
+                              pointsNeeded: parseFloat(analysis.pointsNeeded),
+                              suggestedCompetitions: analysis.suggestedCompetitions,
+                              aiRecommendations: analysis.aiRecommendations,
+                            });
+                            // Scroll to results
+                            setTimeout(() => {
+                              document.querySelector('[data-testid="results-section"]')?.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                          }}
+                          data-testid={`button-view-analysis-${analysis.id}`}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Recalculate - set form values and trigger recalculation
+                            setTargetRank(analysis.targetRank.toString());
+                            setRankingType(analysis.rankingType);
+                            setCategory(analysis.category);
+                            setRankUpResult(null);
+                            toast({
+                              title: "Ready to Recalculate",
+                              description: "Click the calculate button to get fresh results",
+                            });
+                          }}
+                          data-testid={`button-recalculate-analysis-${analysis.id}`}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Recalc
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          onClick={async () => {
+                            if (confirm("Are you sure you want to delete this saved analysis?")) {
+                              try {
+                                const response = await fetch(`/api/rank-up/saved/${analysis.id}`, {
+                                  method: "DELETE",
+                                });
+                                if (!response.ok) throw new Error("Failed to delete");
+                                queryClient.invalidateQueries({ queryKey: ["/api/athletes", selectedAthleteId, "rank-up-analyses"] });
+                                toast({
+                                  title: "Analysis Deleted",
+                                  description: "The saved analysis has been removed",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Delete Failed",
+                                  description: "Could not delete the analysis",
+                                  variant: "destructive",
+                                });
+                              }
+                            }
+                          }}
+                          data-testid={`button-delete-analysis-${analysis.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Results Section */}
           {rankUpResult && (
-            <div className="space-y-6">
+            <div className="space-y-6" data-testid="results-section">
               {/* Overview Card */}
               <Card>
                 <CardHeader>

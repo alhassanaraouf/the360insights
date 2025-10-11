@@ -1455,6 +1455,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a saved rank up analysis
+  app.delete("/api/rank-up/saved/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+
+      await storage.deleteSavedRankUpAnalysis(id);
+      res.json({ message: "Analysis deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting saved rank up analysis:", error);
+      res.status(500).json({ error: "Failed to delete analysis" });
+    }
+  });
+
   // Competition Preferences Routes
   app.get("/api/competition-preferences/:userId", isAuthenticated, async (req, res) => {
     try {

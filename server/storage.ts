@@ -244,6 +244,7 @@ export interface IStorage {
 
   // Rank Up Analyses
   getSavedRankUpAnalyses(athleteId: number): Promise<RankUpCalculationCache[]>;
+  deleteSavedRankUpAnalysis(id: number): Promise<void>;
 
 }
 
@@ -1817,6 +1818,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(rankUpCalculationCache.createdAt));
     
     return analyses;
+  }
+
+  async deleteSavedRankUpAnalysis(id: number): Promise<void> {
+    await db
+      .delete(rankUpCalculationCache)
+      .where(eq(rankUpCalculationCache.id, id));
   }
 
   async getOpponentAnalysisCache(athleteId: number, opponentId: number): Promise<OpponentAnalysisCache | undefined> {
