@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -88,14 +88,18 @@ export class GeminiVideoAnalysis {
     onProgress("Uploading video file...", 10);
 
     const uploadedFile = await genAI.files.upload({
-      file: videoPath
+      file: videoPath,
+      config: { 
+        mimeType: 'video/mp4',
+        displayName: `taekwondo_analysis_${Date.now()}`
+      }
     });
 
     onProgress("Processing video...", 20);
 
     // Wait for video to be processed
     const fileName = uploadedFile.name || '';
-    let file = await genAI.files.get({ file: fileName });
+    let file = await genAI.files.get({ name: fileName });
     const maxWaitTime = 10 * 60 * 1000; // 10 minutes
     const startTime = Date.now();
 
@@ -104,7 +108,7 @@ export class GeminiVideoAnalysis {
         throw new Error('Video processing timeout (10 minutes)');
       }
       await new Promise(resolve => setTimeout(resolve, 5000));
-      file = await genAI.files.get({ file: fileName });
+      file = await genAI.files.get({ name: fileName });
     }
 
     if (file.state === 'FAILED') {
@@ -165,10 +169,10 @@ Provide a detailed narrative that captures the essence of the competition.`;
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
                 prompt
-              ]
+              ])
             });
 
             return { data: result.text || '', error: null };
@@ -214,10 +218,10 @@ CRITICAL:
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
-                { text: prompt }
-              ]
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+                prompt
+              ])
             });
 
             const cleaned = cleanJsonResponse(result.text || '');
@@ -258,10 +262,10 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
-                { text: prompt }
-              ]
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+                prompt
+              ])
             });
 
             const cleaned = cleanJsonResponse(result.text || '');
@@ -302,10 +306,10 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
-                { text: prompt }
-              ]
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+                prompt
+              ])
             });
 
             const cleaned = cleanJsonResponse(result.text || '');
@@ -346,10 +350,10 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
-                { text: prompt }
-              ]
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+                prompt
+              ])
             });
 
             const cleaned = cleanJsonResponse(result.text || '');
@@ -392,10 +396,10 @@ Return this EXACT JSON format:
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
-              contents: [
-                uploadedFile,
-                { text: prompt }
-              ]
+              contents: createUserContent([
+                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+                prompt
+              ])
             });
 
             const cleaned = cleanJsonResponse(result.text || '');
@@ -440,7 +444,7 @@ Return this EXACT JSON format:
       // Cleanup uploaded file
       if (uploadedFile && uploadedFile.name) {
         try {
-          await genAI.files.delete({ file: uploadedFile.name });
+          await genAI.files.delete({ name: uploadedFile.name });
           console.log('Uploaded file cleaned up successfully');
         } catch (cleanupError) {
           console.warn('Failed to cleanup uploaded file:', cleanupError);
@@ -462,15 +466,6 @@ Return this EXACT JSON format:
       uploadedFile = await this.uploadAndProcessVideo(videoPath, onProgress);
 
       onProgress("Understanding your request...", 30);
-
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash-exp",
-        generationConfig: {
-          temperature: 0,
-          maxOutputTokens: 8192,
-        }
-      });
-
       onProgress("Analyzing techniques...", 50);
 
       const prompt = `You are an expert Taekwondo coach and performance analyst with extensive experience in professional training and technique optimization.
@@ -499,15 +494,17 @@ Be specific, detailed, and constructive. Focus on practical coaching advice.`;
 
       onProgress("Comparing to professional standards...", 70);
 
-      const result = await model.generateContent([
-        {
-          fileData: {
-            mimeType: uploadedFile.mimeType,
-            fileUri: uploadedFile.uri
-          }
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.0-flash-exp",
+        config: {
+          temperature: 0,
+          maxOutputTokens: 8192,
         },
-        { text: prompt }
-      ]);
+        contents: createUserContent([
+          createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+          prompt
+        ])
+      });
 
       onProgress("Generating coaching advice...", 90);
 
@@ -520,7 +517,7 @@ Be specific, detailed, and constructive. Focus on practical coaching advice.`;
         userRequest: whatToAnalyze,
         sport: "Taekwondo",
         language: "english",
-        analysis: result.response.text(),
+        analysis: result.text || '',
         processedAt: new Date().toISOString(),
         processingTimeMs: processingTime
       };
@@ -529,7 +526,7 @@ Be specific, detailed, and constructive. Focus on practical coaching advice.`;
       // Cleanup uploaded file
       if (uploadedFile && uploadedFile.name) {
         try {
-          await genAI.files.delete({ file: uploadedFile.name });
+          await genAI.files.delete({ name: uploadedFile.name });
           console.log('Uploaded file cleaned up successfully');
         } catch (cleanupError) {
           console.warn('Failed to cleanup uploaded file:', cleanupError);

@@ -84,7 +84,7 @@ interface PlayerAdvice {
 export default function MatchAnalysis() {
   const [analysisType, setAnalysisType] = useState<"match" | "clip">("match");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [round, setRound] = useState<string>("");
+  const [round, setRound] = useState<string>("entire-match");
   const [clipRequest, setClipRequest] = useState("");
   const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(null);
   const [clipResult, setClipResult] = useState<ClipAnalysisResult | null>(null);
@@ -96,7 +96,7 @@ export default function MatchAnalysis() {
       formData.append('video', file);
       
       if (type === 'match') {
-        if (round) {
+        if (round && round !== 'entire-match') {
           formData.append('round', round);
         }
         const response = await fetch('/api/video-analysis/match', {
@@ -178,7 +178,7 @@ export default function MatchAnalysis() {
 
   const handleReset = () => {
     setVideoFile(null);
-    setRound("");
+    setRound("entire-match");
     setClipRequest("");
     setMatchResult(null);
     setClipResult(null);
@@ -237,7 +237,7 @@ export default function MatchAnalysis() {
                       <SelectValue placeholder="Analyze entire match" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Entire Match</SelectItem>
+                      <SelectItem value="entire-match">Entire Match</SelectItem>
                       <SelectItem value="no-rounds">No Rounds</SelectItem>
                       {Array.from({ length: 50 }, (_, i) => i + 1).map(num => (
                         <SelectItem key={num} value={num.toString()}>Round {num}</SelectItem>
