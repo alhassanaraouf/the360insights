@@ -1311,7 +1311,7 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
-  async calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string): Promise<{
+  async calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string, force?: boolean): Promise<{
     currentRank: number;
     currentPoints: number;
     targetPoints: number;
@@ -1319,36 +1319,42 @@ export class DatabaseStorage implements IStorage {
     suggestedCompetitions: (Competition & { cumulativePoints: number })[];
     aiRecommendations: CompetitionRecommendation;
   }> {
-    // Check for cached result first (with index optimization)
-    const cachedQuery = db
-      .select()
-      .from(rankUpCalculationCache)
-      .where(and(
-        eq(rankUpCalculationCache.athleteId, athleteId),
-        eq(rankUpCalculationCache.targetRank, targetRank),
-        eq(rankUpCalculationCache.rankingType, rankingType),
-        eq(rankUpCalculationCache.category, category),
-        sql`${rankUpCalculationCache.expiresAt} > NOW()` // Filter expired in query
-      ))
-      .orderBy(desc(rankUpCalculationCache.createdAt))
-      .limit(1);
+    // Check for cached result first (with index optimization) - skip if force is true
+    if (!force) {
+      const cachedQuery = db
+        .select()
+        .from(rankUpCalculationCache)
+        .where(and(
+          eq(rankUpCalculationCache.athleteId, athleteId),
+          eq(rankUpCalculationCache.targetRank, targetRank),
+          eq(rankUpCalculationCache.rankingType, rankingType),
+          eq(rankUpCalculationCache.category, category),
+          sql`${rankUpCalculationCache.expiresAt} > NOW()` // Filter expired in query
+        ))
+        .orderBy(desc(rankUpCalculationCache.createdAt))
+        .limit(1);
 
-    const [cachedResult] = await cachedQuery;
+      const [cachedResult] = await cachedQuery;
 
-    // Check if cache exists and is not expired
-    if (cachedResult && cachedResult.expiresAt > new Date()) {
-      console.log(`✅ Using cached rank-up calculation for athlete ${athleteId}`);
-      return {
-        currentRank: cachedResult.currentRank,
-        currentPoints: Number(cachedResult.currentPoints),
-        targetPoints: Number(cachedResult.targetPoints),
-        pointsNeeded: Number(cachedResult.pointsNeeded),
-        suggestedCompetitions: cachedResult.suggestedCompetitions as (Competition & { cumulativePoints: number })[],
-        aiRecommendations: cachedResult.aiRecommendations as CompetitionRecommendation
-      };
+      // Check if cache exists and is not expired
+      if (cachedResult && cachedResult.expiresAt > new Date()) {
+        console.log(`✅ Using cached rank-up calculation for athlete ${athleteId}`);
+        return {
+          currentRank: cachedResult.currentRank,
+          currentPoints: Number(cachedResult.currentPoints),
+          targetPoints: Number(cachedResult.targetPoints),
+          pointsNeeded: Number(cachedResult.pointsNeeded),
+          suggestedCompetitions: cachedResult.suggestedCompetitions as (Competition & { cumulativePoints: number })[],
+          aiRecommendations: cachedResult.aiRecommendations as CompetitionRecommendation
+        };
+      }
     }
 
-    console.log(`🔄 No valid cache found, calculating fresh rank-up requirements...`);
+    if (force) {
+      console.log(`🔄 Force recalculation requested, skipping cache...`);
+    } else {
+      console.log(`🔄 No valid cache found, calculating fresh rank-up requirements...`);
+    }
 
     console.log(`Calculating new rank-up requirements for athlete ${athleteId}`);
 

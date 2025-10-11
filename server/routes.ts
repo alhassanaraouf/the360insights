@@ -1400,7 +1400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rank Up functionality
   app.post("/api/rank-up/calculate", async (req, res) => {
     try {
-      const { athleteId, targetRank, rankingType, category, targetDate } = req.body;
+      const { athleteId, targetRank, rankingType, category, targetDate, force } = req.body;
       
       if (!athleteId || !targetRank || !rankingType || !category) {
         return res.status(400).json({ 
@@ -1413,7 +1413,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetRank, 
         rankingType, 
         category,
-        targetDate
+        targetDate,
+        force
       );
       
       res.json(requirements);

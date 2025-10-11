@@ -493,6 +493,7 @@ export default function RankUp() {
           rankingType,
           category,
           targetDate: targetDate || null,
+          force: true, // Always force fresh calculation
         }),
         headers: {
           "Content-Type": "application/json",
@@ -798,7 +799,6 @@ export default function RankUp() {
                             setRankUpResult({
                               currentRank: analysis.currentRank,
                               currentPoints: parseFloat(analysis.currentPoints),
-                              targetRank: analysis.targetRank,
                               targetPoints: parseFloat(analysis.targetPoints),
                               pointsNeeded: parseFloat(analysis.pointsNeeded),
                               suggestedCompetitions: analysis.suggestedCompetitions,
@@ -822,10 +822,11 @@ export default function RankUp() {
                             setTargetRank(analysis.targetRank.toString());
                             setRankingType(analysis.rankingType);
                             setCategory(analysis.category);
+                            setTargetDate("");
                             setRankUpResult(null);
                             toast({
                               title: "Ready to Recalculate",
-                              description: "Click the calculate button to get fresh results",
+                              description: "Form populated with saved parameters. Click Calculate for fresh results.",
                             });
                           }}
                           data-testid={`button-recalculate-analysis-${analysis.id}`}
