@@ -457,10 +457,17 @@ Rules:
               ])
             });
 
+            // Extract text from Gemini response
             const responseText = result.text || '';
-            console.log('Raw advice response length:', responseText.length);
-            console.log('First 200 chars:', responseText.substring(0, 200));
-            console.log('Last 200 chars:', responseText.substring(responseText.length - 200));
+            if (!responseText) {
+              console.error('[ADVICE] Empty response from Gemini');
+              console.error('[ADVICE] Result object keys:', Object.keys(result));
+              throw new Error('Empty response from Gemini');
+            }
+            
+            console.log('[ADVICE] Raw response length:', responseText.length);
+            console.log('[ADVICE] First 300 chars:', responseText.substring(0, 300));
+            console.log('[ADVICE] Last 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)));
             
             // Since we're using responseMimeType: "application/json", the response should be valid JSON
             // Just trim whitespace and parse directly
@@ -468,10 +475,10 @@ Rules:
             try {
               const trimmed = responseText.trim();
               parsed = JSON.parse(trimmed);
-              console.log('Successfully parsed advice directly');
+              console.log('[ADVICE] Successfully parsed JSON directly');
             } catch (e: any) {
-              console.log('Direct parse failed:', e.message);
-              console.log('Trying more aggressive cleaning...');
+              console.log('[ADVICE] Direct parse failed:', e.message);
+              console.log('[ADVICE] Trying to extract JSON from text...');
               
               // More aggressive: extract JSON from any surrounding text
               let cleaned = responseText.trim();
@@ -480,15 +487,18 @@ Rules:
               
               if (firstBrace !== -1 && lastBrace !== -1) {
                 cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-                console.log('Extracted JSON length:', cleaned.length);
+                console.log('[ADVICE] Extracted JSON length:', cleaned.length);
+                console.log('[ADVICE] Extracted first 200:', cleaned.substring(0, 200));
                 try {
                   parsed = JSON.parse(cleaned);
-                  console.log('Successfully parsed after extraction');
+                  console.log('[ADVICE] Successfully parsed after extraction');
                 } catch (e2: any) {
-                  console.error('Parse failed even after extraction:', e2.message);
+                  console.error('[ADVICE] Parse failed even after extraction:', e2.message);
+                  console.error('[ADVICE] Extracted text:', cleaned.substring(0, 500));
                   throw new Error('Cannot parse advice JSON: ' + e2.message);
                 }
               } else {
+                console.error('[ADVICE] No JSON braces found in response');
                 throw new Error('No JSON braces found in response');
               }
             }
