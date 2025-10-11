@@ -148,12 +148,12 @@ export default function VideoPlayerWithMarkers({
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-auto bg-white dark:bg-gray-900 rounded-t-lg"
+        className="w-full h-auto bg-black rounded-t-xl"
         data-testid="video-player"
       />
 
       {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 p-5 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
+      <div className="bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 dark:from-gray-900 dark:via-black dark:to-gray-900 p-5 rounded-b-xl border-t border-gray-700/50 dark:border-gray-800">
         {/* Timeline with Markers */}
         <div className="relative mb-4">
           {/* Background track */}
@@ -191,10 +191,10 @@ export default function VideoPlayerWithMarkers({
                   
                   {/* Tooltip */}
                   {hoveredEvent === event && (
-                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-xs p-3 rounded-lg shadow-xl whitespace-nowrap z-50">
-                      <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">{event.timestamp}</div>
+                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-900 border border-gray-600 dark:border-gray-700 text-gray-100 dark:text-gray-200 text-xs p-3 rounded-lg shadow-2xl whitespace-nowrap z-50">
+                      <div className="font-bold text-blue-400 dark:text-blue-300 text-sm">{event.timestamp}</div>
                       <div className="mt-1.5 font-medium">{event.description}</div>
-                      {event.player && <div className="text-gray-600 dark:text-gray-400 mt-1 text-xs">{event.player}</div>}
+                      {event.player && <div className="text-gray-400 dark:text-gray-500 mt-1 text-xs">{event.player}</div>}
                     </div>
                   )}
                 </div>
@@ -210,14 +210,14 @@ export default function VideoPlayerWithMarkers({
             size="sm"
             variant="ghost"
             onClick={togglePlay}
-            className="text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+            className="text-gray-300 dark:text-gray-400 hover:bg-blue-600/20 dark:hover:bg-blue-500/20 hover:text-blue-400 dark:hover:text-blue-300 transition-all duration-200"
             data-testid="button-play-pause"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </Button>
 
           {/* Time Display */}
-          <div className="text-gray-700 dark:text-gray-300 text-sm font-mono bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-md" data-testid="text-time">
+          <div className="text-gray-300 dark:text-gray-400 text-sm font-mono bg-gray-700/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-md border border-gray-600/30 dark:border-gray-700/50" data-testid="text-time">
             {secondsToTime(currentTime)} / {secondsToTime(duration)}
           </div>
 
@@ -229,7 +229,7 @@ export default function VideoPlayerWithMarkers({
               size="sm"
               variant="ghost"
               onClick={toggleMute}
-              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
+              className="text-gray-300 dark:text-gray-400 hover:bg-gray-700/50 dark:hover:bg-gray-800/50 hover:text-gray-100 dark:hover:text-gray-200 transition-all duration-200"
               data-testid="button-mute"
             >
               {isMuted || volume === 0 ? (
@@ -254,7 +254,7 @@ export default function VideoPlayerWithMarkers({
             size="sm"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
+            className="text-gray-300 dark:text-gray-400 hover:bg-gray-700/50 dark:hover:bg-gray-800/50 hover:text-gray-100 dark:hover:text-gray-200 transition-all duration-200"
             data-testid="button-fullscreen"
           >
             <Maximize className="h-5 w-5" />
