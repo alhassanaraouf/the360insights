@@ -14,7 +14,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import logoImage from "@assets/WhatsApp_Image_2025-09-15_at_14.33.56-removebg-preview_1758279784771.png";
+import logoImage from "@assets/the360 insights Transparent logo_1760181687601.png";
 
 export default function Landing() {
   return (
@@ -26,14 +26,11 @@ export default function Landing() {
             <div className="flex items-center justify-center">
               <img
                 src={logoImage}
-                alt="Performs Insights Logo"
-                className="h-56 w-72 object-contain"
+                alt="The360 Insights Logo"
+                className="h-32 w-auto object-contain"
               />
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            The360 Insights
-          </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
             Advanced sports analytics platform for Taekwondo athletes. Get
             AI-powered insights, opponent analysis, training recommendations,

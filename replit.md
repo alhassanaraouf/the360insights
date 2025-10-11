@@ -1,7 +1,7 @@
-# Performs Insights - Sports Analytics Dashboard
+# The360 Insights - Sports Analytics Dashboard
 
 ## Overview
-Performs Insights is a comprehensive sports analytics platform designed for Taekwondo athletes. It provides AI-powered performance insights, opponent analysis, training planning, and injury prevention capabilities. The platform aims to be a full-stack web application, offering a 360-degree view of athlete performance, strategic insights, and personalized recommendations. Its business vision includes enhancing athlete performance, optimizing training, and minimizing injury risks within the Taekwondo community, with potential for broader sports applications.
+The360 Insights is a comprehensive sports analytics platform designed for Taekwondo athletes. It provides AI-powered performance insights, opponent analysis, training planning, and injury prevention capabilities. The platform aims to be a full-stack web application, offering a 360-degree view of athlete performance, strategic insights, and personalized recommendations. Its business vision includes enhancing athlete performance, optimizing training, and minimizing injury risks within the Taekwondo community, with potential for broader sports applications.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -45,7 +45,15 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
 - **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 
-### Recent Changes (October 8, 2025)
+### Recent Changes (October 11, 2025)
+
+- **Branding Update**: Updated platform branding to "The360 Insights"
+  - Replaced old logo assets with new professional branding
+  - Sidebar now displays circular blue symbol logo
+  - Landing page shows full "The360 Insights" logo with tagline
+  - Updated all references from "Performs Insights" to "The360 Insights"
+
+### Previous Changes (October 8, 2025)
 
 - **Opponent Analysis Caching**: Implemented intelligent caching system for AI-powered opponent analysis
   - Created `opponent_analysis_cache` table to store analysis results with unique athlete-opponent pair constraint

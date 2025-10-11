@@ -21,7 +21,7 @@ import {
   DollarSign,
   GripVertical,
 } from "lucide-react";
-import logoImage from "@assets/WhatsApp_Image_2025-09-15_at_14.33.56-removebg-preview_1758279784771.png";
+import logoImage from "@assets/the360 insights Transparent symbol_1760181687601.png";
 import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
 import { useQuery } from "@tanstack/react-query";
@@ -166,8 +166,8 @@ export default function Sidebar() {
             <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
               <img
                 src={logoImage}
-                alt="The360 Insights Logo"
-                className="w-20 h-16 object-contain"
+                alt="The360 Insights Symbol"
+                className="w-20 h-20 object-contain"
               />
             </div>
             <div className="min-w-0">
