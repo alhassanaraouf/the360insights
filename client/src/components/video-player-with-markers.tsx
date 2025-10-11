@@ -148,16 +148,16 @@ export default function VideoPlayerWithMarkers({
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-auto bg-black"
+        className="w-full h-auto bg-black rounded-t-lg"
         data-testid="video-player"
       />
 
       {/* Controls */}
-      <div className="bg-gray-900 p-4">
+      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 p-5 rounded-b-lg shadow-xl border-t border-gray-700">
         {/* Timeline with Markers */}
-        <div className="relative mb-3">
+        <div className="relative mb-4">
           {/* Background track */}
-          <div className="relative h-2 mb-2">
+          <div className="relative h-3 mb-2">
             <Slider
               value={[currentTime]}
               min={0}
@@ -187,14 +187,14 @@ export default function VideoPlayerWithMarkers({
                   onMouseLeave={() => setHoveredEvent(null)}
                   data-testid={`marker-${event.type}-${idx}`}
                 >
-                  <div className={`w-2 h-6 ${getEventColor(event.type)} rounded-sm hover:scale-110 transition-transform`} />
+                  <div className={`w-3 h-7 ${getEventColor(event.type)} rounded-md hover:scale-125 hover:shadow-lg transition-all duration-200 shadow-md`} />
                   
                   {/* Tooltip */}
                   {hoveredEvent === event && (
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-700 text-white text-xs p-2 rounded shadow-lg whitespace-nowrap z-50">
-                      <div className="font-semibold text-blue-400">{event.timestamp}</div>
-                      <div className="mt-1">{event.description}</div>
-                      {event.player && <div className="text-gray-400 mt-0.5">{event.player}</div>}
+                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-gray-900 to-gray-800 border-2 border-blue-500/50 text-white text-xs p-3 rounded-lg shadow-2xl whitespace-nowrap z-50 backdrop-blur-sm">
+                      <div className="font-bold text-blue-300 text-sm">{event.timestamp}</div>
+                      <div className="mt-1.5 font-medium">{event.description}</div>
+                      {event.player && <div className="text-gray-300 mt-1 text-xs">{event.player}</div>}
                     </div>
                   )}
                 </div>
@@ -204,32 +204,32 @@ export default function VideoPlayerWithMarkers({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-4 mt-2">
           {/* Play/Pause */}
           <Button
             size="sm"
             variant="ghost"
             onClick={togglePlay}
-            className="text-white hover:bg-gray-800 hover:text-white"
+            className="text-white hover:bg-blue-600 hover:text-white transition-all duration-200 rounded-lg shadow-md hover:shadow-lg"
             data-testid="button-play-pause"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </Button>
 
           {/* Time Display */}
-          <div className="text-white text-sm font-mono" data-testid="text-time">
+          <div className="text-white text-sm font-mono bg-gray-800/50 px-3 py-1 rounded-md" data-testid="text-time">
             {secondsToTime(currentTime)} / {secondsToTime(duration)}
           </div>
 
           <div className="flex-1" />
 
           {/* Volume */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               size="sm"
               variant="ghost"
               onClick={toggleMute}
-              className="text-white hover:bg-gray-800 hover:text-white"
+              className="text-white hover:bg-purple-600 hover:text-white transition-all duration-200 rounded-lg shadow-md hover:shadow-lg"
               data-testid="button-mute"
             >
               {isMuted || volume === 0 ? (
@@ -244,7 +244,7 @@ export default function VideoPlayerWithMarkers({
               max={1}
               step={0.1}
               onValueChange={handleVolumeChange}
-              className="w-20"
+              className="w-24"
               data-testid="slider-volume"
             />
           </div>
@@ -254,7 +254,7 @@ export default function VideoPlayerWithMarkers({
             size="sm"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="text-white hover:bg-gray-800 hover:text-white"
+            className="text-white hover:bg-green-600 hover:text-white transition-all duration-200 rounded-lg shadow-md hover:shadow-lg"
             data-testid="button-fullscreen"
           >
             <Maximize className="h-5 w-5" />

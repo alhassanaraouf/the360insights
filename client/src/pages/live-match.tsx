@@ -616,12 +616,42 @@ export default function MatchAnalysis() {
             </Card>
 
             <Tabs defaultValue="scores" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="scores" data-testid="tab-scores">Scores</TabsTrigger>
-                <TabsTrigger value="punches" data-testid="tab-punches">Punches</TabsTrigger>
-                <TabsTrigger value="kicks" data-testid="tab-kicks">Kicks</TabsTrigger>
-                <TabsTrigger value="violations" data-testid="tab-violations">Violations</TabsTrigger>
-                <TabsTrigger value="advice" data-testid="tab-advice">Advice</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                <TabsTrigger 
+                  value="scores" 
+                  data-testid="tab-scores"
+                  className="data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:dark:bg-green-900/50 data-[state=active]:dark:text-green-300 data-[state=active]:font-semibold"
+                >
+                  Scores
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="punches" 
+                  data-testid="tab-punches"
+                  className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 data-[state=active]:dark:bg-purple-900/50 data-[state=active]:dark:text-purple-300 data-[state=active]:font-semibold"
+                >
+                  Punches
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="kicks" 
+                  data-testid="tab-kicks"
+                  className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:dark:bg-blue-900/50 data-[state=active]:dark:text-blue-300 data-[state=active]:font-semibold"
+                >
+                  Kicks
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="violations" 
+                  data-testid="tab-violations"
+                  className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-700 data-[state=active]:dark:bg-yellow-900/50 data-[state=active]:dark:text-yellow-300 data-[state=active]:font-semibold"
+                >
+                  Violations
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="advice" 
+                  data-testid="tab-advice"
+                  className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 data-[state=active]:dark:bg-indigo-900/50 data-[state=active]:dark:text-indigo-300 data-[state=active]:font-semibold"
+                >
+                  Advice
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="scores" className="mt-6">
@@ -733,14 +763,20 @@ export default function MatchAnalysis() {
 
               <TabsContent value="advice" className="mt-6">
                 <div className="grid grid-cols-1 gap-6">
-                  {matchResult.advice_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Target className="h-5 w-5 text-primary" />
-                          {player.name} - Coaching Advice
-                        </CardTitle>
-                      </CardHeader>
+                  {matchResult.advice_analysis?.players?.map((player, idx) => {
+                    const isBlue = idx === 0;
+                    const playerColor = isBlue ? 'text-blue-600' : 'text-red-600';
+                    const borderColor = isBlue ? 'border-blue-200 dark:border-blue-800' : 'border-red-200 dark:border-red-800';
+                    const bgColor = isBlue ? 'bg-blue-50/50 dark:bg-blue-950/20' : 'bg-red-50/50 dark:bg-red-950/20';
+                    
+                    return (
+                      <Card key={idx} className={`${borderColor} ${bgColor}`}>
+                        <CardHeader>
+                          <CardTitle className={`flex items-center gap-2 ${playerColor} text-xl font-bold`}>
+                            <Target className="h-6 w-6" />
+                            {player.name} - Coaching Advice
+                          </CardTitle>
+                        </CardHeader>
                       <CardContent className="space-y-6">
                         {/* Tactical Advice */}
                         <div>
@@ -821,7 +857,8 @@ export default function MatchAnalysis() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                  );
+                  })}
                 </div>
               </TabsContent>
             </Tabs>
