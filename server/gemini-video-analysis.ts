@@ -161,17 +161,17 @@ export class GeminiVideoAnalysis {
         ? `round ${round}` 
         : 'entire match';
 
-      // Run all analyses in parallel
-      onProgress("Running comprehensive analysis...", 30);
-
-      const analysisPromises = [
-        // Match Analysis (Text)
-        (async () => {
-          try {
-            onProgress("Analyzing match dynamics...", 40);
-            const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
+      // First, get match analysis to extract consistent player names
+      onProgress("Analyzing match dynamics...", 30);
+      let matchAnalysisText = '';
+      let playerNames = ["Player 1", "Player 2"];
+      
+      try {
+        const matchPrompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
 
 Write your response in English.
+
+IMPORTANT: Start by clearly stating both player names in the format "Player 1 Name vs Player 2 Name" on the first line.
 
 Focus on:
 - Opening strategy and tactics
@@ -184,27 +184,31 @@ Focus on:
 
 Listen to commentator insights and incorporate them into your analysis. Watch the scoreboard for accurate score tracking.
 
-Start with the first player, then analyze the second player. Use actual player names from the video.
-
 Provide a detailed narrative that captures the essence of the competition.`;
 
-            const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
-              config: {
-                temperature: 0,
-                maxOutputTokens: 8192,
-              },
-              contents: createUserContent([
-                createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
-            });
+        const matchResult = await genAI.models.generateContent({
+          model: "gemini-2.0-flash-exp",
+          config: {
+            temperature: 0,
+            maxOutputTokens: 8192,
+          },
+          contents: createUserContent([
+            createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
+            matchPrompt
+          ])
+        });
 
-            return { data: result.text || '', error: null };
-          } catch (error: any) {
-            return { data: null, error: error.message };
-          }
-        })(),
+        matchAnalysisText = matchResult.text || '';
+        playerNames = extractPlayerNames(matchAnalysisText);
+        console.log(`Extracted player names: ${playerNames[0]} vs ${playerNames[1]}`);
+      } catch (error: any) {
+        console.error('Match analysis error:', error.message);
+      }
+
+      // Run all other analyses in parallel with consistent player names
+      onProgress("Running comprehensive analysis...", 40);
+
+      const analysisPromises = [
 
         // Score Analysis (JSON)
         (async () => {
@@ -214,11 +218,24 @@ Provide a detailed narrative that captures the essence of the competition.`;
 
 Watch ${roundText} only. Identify when a player scored using the scoreboard. Focus on scoreboard changes for accuracy. Listen to commentators - they help reference which player scored how many points.
 
-Return this EXACT JSON format:
+The two players are: "${playerNames[0]}" and "${playerNames[1]}"
+
+Return this EXACT JSON format using these exact player names:
 {
   "players": [
     {
-      "name": "Actual Player Name",
+      "name": "${playerNames[0]}",
+      "total": total_score_number,
+      "events": [
+        {
+          "timestamp": "MM:SS",
+          "description": "Point description",
+          "value": points_scored
+        }
+      ]
+    },
+    {
+      "name": "${playerNames[1]}",
       "total": total_score_number,
       "events": [
         {
@@ -233,7 +250,7 @@ Return this EXACT JSON format:
 
 CRITICAL:
 - Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS
-- Use actual player names from video
+- Use the EXACT player names provided above
 - Track cumulative score changes
 - List scoring events chronologically`;
 
@@ -264,11 +281,24 @@ CRITICAL:
 
 Track all punches thrown in ${roundText}. Count every attempt (successful or blocked).
 
-Return this EXACT JSON format:
+The two players are: "${playerNames[0]}" and "${playerNames[1]}"
+
+Return this EXACT JSON format using these exact player names:
 {
   "players": [
     {
-      "name": "Actual Player Name",
+      "name": "${playerNames[0]}",
+      "total": total_punches_count,
+      "events": [
+        {
+          "timestamp": "MM:SS",
+          "description": "Punch type/target",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "${playerNames[1]}",
       "total": total_punches_count,
       "events": [
         {
@@ -281,7 +311,7 @@ Return this EXACT JSON format:
   ]
 }
 
-CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
+CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS and use the EXACT player names provided above`;
 
             const result = await genAI.models.generateContent({
               model: "gemini-2.0-flash-exp",
@@ -310,11 +340,24 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
 Track all kicks executed in ${roundText}. Count every kick attempt regardless of success.
 
-Return this EXACT JSON format:
+The two players are: "${playerNames[0]}" and "${playerNames[1]}"
+
+Return this EXACT JSON format using these exact player names:
 {
   "players": [
     {
-      "name": "Actual Player Name",
+      "name": "${playerNames[0]}",
+      "total": total_kicks_count,
+      "events": [
+        {
+          "timestamp": "MM:SS",
+          "description": "Kick type (e.g., roundhouse, spinning hook, head kick, body kick)",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "${playerNames[1]}",
       "total": total_kicks_count,
       "events": [
         {
@@ -327,7 +370,7 @@ Return this EXACT JSON format:
   ]
 }
 
-CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
+CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS and use the EXACT player names provided above`;
 
             const result = await genAI.models.generateContent({
               model: "gemini-2.0-flash-exp",
@@ -356,11 +399,24 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
 Watch the scoreboard for referee signals indicating yellow cards, warnings, or penalties in ${roundText}.
 
-Return this EXACT JSON format:
+The two players are: "${playerNames[0]}" and "${playerNames[1]}"
+
+Return this EXACT JSON format using these exact player names:
 {
   "players": [
     {
-      "name": "Actual Player Name",
+      "name": "${playerNames[0]}",
+      "total": total_violations_count,
+      "events": [
+        {
+          "timestamp": "MM:SS",
+          "description": "Type of violation (e.g., yellow card, warning, penalty)",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "${playerNames[1]}",
       "total": total_violations_count,
       "events": [
         {
@@ -373,7 +429,7 @@ Return this EXACT JSON format:
   ]
 }
 
-CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
+CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS and use the EXACT player names provided above`;
 
             const result = await genAI.models.generateContent({
               model: "gemini-2.0-flash-exp",
@@ -402,11 +458,13 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
 Analyze ${roundText} and provide coaching advice for each player.
 
-Return EXACTLY this JSON structure with actual data:
+The two players are: "${playerNames[0]}" and "${playerNames[1]}"
+
+Return EXACTLY this JSON structure with actual data using these exact player names:
 {
   "players": [
     {
-      "name": "Player Full Name",
+      "name": "${playerNames[0]}",
       "tactical_advice": {
         "issues": ["tactical issue 1", "tactical issue 2", "tactical issue 3"],
         "improvements": ["tactical improvement 1", "tactical improvement 2", "tactical improvement 3"]
@@ -421,7 +479,7 @@ Return EXACTLY this JSON structure with actual data:
       }
     },
     {
-      "name": "Player Full Name",
+      "name": "${playerNames[1]}",
       "tactical_advice": {
         "issues": ["tactical issue 1", "tactical issue 2", "tactical issue 3"],
         "improvements": ["tactical improvement 1", "tactical improvement 2", "tactical improvement 3"]
@@ -527,8 +585,6 @@ Rules:
       const [matchResult, scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
 
       const processingTime = Date.now() - startTime;
-
-      const matchAnalysisText = matchResult.status === 'fulfilled' ? matchResult.value.data : null;
       
       return {
         match_analysis: matchAnalysisText,
