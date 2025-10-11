@@ -428,6 +428,7 @@ export const videoAnalysis = pgTable("video_analysis", {
   // Metadata
   fileName: text("file_name"),
   fileSize: integer("file_size"),
+  videoPath: text("video_path"), // Path to stored video file for playback
   processingTimeMs: integer("processing_time_ms"),
   processedAt: timestamp("processed_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
