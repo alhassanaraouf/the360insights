@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import VideoPlayerWithMarkers from "@/components/video-player-with-markers";
 
 interface MatchAnalysisResult {
   id: number;
@@ -81,6 +82,143 @@ interface PlayerWithAdvice {
 
 interface PlayerAdvice {
   players: PlayerWithAdvice[];
+}
+
+// Video Player Section Component
+function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult }) {
+  // Extract all events from analysis data for timeline markers
+  const timelineEvents: Array<{
+    timestamp: string;
+    description: string;
+    type: 'score' | 'kick' | 'punch' | 'violation';
+    player?: string;
+  }> = [];
+
+  // Extract score events
+  matchResult.score_analysis?.players?.forEach(player => {
+    player.events?.forEach(event => {
+      timelineEvents.push({
+        timestamp: event.timestamp,
+        description: event.description,
+        type: 'score',
+        player: player.name
+      });
+    });
+  });
+
+  // Extract punch events
+  matchResult.punch_analysis?.players?.forEach(player => {
+    player.events?.forEach(event => {
+      timelineEvents.push({
+        timestamp: event.timestamp,
+        description: event.description,
+        type: 'punch',
+        player: player.name
+      });
+    });
+  });
+
+  // Extract kick events
+  matchResult.kick_count_analysis?.players?.forEach(player => {
+    player.events?.forEach(event => {
+      timelineEvents.push({
+        timestamp: event.timestamp,
+        description: event.description,
+        type: 'kick',
+        player: player.name
+      });
+    });
+  });
+
+  // Extract violation events
+  matchResult.yellow_card_analysis?.players?.forEach(player => {
+    player.events?.forEach(event => {
+      timelineEvents.push({
+        timestamp: event.timestamp,
+        description: event.description,
+        type: 'violation',
+        player: player.name
+      });
+    });
+  });
+
+  // Get player stats
+  const bluePlayer = matchResult.score_analysis?.players?.[0];
+  const redPlayer = matchResult.score_analysis?.players?.[1];
+  const blueKicks = matchResult.kick_count_analysis?.players?.[0];
+  const redKicks = matchResult.kick_count_analysis?.players?.[1];
+  const blueViolations = matchResult.yellow_card_analysis?.players?.[0];
+  const redViolations = matchResult.yellow_card_analysis?.players?.[1];
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
+        <CardTitle className="flex items-center justify-between">
+          <span>Match Analysis Results</span>
+          <Button variant="outline" size="sm" data-testid="button-analyze-new">
+            <Video className="h-4 w-4 mr-2" />
+            Analyze New Video
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-0">
+          {/* Blue Player Stats (Left) */}
+          <div className="bg-blue-950/30 p-6 flex flex-col gap-4 border-r border-gray-200 dark:border-gray-800">
+            <div className="text-center">
+              <div className="text-sm font-semibold text-blue-400 mb-2">BLUE SCORE</div>
+              <div className="text-5xl font-bold text-blue-500" data-testid="score-blue">
+                {bluePlayer?.total || 0}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-semibold text-blue-400 mb-2">TOTAL KICKS</div>
+              <div className="text-3xl font-bold text-blue-300" data-testid="kicks-blue">
+                {blueKicks?.total || 0}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-semibold text-yellow-400 mb-2">WARNINGS</div>
+              <div className="text-3xl font-bold text-yellow-500" data-testid="warnings-blue">
+                {blueViolations?.total || 0}
+              </div>
+            </div>
+          </div>
+
+          {/* Video Player (Center) */}
+          <div className="bg-black">
+            <VideoPlayerWithMarkers
+              videoUrl={`/api/video-analysis/${matchResult.id}/video`}
+              events={timelineEvents}
+              data-testid="video-player-section"
+            />
+          </div>
+
+          {/* Red Player Stats (Right) */}
+          <div className="bg-red-950/30 p-6 flex flex-col gap-4 border-l border-gray-200 dark:border-gray-800">
+            <div className="text-center">
+              <div className="text-sm font-semibold text-red-400 mb-2">RED SCORE</div>
+              <div className="text-5xl font-bold text-red-500" data-testid="score-red">
+                {redPlayer?.total || 0}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-semibold text-red-400 mb-2">TOTAL KICKS</div>
+              <div className="text-3xl font-bold text-red-300" data-testid="kicks-red">
+                {redKicks?.total || 0}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-semibold text-yellow-400 mb-2">WARNINGS</div>
+              <div className="text-3xl font-bold text-yellow-500" data-testid="warnings-red">
+                {redViolations?.total || 0}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function MatchAnalysis() {
@@ -338,6 +476,11 @@ export default function MatchAnalysis() {
         {/* Match Analysis Results */}
         {matchResult && !analyzeVideoMutation.isPending && (
           <div className="space-y-6">
+            {/* Video Player with Stats */}
+            {matchResult.id && (
+              <VideoPlayerSection matchResult={matchResult} />
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
