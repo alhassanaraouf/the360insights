@@ -27,7 +27,12 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
 -   **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
--   **Rank-Up Calculator**: AI-powered rank advancement strategy with visual progress indicators showing the AI's thought process. Calculations typically take 3-5 minutes due to complex analysis of ranking data and competition strategies.
+-   **Rank-Up Calculator**: AI-powered rank advancement strategy with the following capabilities:
+    - Compact visual progress indicators (7-stage analysis feedback)
+    - Saved analyses management (view, delete, recalculate previous analyses)
+    - AI transparency: View the complete prompt sent to OpenAI via expandable accordion
+    - Calculations typically take 3-5 minutes due to complex analysis of ranking data and competition strategies
+    - Results cached for 1 month with automatic expiration
 
 ### System Design Choices
 -   **Database Choice**: PostgreSQL for data integrity and complex analytics.
