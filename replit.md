@@ -1,229 +1,70 @@
 # The360 Insights - Sports Analytics Dashboard
 
 ## Overview
-The360 Insights is a comprehensive sports analytics platform designed for Taekwondo athletes. It provides AI-powered performance insights, opponent analysis, training planning, and injury prevention capabilities. The platform aims to be a full-stack web application, offering a 360-degree view of athlete performance, strategic insights, and personalized recommendations. Its business vision includes enhancing athlete performance, optimizing training, and minimizing injury risks within the Taekwondo community, with potential for broader sports applications.
+The360 Insights is a comprehensive sports analytics platform for Taekwondo athletes. It provides AI-powered performance insights, opponent analysis, training planning, and injury prevention capabilities. The platform aims to be a full-stack web application offering a 360-degree view of athlete performance, strategic insights, and personalized recommendations. Its business vision includes enhancing athlete performance, optimizing training, and minimizing injury risks within the Taekwondo community, with potential for broader sports applications.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui component library, Radix UI primitives
-- **State Management**: TanStack Query (React Query)
-- **Routing**: Wouter
-- **Build Tool**: Vite
+### UI/UX Decisions
+The platform uses React 18 with TypeScript for the frontend, styled with Tailwind CSS and shadcn/ui component library built on Radix UI primitives. The design focuses on a consistent, customizable appearance.
 
-### Backend Architecture
-- **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js for REST API
-- **Database**: PostgreSQL (Neon serverless) with persistent data storage
-- **Database ORM**: Drizzle ORM with Neon driver for WebSocket connections
-- **AI Integration**: OpenAI API
-- **Session Management**: Replit Key Value Store (custom session store)
-- **WebSocket**: Real-time match analysis
+### Technical Implementations
+-   **Frontend**: React 18, TypeScript, Wouter for routing, TanStack Query for state management, Vite as build tool.
+-   **Backend**: Node.js with TypeScript, Express.js for REST API, Drizzle ORM for database interactions.
+-   **Database**: PostgreSQL (Neon serverless) for relational data persistence.
+-   **AI Integration**: OpenAI API (GPT-4o) for performance insights, opponent analysis, and training plans.
+-   **Session Management**: Replit Key Value Store for persistent authentication sessions.
+-   **Real-time Features**: WebSocket integration for live match analysis.
+-   **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
+-   **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
+-   **Object Storage**: Replit Object Storage for athlete profile pictures and other assets.
 
-### Database Schema (PostgreSQL)
-- `athletes`: Athlete profiles, performance metrics
-- `kpi_metrics`: Key performance indicators
-- `strengths/weaknesses`: Athlete skill assessments
-- `opponents`: Opponent data (now integrated into athlete data)
-- `performance_data`: Historical performance (now integrated into `athlete_ranks`)
-- `career_events`: Achievements and milestones
-- `training_recommendations`: AI-generated training plans
-- `athlete_ranks`: Consolidated ranking system for world, Olympic, national, continental, regional ranks
-- `coaches`: Separate table for coach information
-- `users`: User profiles with authentication details and bio
-- `competitions`: Competition events with SimplyCompete integration fields (sourceUrl, metadata, lastSyncedAt, simplyCompeteEventId)
+### Feature Specifications
+-   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
+-   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
+-   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
+-   **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
+-   **Rank-Up Calculator**: AI-powered rank advancement strategy with visual progress indicators showing the AI's thought process. Calculations typically take 3-5 minutes due to complex analysis of ranking data and competition strategies.
 
-### Key Components & Features
-- **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
-- **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights (using GPT-4o).
-- **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
-- **Athlete Management**: Comprehensive athlete directory with search, filter, sort, edit, and delete functionalities.
-- **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
-- **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
+### System Design Choices
+-   **Database Choice**: PostgreSQL for data integrity and complex analytics.
+-   **AI Integration**: OpenAI GPT-4o for accurate sports analysis.
+-   **Component Architecture**: Modular React components with TypeScript for maintainability.
+-   **State Management**: TanStack Query for efficient server state caching.
+-   **Styling Strategy**: Tailwind CSS + shadcn/ui for consistent, customizable design.
+-   **Real-time Features**: WebSocket integration for live analysis.
+-   **Session Management**: Replit Key Value Store for zero-configuration session persistence.
+-   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage.
+-   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis.
 
-### Recent Changes (October 11, 2025)
-
-- **Branding Update**: Updated platform branding to "The360 Insights"
-  - Replaced old logo assets with new professional branding
-  - Sidebar now displays circular blue symbol logo
-  - Landing page shows full "The360 Insights" logo with tagline
-  - Updated all references from "Performs Insights" to "The360 Insights"
-
-### Previous Changes (October 8, 2025)
-
-- **Opponent Analysis Caching**: Implemented intelligent caching system for AI-powered opponent analysis
-  - Created `opponent_analysis_cache` table to store analysis results with unique athlete-opponent pair constraint
-  - Cache expires on the 1st of each month at 00:00:00 for monthly refresh of tactical insights
-  - Route checks cache before calling OpenAI API, returning instant results when cached
-  - Stores all analysis data: weaknesses, tactics, win probability, strategies, mental prep, technical focus
-  - Significant performance improvement and cost savings by avoiding redundant AI API calls
-  - Monthly expiration ensures strategic insights stay relevant with automatic refresh
-
-- **Opponent List Bug Fixes**: Fixed two critical issues with opponent list display
-  
-  **Issue 1 - Inverted Toggle Behavior**:
-  - Problem: Toggle OFF showed "No opponents found", toggle ON showed results (opposite of expected UX)
-  - Root cause: Top-ranked athletes (e.g., rank #1) had 0 opponents within ±10 ranks filter
-  - Solution: Changed default toggle state to ON (show all weight class) instead of OFF (filtered)
-  - New behavior: Users see all opponents by default, can toggle OFF to filter to ±10 ranks
-  - Each toggle state maintains distinct, predictable datasets without silent data swapping
-  
-  **Issue 2 - Duplicate Athletes in List**:
-  - Problem: Some athletes appeared multiple times in the opponent list
-  - Root cause: Athletes with multiple rank records (e.g., Moataz has 3 world ranks) created duplicate rows when joining with athleteRanks table
-  - Solution: Implemented PostgreSQL DISTINCT ON to ensure each athlete appears exactly once
-  - Technical fix: Added `selectDistinctOn([athletes.id])` with proper ORDER BY clause starting with athletes.id
-  - Count queries updated to use `count(DISTINCT athletes.id)` for accurate pagination totals
-  - Result: Each opponent now appears exactly once regardless of how many rank records exist
-
-### Previous Changes (October 4, 2025)
-
-- **Performance Analysis Caching**: Implemented intelligent caching system for AI-powered performance analysis
-  - Created `performance_analysis_cache` table to store analysis results for each athlete
-  - Cache expires after 30 days (1 month), reducing unnecessary AI API calls
-  - Route checks cache before calling OpenAI API, returning cached results when valid
-  - Added validation to handle invalid athlete IDs with proper 400 error responses
-  - Significant cost savings by avoiding duplicate AI analyses for the same athlete within 30 days
-  - Performance improvement by serving cached results instantly instead of waiting for AI processing
-
-- **Auto-Generate Playing Styles on Opponent Selection**: Implemented automatic playing style generation when selecting opponents
-  - Created new endpoint `/api/generate/playing-style/:athleteId` for single athlete playing style generation
-  - Updated opponent selection handler to detect missing playing styles and auto-generate them using OpenAI GPT-5
-  - System checks for empty, null, or whitespace-only playing styles and generates concise labels (e.g., "Aggressive Counter-Puncher")
-  - Auto-generated playing styles are saved to database for future use
-  - Query cache is invalidated to ensure UI reflects newly generated playing styles
-  
-- **Opponent Profile Picture Display**: Enhanced Opponent Profile section with athlete profile pictures
-  - Added large circular avatar (24x24) displaying opponent's profile picture
-  - Integrated with Replit Object Storage for profile images
-  - Fallback to user icon when profile picture is unavailable
-  - Centered display above opponent name and details
-
-- **Fixed OpenAI API Compatibility**: Resolved GPT-5 parameter error
-  - Changed `max_tokens` to `max_completion_tokens` in playing style generation
-  - Fixes "Unsupported parameter" error from OpenAI API
-  - Ensures proper AI-powered playing style generation
-
-### Previous Changes (October 3, 2025)
-
-- **Fixed Object Storage Bucket Initialization**: Resolved issue where profile pictures were uploaded to production bucket during dev imports
-  - Root cause: Client was initialized with `new Client()` without passing bucketId parameter, defaulting to production bucket
-  - Fix: Changed initialization to `new Client({ bucketId })` to explicitly specify the target bucket
-  - Added enhanced logging to show bucket ID during each upload operation
-  - Removed unnecessary `init()` call and `isInitialized` checks since the client is now properly configured at instantiation
-  - Dev imports now correctly use dev bucket: `replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945`
-  - Production uploads use prod bucket: `replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b`
-
-### Previous Changes (October 2, 2025)
-
-- **Environment-Based Object Storage Configuration**: Implemented dynamic bucket selection based on environment
-  - Bucket selection: Uses `BUCKET_ID` env var if set, otherwise `NODE_ENV` determines bucket (production → prod bucket, otherwise → dev bucket)
-  - Updated `server/bucket-storage.ts` to initialize client with environment-based bucket ID
-  - Added console logging to show which bucket is being used on startup
-
-### Previous Changes (October 1, 2025)
-
-- **Migration to Standard Replit Environment**: Successfully migrated from Replit Agent to standard Replit environment
-  - Refactored OpenAI client initialization to use centralized lazy-loading pattern (getOpenAIClient())
-  - Updated all AI-related modules to gracefully handle missing OpenAI API key
-  - Application can now start and run without OpenAI API key configured (AI features disabled until key is added)
-  - All TypeScript files updated to use shared OpenAI client helper (server/openai-client.ts)
-  - Fixed module-level initialization issues that previously caused startup failures
-  - Database migrations successfully applied to PostgreSQL
-  - All workflows configured and running properly
-
-### Previous Changes (September 30, 2025)
-
-- **SimplyCompete Competition Sync**: Implemented external API integration for competition data synchronization
-  - Added database fields to competitions table: `sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId` with index
-  - Created background sync script (`scripts/sync-competitions.ts`) that fetches competitions from SimplyCompete API
-  - Implemented intelligent matching logic using normalized name comparison and exact date matching
-  - Added support for multiple authentication methods: API keys, auth tokens, and session cookies
-  - Script includes pagination support, fail-fast error handling, and comprehensive logging
-  - Run with: `tsx scripts/sync-competitions.ts` (requires authentication credentials)
-  - Authentication: Set `SIMPLYCOMPETE_API_KEY`, `SIMPLYCOMPETE_AUTH_TOKEN`, or `SIMPLYCOMPETE_COOKIE` environment variables
-
-### Previous Changes (September 2, 2025)
-
-- **Competition Display Enhancement**: Modified dashboard competition filtering to show only user-selected competitions
-  - Updated CompetitionCalendar component to display empty list when no competitions are selected
-  - Removed fallback behavior that showed all competitions by default
-  - Users now see only their specifically chosen competitions in dashboard upcoming/recent sections
-  - Enforces intentional competition selection for personalized dashboard experience
-
-- **PDF Generation Fixes**: Successfully resolved PDF export functionality issues
-  - Fixed TypeScript compilation errors in PDF generator that were causing export failures
-  - Removed "AI PERFORMANCE ANALYSIS" main header as requested
-  - Updated all section headers to use consistent blue color scheme instead of mixed colors
-  - Removed emoji symbols (🗲, 🎯) from section headers for cleaner appearance
-  - Verified PDF generation working for both athlete reports and rankings overview
-  - All PDF exports now complete successfully with proper formatting
-
-### Previous Changes (August 26, 2025)
-
-- **Deployment Configuration Fixes**: Successfully resolved Replit deployment errors
-  - Fixed deployment path issue where system was looking for index.js in root instead of dist directory
-  - Created production entry point wrapper (index.js) that properly redirects to built application in dist/
-  - Updated ESBuild configuration with `packages: 'external'` to prevent bundling issues with Node.js modules
-  - Removed conflicting ESM banner that was causing duplicate declaration errors
-  - Verified production build process and application startup functionality
-  - All deployment fixes tested and working, ready for production deployment
-
-### Previous Changes (August 19, 2025)
-
-- **PostgreSQL Database Integration**: Successfully integrated Neon PostgreSQL database to replace in-memory storage
-  - Created database connection using Drizzle ORM with Neon serverless driver  
-  - Updated storage layer (DatabaseStorage) to use database operations instead of memory
-  - All existing schema tables (athletes, kpi_metrics, career_events, etc.) now persist to PostgreSQL
-  - Database credentials and connection automatically configured through Replit environment
-- **Authentication Database Setup**: Configured database-backed authentication system
-  - Added users table with proper UUID generation and user profile fields
-  - Added sessions table with PostgreSQL session store for persistent authentication
-  - Updated Replit Auth to use database instead of in-memory session storage
-  - All authentication data now persists between application restarts
-
-- **Bug Fixes**: Fixed critical database connection issue (DATABASE_URL was missing), resolved TypeScript type errors in storage functions, fixed authentication session persistence in development environment, created user authentication table and sample data
-- **Enhanced JSON Import**: Added support for new JSON format with athletes wrapped in "athletes" array and competition history processing
-- **Career Journey Updates**: Added event_result field display in career timeline views, showing competition results like "Gold Medal", "Bronze Medal", etc.
-- **Athlete Filtering**: Updated athlete selectors to respect Egypt/Global toggle - shows only Egyptian athletes when Egypt mode is active
-- **Removed Pages**: Removed Injury Prevention page (`/injury-prevention`) and Tactical Training page (`/tactical-training`), cleaned up navigation and routing  
-- **Athlete360 Updates**: Removed injury history section from athlete360 page, expanded career journey to full width layout
-- **Training Planner Fix**: Fixed backend error by replacing missing performance data function with career events data
-
-### Previous Changes (August 12, 2025)
-- **Removed Pages**: Motivation Hub Page (`/motivation-dashboard`), World Ranking Page (`/rankings`), and Data Verification Page (`/data-verification`) as requested by user
-- **Updated Navigation**: Removed corresponding navigation items from sidebar
-- **Backend Preserved**: Data verification API endpoints remain available for other features that may need data validation functionality
-
-### Data Flow
-Authentication & athlete selection -> Data aggregation -> AI processing (OpenAI API) -> Real-time updates (WebSockets) -> Export & sharing (PDF).
-
-### Key Architectural Decisions
-1.  **Database Choice**: PostgreSQL for relational data integrity and complex analytics.
-2.  **AI Integration**: OpenAI GPT-4o for accurate sports analysis.
-3.  **Component Architecture**: Modular React components with TypeScript for maintainability.
-4.  **State Management**: TanStack Query for efficient server state caching.
-5.  **Styling Strategy**: Tailwind CSS + shadcn/ui for consistent, customizable design.
-6.  **Real-time Features**: WebSocket integration for live analysis.
-7.  **Session Management**: Replit Key Value Store for zero-configuration session persistence.
-8.  **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table for normalization. Removed external image URLs in favor of Replit Object Storage.
+### Database Schema
+-   `athletes`: Athlete profiles, performance metrics (indexed on: worldCategory, nationality, name)
+-   `kpi_metrics`: Key performance indicators (indexed on: athleteId)
+-   `strengths/weaknesses`: Athlete skill assessments (indexed on: athleteId)
+-   `opponents`: Opponent data
+-   `performance_data`: Historical performance
+-   `career_events`: Achievements and milestones (indexed on: athleteId, date)
+-   `training_recommendations`: AI-generated training plans (indexed on: athleteId)
+-   `athlete_ranks`: Consolidated ranking system (world, Olympic, national, continental, regional) (indexed on: athleteId, rankingType, category, ranking)
+-   `coaches`: Coach information
+-   `users`: User profiles with authentication details and bio
+-   `competitions`: Competition events with SimplyCompete integration fields (`sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId`) (indexed on: simplyCompeteEventId)
+-   `competition_participants`: Links athletes to competitions (indexed on: competitionId, athleteId)
+-   `opponent_analysis_cache`: Stores AI-powered opponent analysis results with monthly expiration.
+-   `performance_analysis_cache`: Stores AI-powered performance analysis results with 30-day expiration.
+-   `ai_queries`: AI query history (indexed on: athleteId, timestamp)
+-   `training_plans`: Detailed training plans (indexed on: athleteId)
+-   `sponsorship_bids`: Sponsorship bids for athletes (indexed on: athleteId, sponsorUserId)
 
 ## External Dependencies
 
-### Core Dependencies
 -   **Database**: Neon Database (serverless PostgreSQL)
 -   **AI Services**: OpenAI API (GPT-4o model)
 -   **UI Frameworks**: Radix UI, Tailwind CSS
 -   **Charts**: Recharts
 -   **PDF Generation**: jsPDF
 -   **Object Storage**: Replit Object Storage
-
-### Development Tools
--   **TypeScript**: For type safety
--   **Drizzle Kit**: Database migrations
--   **ESBuild**: Backend bundling
--   **PostCSS**: CSS processing
+-   **Competition Data**: SimplyCompete API
