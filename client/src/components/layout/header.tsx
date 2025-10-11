@@ -131,7 +131,7 @@ export default function Header({ title, description }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mobile-padding w-full overflow-hidden">
+    <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mobile-padding w-full overflow-visible">
       <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between w-full">
         <div className="min-w-0 flex-1 w-full lg:w-auto">
           <h2 className="mobile-heading text-gray-900 dark:text-white truncate">{title}</h2>

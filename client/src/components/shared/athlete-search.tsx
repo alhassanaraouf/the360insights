@@ -105,7 +105,7 @@ export default function AthleteSearch({
       </div>
 
       {showResults && searchTerm.trim() && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-80 sm:max-h-96 overflow-y-auto mobile-modal">
+        <div className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-80 sm:max-h-96 overflow-y-auto mobile-modal">
           {isLoading ? (
             <div className="p-4 text-center text-gray-500">
               {showEgyptianOnly ? "Searching Egyptian athletes..." : "Searching athletes..."}
