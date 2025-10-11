@@ -30,7 +30,8 @@ import {
   Brain,
   ChevronsUpDown,
   Loader2,
-  User as UserIcon
+  User as UserIcon,
+  CheckCircle2
 } from "lucide-react";
 
 interface Athlete {
@@ -275,6 +276,20 @@ export default function RankUp() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [userChangedRankingType, setUserChangedRankingType] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [calculationProgress, setCalculationProgress] = useState<{
+    step: number;
+    message: string;
+  }>({ step: 0, message: "" });
+
+  // Cleanup timers on unmount
+  const progressTimersRef = useRef<NodeJS.Timeout[]>([]);
+  
+  useEffect(() => {
+    return () => {
+      // Clear all progress timers on component unmount
+      progressTimersRef.current.forEach(timer => clearTimeout(timer));
+    };
+  }, []);
 
   // Fetch selected athlete details for ranking data
   const { data: selectedAthlete } = useQuery({
@@ -436,18 +451,33 @@ export default function RankUp() {
     }
 
     setIsCalculating(true);
+    setCalculationProgress({ step: 0, message: "" });
     
-    // Show initial loading toast
-    const loadingToast = toast({
-      title: "Calculating...",
-      description: "Analyzing competitions and generating AI recommendations. This may take 15-30 seconds.",
-      duration: 30000,
+    // Simulate AI thought process with progress updates
+    const progressSteps = [
+      { step: 1, message: "📊 Analyzing your current ranking position...", delay: 500 },
+      { step: 2, message: "🔍 Gathering upcoming competition data...", delay: 3000 },
+      { step: 3, message: "📈 Calculating points requirements...", delay: 6000 },
+      { step: 4, message: "🧠 AI is analyzing optimal competition strategies...", delay: 20000 },
+      { step: 5, message: "🎯 Evaluating competition difficulty and timing...", delay: 45000 },
+      { step: 6, message: "⚡ Generating personalized recommendations...", delay: 90000 },
+      { step: 7, message: "🏆 Finalizing your rank-up strategy...", delay: 150000 }
+    ];
+
+    // Start progress simulation
+    progressTimersRef.current.forEach(timer => clearTimeout(timer)); // Clear any existing timers
+    progressTimersRef.current = [];
+    progressSteps.forEach(({ step, message, delay }) => {
+      const timer = setTimeout(() => {
+        setCalculationProgress({ step, message });
+      }, delay);
+      progressTimersRef.current.push(timer);
     });
 
     try {
-      // Add timeout for long-running requests (45 seconds)
+      // Add timeout for long-running requests (5 minutes to match AI processing time)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
 
       const response = await fetch("/api/rank-up/calculate", {
         method: "POST",
@@ -462,9 +492,10 @@ export default function RankUp() {
           "Content-Type": "application/json",
         },
         signal: controller.signal,
+      }).finally(() => {
+        // Clear timeout to prevent stray abort calls
+        clearTimeout(timeoutId);
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -472,11 +503,13 @@ export default function RankUp() {
 
       setRankUpResult(await response.json());
       
-      // Dismiss loading toast
-      loadingToast.dismiss?.();
+      // Clear all progress timers
+      progressTimersRef.current.forEach(timer => clearTimeout(timer));
+      
+      setCalculationProgress({ step: 8, message: "✅ Analysis complete!" });
       
       toast({
-        title: "Calculation Complete",
+        title: "✅ Calculation Complete",
         description: isAlreadyTopRank 
           ? "Rank maintenance strategy generated successfully"
           : "Rank up requirements calculated successfully",
@@ -484,16 +517,19 @@ export default function RankUp() {
     } catch (error) {
       console.error("Calculation error:", error);
       
-      // Dismiss loading toast
-      loadingToast.dismiss?.();
+      // Clear all progress timers
+      progressTimersRef.current.forEach(timer => clearTimeout(timer));
       
       toast({
         title: "Calculation Failed",
-        description: "Failed to calculate rank up requirements",
+        description: error instanceof Error && error.name === 'AbortError' 
+          ? "The calculation took too long and was cancelled. Please try again."
+          : "Failed to calculate rank up requirements. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsCalculating(false);
+      setTimeout(() => setCalculationProgress({ step: 0, message: "" }), 3000);
     }
   };
 
@@ -673,6 +709,7 @@ export default function RankUp() {
                   onClick={calculateRankUp}
                   disabled={isCalculating || !selectedAthleteId || !rankingType || !category || (!isAlreadyTopRank && !targetRank)}
                   className="px-8 py-2"
+                  data-testid="button-calculate-rank-up"
                 >
                   {isCalculating ? (
                     <>
@@ -681,13 +718,45 @@ export default function RankUp() {
                     </>
                   ) : isAlreadyTopRank ? "Get Maintenance Strategy" : "Calculate Requirements"}
                 </Button>
-                {isCalculating && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                    Generating AI recommendations...
-                  </div>
-                )}
               </div>
+
+              {/* Progress Indicator */}
+              {isCalculating && calculationProgress.step > 0 && (
+                <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                        AI Analysis in Progress
+                      </h3>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Step {calculationProgress.step} of 7
+                      </span>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="relative w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out"
+                        style={{ width: `${(calculationProgress.step / 7) * 100}%` }}
+                      />
+                    </div>
+
+                    {/* Current Step Message */}
+                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                      <p className="text-sm font-medium">{calculationProgress.message}</p>
+                    </div>
+
+                    {/* Estimated Time */}
+                    <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        ⏱️ This process typically takes 3-5 minutes. The AI is analyzing complex ranking data and competition strategies to give you the best recommendations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
