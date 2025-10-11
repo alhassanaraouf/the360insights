@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const analysisResult = await geminiVideoAnalysis.analyzeMatch(
-        uploadedFilePath,
+        uploadedFilePath!,
         round,
         onProgress
       );
@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const analysisResult = await geminiVideoAnalysis.analyzeClip(
-        uploadedFilePath,
+        uploadedFilePath!,
         whatToAnalyze,
         onProgress
       );

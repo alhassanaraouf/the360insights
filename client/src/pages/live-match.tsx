@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,60 +87,65 @@ interface PlayerAdvice {
 // Video Player Section Component
 function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult }) {
   // Extract all events from analysis data for timeline markers
-  const timelineEvents: Array<{
-    timestamp: string;
-    description: string;
-    type: 'score' | 'kick' | 'punch' | 'violation';
-    player?: string;
-  }> = [];
+  // Memoize to ensure stable object references for hover state
+  const timelineEvents = useMemo(() => {
+    const events: Array<{
+      timestamp: string;
+      description: string;
+      type: 'score' | 'kick' | 'punch' | 'violation';
+      player?: string;
+    }> = [];
 
-  // Extract score events
-  matchResult.score_analysis?.players?.forEach(player => {
-    player.events?.forEach(event => {
-      timelineEvents.push({
-        timestamp: event.timestamp,
-        description: event.description,
-        type: 'score',
-        player: player.name
+    // Extract score events
+    matchResult.score_analysis?.players?.forEach(player => {
+      player.events?.forEach(event => {
+        events.push({
+          timestamp: event.timestamp,
+          description: event.description,
+          type: 'score',
+          player: player.name
+        });
       });
     });
-  });
 
-  // Extract punch events
-  matchResult.punch_analysis?.players?.forEach(player => {
-    player.events?.forEach(event => {
-      timelineEvents.push({
-        timestamp: event.timestamp,
-        description: event.description,
-        type: 'punch',
-        player: player.name
+    // Extract punch events
+    matchResult.punch_analysis?.players?.forEach(player => {
+      player.events?.forEach(event => {
+        events.push({
+          timestamp: event.timestamp,
+          description: event.description,
+          type: 'punch',
+          player: player.name
+        });
       });
     });
-  });
 
-  // Extract kick events
-  matchResult.kick_count_analysis?.players?.forEach(player => {
-    player.events?.forEach(event => {
-      timelineEvents.push({
-        timestamp: event.timestamp,
-        description: event.description,
-        type: 'kick',
-        player: player.name
+    // Extract kick events
+    matchResult.kick_count_analysis?.players?.forEach(player => {
+      player.events?.forEach(event => {
+        events.push({
+          timestamp: event.timestamp,
+          description: event.description,
+          type: 'kick',
+          player: player.name
+        });
       });
     });
-  });
 
-  // Extract violation events
-  matchResult.yellow_card_analysis?.players?.forEach(player => {
-    player.events?.forEach(event => {
-      timelineEvents.push({
-        timestamp: event.timestamp,
-        description: event.description,
-        type: 'violation',
-        player: player.name
+    // Extract violation events
+    matchResult.yellow_card_analysis?.players?.forEach(player => {
+      player.events?.forEach(event => {
+        events.push({
+          timestamp: event.timestamp,
+          description: event.description,
+          type: 'violation',
+          player: player.name
+        });
       });
     });
-  });
+
+    return events;
+  }, [matchResult]);
 
   // Get player stats
   const bluePlayer = matchResult.score_analysis?.players?.[0];
