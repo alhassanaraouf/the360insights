@@ -14,6 +14,8 @@ interface VideoPlayerWithMarkersProps {
   videoUrl: string;
   events: TimelineEvent[];
   className?: string;
+  onPlayStateChange?: (isPlaying: boolean) => void;
+  onTimeUpdate?: (currentTime: number) => void;
 }
 
 // Convert MM:SS to seconds
@@ -34,7 +36,13 @@ function secondsToTime(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function VideoPlayerWithMarkers({ videoUrl, events, className = "" }: VideoPlayerWithMarkersProps) {
+export default function VideoPlayerWithMarkers({ 
+  videoUrl, 
+  events, 
+  className = "",
+  onPlayStateChange,
+  onTimeUpdate 
+}: VideoPlayerWithMarkersProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -47,9 +55,18 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
     const video = videoRef.current;
     if (!video) return;
 
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleTimeUpdate = () => {
+      const time = video.currentTime;
+      setCurrentTime(time);
+      onTimeUpdate?.(time);
+    };
+    
     const handleDurationChange = () => setDuration(video.duration);
-    const handleEnded = () => setIsPlaying(false);
+    
+    const handleEnded = () => {
+      setIsPlaying(false);
+      onPlayStateChange?.(false);
+    };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('durationchange', handleDurationChange);
@@ -60,18 +77,20 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
       video.removeEventListener('durationchange', handleDurationChange);
       video.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [onTimeUpdate, onPlayStateChange]);
 
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (isPlaying) {
-      video.pause();
-    } else {
+    const newPlayingState = !isPlaying;
+    if (newPlayingState) {
       video.play();
+    } else {
+      video.pause();
     }
-    setIsPlaying(!isPlaying);
+    setIsPlaying(newPlayingState);
+    onPlayStateChange?.(newPlayingState);
   };
 
   const handleSeek = (value: number[]) => {
@@ -124,32 +143,34 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`w-full ${className}`}>
       {/* Video Element */}
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-auto bg-black rounded-t-lg"
+        className="w-full h-auto bg-black"
         data-testid="video-player"
       />
 
       {/* Controls */}
-      <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-lg">
+      <div className="bg-gray-900 p-4">
         {/* Timeline with Markers */}
-        <div className="relative mb-4">
-          {/* Progress Bar */}
-          <Slider
-            value={[currentTime]}
-            min={0}
-            max={duration || 100}
-            step={0.1}
-            onValueChange={handleSeek}
-            className="cursor-pointer"
-            data-testid="video-timeline"
-          />
+        <div className="relative mb-3">
+          {/* Background track */}
+          <div className="relative h-2 mb-2">
+            <Slider
+              value={[currentTime]}
+              min={0}
+              max={duration || 100}
+              step={0.1}
+              onValueChange={handleSeek}
+              className="cursor-pointer"
+              data-testid="video-timeline"
+            />
+          </div>
           
-          {/* Event Markers */}
-          <div className="absolute top-0 left-0 right-0 h-full pointer-events-none">
+          {/* Event Markers - positioned below the timeline */}
+          <div className="relative h-8 mt-1">
             {events.map((event, idx) => {
               const eventTime = timeToSeconds(event.timestamp);
               const position = (eventTime / duration) * 100;
@@ -159,21 +180,21 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
               return (
                 <div
                   key={idx}
-                  className="absolute top-0 transform -translate-x-1/2 pointer-events-auto cursor-pointer"
+                  className="absolute top-0 transform -translate-x-1/2 cursor-pointer group"
                   style={{ left: `${position}%` }}
                   onClick={() => jumpToEvent(event)}
                   onMouseEnter={() => setHoveredEvent(event)}
                   onMouseLeave={() => setHoveredEvent(null)}
                   data-testid={`marker-${event.type}-${idx}`}
                 >
-                  <div className={`w-1 h-4 ${getEventColor(event.type)} rounded-full`} />
+                  <div className={`w-2 h-6 ${getEventColor(event.type)} rounded-sm hover:scale-110 transition-transform`} />
                   
                   {/* Tooltip */}
                   {hoveredEvent === event && (
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/95 text-white text-xs p-2 rounded whitespace-nowrap z-10">
-                      <div className="font-semibold">{event.timestamp}</div>
-                      <div>{event.description}</div>
-                      {event.player && <div className="text-gray-400">{event.player}</div>}
+                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-700 text-white text-xs p-2 rounded shadow-lg whitespace-nowrap z-50">
+                      <div className="font-semibold text-blue-400">{event.timestamp}</div>
+                      <div className="mt-1">{event.description}</div>
+                      {event.player && <div className="text-gray-400 mt-0.5">{event.player}</div>}
                     </div>
                   )}
                 </div>
@@ -183,20 +204,20 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 mt-2">
           {/* Play/Pause */}
           <Button
             size="sm"
             variant="ghost"
             onClick={togglePlay}
-            className="text-white hover:text-white/80"
+            className="text-white hover:bg-gray-800 hover:text-white"
             data-testid="button-play-pause"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </Button>
 
           {/* Time Display */}
-          <div className="text-white text-sm" data-testid="text-time">
+          <div className="text-white text-sm font-mono" data-testid="text-time">
             {secondsToTime(currentTime)} / {secondsToTime(duration)}
           </div>
 
@@ -208,7 +229,7 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
               size="sm"
               variant="ghost"
               onClick={toggleMute}
-              className="text-white hover:text-white/80"
+              className="text-white hover:bg-gray-800 hover:text-white"
               data-testid="button-mute"
             >
               {isMuted || volume === 0 ? (
@@ -223,7 +244,7 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
               max={1}
               step={0.1}
               onValueChange={handleVolumeChange}
-              className="w-24"
+              className="w-20"
               data-testid="slider-volume"
             />
           </div>
@@ -233,7 +254,7 @@ export default function VideoPlayerWithMarkers({ videoUrl, events, className = "
             size="sm"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="text-white hover:text-white/80"
+            className="text-white hover:bg-gray-800 hover:text-white"
             data-testid="button-fullscreen"
           >
             <Maximize className="h-5 w-5" />

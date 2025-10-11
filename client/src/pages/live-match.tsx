@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,8 +84,44 @@ interface PlayerAdvice {
   players: PlayerWithAdvice[];
 }
 
+// Helper function to convert MM:SS to seconds
+function timeToSeconds(timeStr: string): number {
+  const parts = timeStr.split(':');
+  if (parts.length === 2) {
+    const minutes = parseInt(parts[0]);
+    const seconds = parseInt(parts[1]);
+    return minutes * 60 + seconds;
+  }
+  return 0;
+}
+
 // Video Player Section Component
 function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult }) {
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  
+  // Get full player stats (final totals)
+  const bluePlayer = matchResult.score_analysis?.players?.[0];
+  const redPlayer = matchResult.score_analysis?.players?.[1];
+  const blueKicks = matchResult.kick_count_analysis?.players?.[0];
+  const redKicks = matchResult.kick_count_analysis?.players?.[1];
+  const blueViolations = matchResult.yellow_card_analysis?.players?.[0];
+  const redViolations = matchResult.yellow_card_analysis?.players?.[1];
+
+  // Reset state when viewing a different match analysis
+  useEffect(() => {
+    setHasStartedPlaying(false);
+    setCurrentVideoTime(0);
+  }, [matchResult.id]);
+
+  // Handle play state changes
+  const handlePlayStateChange = (playing: boolean) => {
+    if (playing && !hasStartedPlaying) {
+      // First time playing - mark as started
+      setHasStartedPlaying(true);
+    }
+  };
+
   // Extract all events from analysis data for timeline markers
   // Memoize to ensure stable object references for hover state
   const timelineEvents = useMemo(() => {
@@ -147,76 +183,149 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
     return events;
   }, [matchResult]);
 
-  // Get player stats
-  const bluePlayer = matchResult.score_analysis?.players?.[0];
-  const redPlayer = matchResult.score_analysis?.players?.[1];
-  const blueKicks = matchResult.kick_count_analysis?.players?.[0];
-  const redKicks = matchResult.kick_count_analysis?.players?.[1];
-  const blueViolations = matchResult.yellow_card_analysis?.players?.[0];
-  const redViolations = matchResult.yellow_card_analysis?.players?.[1];
+  // Calculate dynamic counters based on video playback
+  const dynamicStats = useMemo(() => {
+    if (!hasStartedPlaying) {
+      // Show full results when video hasn't been played yet
+      return {
+        blueScore: bluePlayer?.total || 0,
+        redScore: redPlayer?.total || 0,
+        blueKicksCount: blueKicks?.total || 0,
+        redKicksCount: redKicks?.total || 0,
+        blueWarnings: blueViolations?.total || 0,
+        redWarnings: redViolations?.total || 0,
+      };
+    }
+
+    // Once playing has started, count events up to current time
+    let blueScore = 0;
+    let redScore = 0;
+    let blueKicksCount = 0;
+    let redKicksCount = 0;
+    let blueWarnings = 0;
+    let redWarnings = 0;
+
+    // Get events with their values from the original data
+    const blueScoreEvents = bluePlayer?.events || [];
+    const redScoreEvents = redPlayer?.events || [];
+    const blueKickEvents = blueKicks?.events || [];
+    const redKickEvents = redKicks?.events || [];
+    const blueViolationEvents = blueViolations?.events || [];
+    const redViolationEvents = redViolations?.events || [];
+
+    // Calculate scores based on actual event values up to current time
+    blueScoreEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        blueScore += event.value || 1;
+      }
+    });
+
+    redScoreEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        redScore += event.value || 1;
+      }
+    });
+
+    // Count kicks
+    blueKickEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        blueKicksCount += event.value || 1;
+      }
+    });
+
+    redKickEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        redKicksCount += event.value || 1;
+      }
+    });
+
+    // Count violations
+    blueViolationEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        blueWarnings += event.value || 1;
+      }
+    });
+
+    redViolationEvents.forEach(event => {
+      const eventTime = timeToSeconds(event.timestamp);
+      if (eventTime <= currentVideoTime) {
+        redWarnings += event.value || 1;
+      }
+    });
+
+    return {
+      blueScore,
+      redScore,
+      blueKicksCount,
+      redKicksCount,
+      blueWarnings,
+      redWarnings,
+    };
+  }, [hasStartedPlaying, currentVideoTime, bluePlayer, redPlayer, blueKicks, redKicks, blueViolations, redViolations]);
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
-        <CardTitle className="flex items-center justify-between">
-          <span>Match Analysis Results</span>
-          <Button variant="outline" size="sm" data-testid="button-analyze-new">
-            <Video className="h-4 w-4 mr-2" />
-            Analyze New Video
-          </Button>
-        </CardTitle>
+      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600">
+        <CardTitle className="text-white text-2xl">Match Analysis Results</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_220px] gap-0">
           {/* Blue Player Stats (Left) */}
-          <div className="bg-blue-950/30 p-6 flex flex-col gap-4 border-r border-gray-200 dark:border-gray-800">
+          <div className="bg-gradient-to-b from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 p-6 flex flex-col justify-center gap-6 border-r border-gray-200 dark:border-gray-700">
             <div className="text-center">
-              <div className="text-sm font-semibold text-blue-400 mb-2">BLUE SCORE</div>
-              <div className="text-5xl font-bold text-blue-500" data-testid="score-blue">
-                {bluePlayer?.total || 0}
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 tracking-wider">BLUE SCORE</div>
+              <div className="text-6xl font-bold text-blue-600 dark:text-blue-500" data-testid="score-blue">
+                {dynamicStats.blueScore}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-blue-400 mb-2">TOTAL KICKS</div>
-              <div className="text-3xl font-bold text-blue-300" data-testid="kicks-blue">
-                {blueKicks?.total || 0}
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 tracking-wider">TOTAL KICKS</div>
+              <div className="text-4xl font-bold text-blue-500 dark:text-blue-300" data-testid="kicks-blue">
+                {dynamicStats.blueKicksCount}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-yellow-400 mb-2">WARNINGS</div>
-              <div className="text-3xl font-bold text-yellow-500" data-testid="warnings-blue">
-                {blueViolations?.total || 0}
+              <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2 tracking-wider">WARNINGS</div>
+              <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-500" data-testid="warnings-blue">
+                {dynamicStats.blueWarnings}
               </div>
             </div>
           </div>
 
           {/* Video Player (Center) */}
-          <div className="bg-black">
+          <div className="bg-black flex items-center justify-center">
             <VideoPlayerWithMarkers
               videoUrl={`/api/video-analysis/${matchResult.id}/video`}
               events={timelineEvents}
+              onPlayStateChange={handlePlayStateChange}
+              onTimeUpdate={setCurrentVideoTime}
               data-testid="video-player-section"
             />
           </div>
 
           {/* Red Player Stats (Right) */}
-          <div className="bg-red-950/30 p-6 flex flex-col gap-4 border-l border-gray-200 dark:border-gray-800">
+          <div className="bg-gradient-to-b from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20 p-6 flex flex-col justify-center gap-6 border-l border-gray-200 dark:border-gray-700">
             <div className="text-center">
-              <div className="text-sm font-semibold text-red-400 mb-2">RED SCORE</div>
-              <div className="text-5xl font-bold text-red-500" data-testid="score-red">
-                {redPlayer?.total || 0}
+              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 tracking-wider">RED SCORE</div>
+              <div className="text-6xl font-bold text-red-600 dark:text-red-500" data-testid="score-red">
+                {dynamicStats.redScore}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-red-400 mb-2">TOTAL KICKS</div>
-              <div className="text-3xl font-bold text-red-300" data-testid="kicks-red">
-                {redKicks?.total || 0}
+              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 tracking-wider">TOTAL KICKS</div>
+              <div className="text-4xl font-bold text-red-500 dark:text-red-300" data-testid="kicks-red">
+                {dynamicStats.redKicksCount}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-yellow-400 mb-2">WARNINGS</div>
-              <div className="text-3xl font-bold text-yellow-500" data-testid="warnings-red">
-                {redViolations?.total || 0}
+              <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2 tracking-wider">WARNINGS</div>
+              <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-500" data-testid="warnings-red">
+                {dynamicStats.redWarnings}
               </div>
             </div>
           </div>
