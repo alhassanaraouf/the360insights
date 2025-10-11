@@ -1566,6 +1566,7 @@ export class DatabaseStorage implements IStorage {
         targetRank,
         rankingType,
         category,
+        targetDate: targetDate || null,
         currentRank: currentRanking.ranking,
         currentPoints: currentPoints.toString(),
         targetPoints: targetPoints.toString(),
@@ -1582,6 +1583,7 @@ export class DatabaseStorage implements IStorage {
           rankUpCalculationCache.category
         ],
         set: {
+          targetDate: targetDate || null,
           currentRank: currentRanking.ranking,
           currentPoints: currentPoints.toString(),
           targetPoints: targetPoints.toString(),

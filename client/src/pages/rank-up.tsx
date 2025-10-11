@@ -787,6 +787,12 @@ export default function RankUp() {
                         <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                           <span>{parseFloat(analysis.pointsNeeded).toFixed(1)} points needed</span>
                           <span>•</span>
+                          {analysis.targetDate && (
+                            <>
+                              <span>Target: {analysis.targetDate}</span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{new Date(analysis.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
@@ -821,9 +827,12 @@ export default function RankUp() {
                             // Recalculate - set form values and trigger recalculation
                             setTargetRank(analysis.targetRank.toString());
                             setRankingType(analysis.rankingType);
-                            setCategory(analysis.category);
-                            setTargetDate("");
+                            setTargetDate(analysis.targetDate || "");
                             setRankUpResult(null);
+                            // Set category after a brief delay to prevent it from being cleared
+                            setTimeout(() => {
+                              setCategory(analysis.category);
+                            }, 50);
                             toast({
                               title: "Ready to Recalculate",
                               description: "Form populated with saved parameters. Click Calculate for fresh results.",

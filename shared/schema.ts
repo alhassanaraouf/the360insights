@@ -255,6 +255,7 @@ export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
   targetRank: integer("target_rank").notNull(),
   rankingType: varchar("ranking_type", { length: 50 }).notNull(),
   category: varchar("category", { length: 100 }).notNull(),
+  targetDate: varchar("target_date", { length: 50 }), // Target date for achieving the rank
   currentRank: integer("current_rank").notNull(),
   currentPoints: decimal("current_points", { precision: 10, scale: 2 }).notNull(),
   targetPoints: decimal("target_points", { precision: 10, scale: 2 }).notNull(),
