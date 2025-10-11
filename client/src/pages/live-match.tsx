@@ -269,29 +269,29 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
   }, [hasStartedPlaying, currentVideoTime, bluePlayer, redPlayer, blueKicks, redKicks, blueViolations, redViolations]);
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600">
-        <CardTitle className="text-white text-2xl">Match Analysis Results</CardTitle>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Match Analysis Results</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_220px] gap-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-0">
           {/* Blue Player Stats (Left) */}
-          <div className="bg-gradient-to-b from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 p-6 flex flex-col justify-center gap-6 border-r border-gray-200 dark:border-gray-700">
-            <div className="text-center">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 tracking-wider">BLUE SCORE</div>
-              <div className="text-6xl font-bold text-blue-600 dark:text-blue-500" data-testid="score-blue">
+          <div className="p-4 flex flex-col justify-center gap-4 border-r border-gray-200 dark:border-gray-700">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">BLUE SCORE</div>
+              <div className="text-5xl font-bold text-blue-600 dark:text-blue-400" data-testid="score-blue">
                 {dynamicStats.blueScore}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2 tracking-wider">TOTAL KICKS</div>
-              <div className="text-4xl font-bold text-blue-500 dark:text-blue-300" data-testid="kicks-blue">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">TOTAL KICKS</div>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="kicks-blue">
                 {dynamicStats.blueKicksCount}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2 tracking-wider">WARNINGS</div>
-              <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-500" data-testid="warnings-blue">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">WARNINGS</div>
+              <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="warnings-blue">
                 {dynamicStats.blueWarnings}
               </div>
             </div>
@@ -309,22 +309,22 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
           </div>
 
           {/* Red Player Stats (Right) */}
-          <div className="bg-gradient-to-b from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20 p-6 flex flex-col justify-center gap-6 border-l border-gray-200 dark:border-gray-700">
-            <div className="text-center">
-              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 tracking-wider">RED SCORE</div>
-              <div className="text-6xl font-bold text-red-600 dark:text-red-500" data-testid="score-red">
+          <div className="p-4 flex flex-col justify-center gap-4 border-l border-gray-200 dark:border-gray-700">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">RED SCORE</div>
+              <div className="text-5xl font-bold text-red-600 dark:text-red-400" data-testid="score-red">
                 {dynamicStats.redScore}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 tracking-wider">TOTAL KICKS</div>
-              <div className="text-4xl font-bold text-red-500 dark:text-red-300" data-testid="kicks-red">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">TOTAL KICKS</div>
+              <div className="text-3xl font-bold text-red-600 dark:text-red-400" data-testid="kicks-red">
                 {dynamicStats.redKicksCount}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2 tracking-wider">WARNINGS</div>
-              <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-500" data-testid="warnings-red">
+            <div className="border rounded-lg p-3 text-center">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">WARNINGS</div>
+              <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="warnings-red">
                 {dynamicStats.redWarnings}
               </div>
             </div>
@@ -657,15 +657,14 @@ export default function MatchAnalysis() {
               <TabsContent value="scores" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.score_analysis?.players?.map((player, idx) => (
-                    <Card key={idx} className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20">
-                      <CardHeader className="bg-blue-100 dark:bg-blue-900/30">
-                        <CardTitle className="flex items-center justify-between text-blue-700 dark:text-blue-300">
-                          <span>{player.name}</span>
-                          <Award className="h-5 w-5 text-blue-500" />
+                    <Card key={idx}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {player.name}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-6">
-                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4" data-testid={`score-total-${idx}`}>
+                      <CardContent className="space-y-3">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`score-total-${idx}`}>
                           {player.total} points
                         </div>
                         <div className="space-y-2">
@@ -686,12 +685,14 @@ export default function MatchAnalysis() {
               <TabsContent value="punches" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.punch_analysis?.players?.map((player, idx) => (
-                    <Card key={idx} className="border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/20">
-                      <CardHeader className="bg-red-100 dark:bg-red-900/30">
-                        <CardTitle className="text-red-700 dark:text-red-300">{player.name}</CardTitle>
+                    <Card key={idx}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {player.name}
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-6">
-                        <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4" data-testid={`punches-total-${idx}`}>
+                      <CardContent className="space-y-3">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`punches-total-${idx}`}>
                           {player.total} punches
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -711,12 +712,14 @@ export default function MatchAnalysis() {
               <TabsContent value="kicks" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.kick_count_analysis?.players?.map((player, idx) => (
-                    <Card key={idx} className="border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/20">
-                      <CardHeader className="bg-red-100 dark:bg-red-900/30">
-                        <CardTitle className="text-red-700 dark:text-red-300">{player.name}</CardTitle>
+                    <Card key={idx}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {player.name}
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-6">
-                        <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4" data-testid={`kicks-total-${idx}`}>
+                      <CardContent className="space-y-3">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`kicks-total-${idx}`}>
                           {player.total} kicks
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -736,15 +739,14 @@ export default function MatchAnalysis() {
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.yellow_card_analysis?.players?.map((player, idx) => (
-                    <Card key={idx} className="border-yellow-200 dark:border-yellow-800 bg-yellow-50/30 dark:bg-yellow-950/20">
-                      <CardHeader className="bg-yellow-100 dark:bg-yellow-900/30">
-                        <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
-                          <span>{player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</span>
-                          <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <Card key={idx}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-6">
-                        <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-4" data-testid={`violations-total-${idx}`}>
+                      <CardContent className="space-y-3">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`violations-total-${idx}`}>
                           {player.total} violations
                         </div>
                         <div className="space-y-2">
@@ -766,37 +768,34 @@ export default function MatchAnalysis() {
                   {matchResult.advice_analysis?.players?.map((player, idx) => {
                     const isBlue = idx === 0;
                     const playerColor = isBlue ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300';
-                    const borderColor = isBlue ? 'border-blue-200 dark:border-blue-800' : 'border-red-200 dark:border-red-800';
-                    const bgColor = isBlue ? 'bg-blue-50/50 dark:bg-blue-950/20' : 'bg-red-50/50 dark:bg-red-950/20';
-                    const headerBg = isBlue ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30';
                     
                     return (
-                      <Card key={idx} className={`${borderColor} ${bgColor} border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20`}>
-                        <CardHeader className="bg-indigo-100 dark:bg-indigo-900/30">
-                          <CardTitle className={`flex items-center gap-2 text-indigo-700 dark:text-indigo-300 text-xl font-bold`}>
-                            <Target className="h-6 w-6" />
+                      <Card key={idx}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}>
+                            <Target className="h-5 w-5" />
                             {player.name} - Coaching Advice
                           </CardTitle>
                         </CardHeader>
-                      <CardContent className="space-y-6 pt-6">
+                      <CardContent className="space-y-4">
                         {/* Tactical Advice */}
-                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
                             <TrendingUp className="h-4 w-4" />
                             Tactical
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
                               <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.tactical_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                            <div>
                               <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.tactical_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
@@ -806,23 +805,23 @@ export default function MatchAnalysis() {
                         </div>
 
                         {/* Technical Advice */}
-                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                        <div className="space-y-3 pt-2 border-t">
+                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
                             <Activity className="h-4 w-4" />
                             Technical
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
                               <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.technical_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                            <div>
                               <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.technical_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
@@ -832,23 +831,23 @@ export default function MatchAnalysis() {
                         </div>
 
                         {/* Mental Advice */}
-                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                        <div className="space-y-3 pt-2 border-t">
+                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
                             <BarChart3 className="h-4 w-4" />
                             Mental
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
                               <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.mental_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                            <div>
                               <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
+                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {player.mental_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
