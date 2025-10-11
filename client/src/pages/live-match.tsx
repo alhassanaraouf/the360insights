@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Upload, 
+import {
+  Upload,
   Loader2,
   Video,
   BarChart3,
@@ -18,12 +18,18 @@ import {
   Award,
   AlertCircle,
   Target,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import VideoPlayerWithMarkers from "@/components/video-player-with-markers";
 
 interface MatchAnalysisResult {
@@ -86,7 +92,7 @@ interface PlayerAdvice {
 
 // Helper function to convert MM:SS to seconds
 function timeToSeconds(timeStr: string): number {
-  const parts = timeStr.split(':');
+  const parts = timeStr.split(":");
   if (parts.length === 2) {
     const minutes = parseInt(parts[0]);
     const seconds = parseInt(parts[1]);
@@ -96,10 +102,14 @@ function timeToSeconds(timeStr: string): number {
 }
 
 // Video Player Section Component
-function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult }) {
+function VideoPlayerSection({
+  matchResult,
+}: {
+  matchResult: MatchAnalysisResult;
+}) {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  
+
   // Get full player stats (final totals)
   const bluePlayer = matchResult.score_analysis?.players?.[0];
   const redPlayer = matchResult.score_analysis?.players?.[1];
@@ -128,54 +138,54 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
     const events: Array<{
       timestamp: string;
       description: string;
-      type: 'score' | 'kick' | 'punch' | 'violation';
+      type: "score" | "kick" | "punch" | "violation";
       player?: string;
     }> = [];
 
     // Extract score events
-    matchResult.score_analysis?.players?.forEach(player => {
-      player.events?.forEach(event => {
+    matchResult.score_analysis?.players?.forEach((player) => {
+      player.events?.forEach((event) => {
         events.push({
           timestamp: event.timestamp,
           description: event.description,
-          type: 'score',
-          player: player.name
+          type: "score",
+          player: player.name,
         });
       });
     });
 
     // Extract punch events
-    matchResult.punch_analysis?.players?.forEach(player => {
-      player.events?.forEach(event => {
+    matchResult.punch_analysis?.players?.forEach((player) => {
+      player.events?.forEach((event) => {
         events.push({
           timestamp: event.timestamp,
           description: event.description,
-          type: 'punch',
-          player: player.name
+          type: "punch",
+          player: player.name,
         });
       });
     });
 
     // Extract kick events
-    matchResult.kick_count_analysis?.players?.forEach(player => {
-      player.events?.forEach(event => {
+    matchResult.kick_count_analysis?.players?.forEach((player) => {
+      player.events?.forEach((event) => {
         events.push({
           timestamp: event.timestamp,
           description: event.description,
-          type: 'kick',
-          player: player.name
+          type: "kick",
+          player: player.name,
         });
       });
     });
 
     // Extract violation events
-    matchResult.yellow_card_analysis?.players?.forEach(player => {
-      player.events?.forEach(event => {
+    matchResult.yellow_card_analysis?.players?.forEach((player) => {
+      player.events?.forEach((event) => {
         events.push({
           timestamp: event.timestamp,
           description: event.description,
-          type: 'violation',
-          player: player.name
+          type: "violation",
+          player: player.name,
         });
       });
     });
@@ -214,14 +224,14 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
     const redViolationEvents = redViolations?.events || [];
 
     // Calculate scores based on actual event values up to current time
-    blueScoreEvents.forEach(event => {
+    blueScoreEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         blueScore += event.value || 1;
       }
     });
 
-    redScoreEvents.forEach(event => {
+    redScoreEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         redScore += event.value || 1;
@@ -229,14 +239,14 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
     });
 
     // Count kicks
-    blueKickEvents.forEach(event => {
+    blueKickEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         blueKicksCount += event.value || 1;
       }
     });
 
-    redKickEvents.forEach(event => {
+    redKickEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         redKicksCount += event.value || 1;
@@ -244,14 +254,14 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
     });
 
     // Count violations
-    blueViolationEvents.forEach(event => {
+    blueViolationEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         blueWarnings += event.value || 1;
       }
     });
 
-    redViolationEvents.forEach(event => {
+    redViolationEvents.forEach((event) => {
       const eventTime = timeToSeconds(event.timestamp);
       if (eventTime <= currentVideoTime) {
         redWarnings += event.value || 1;
@@ -266,32 +276,58 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
       blueWarnings,
       redWarnings,
     };
-  }, [hasStartedPlaying, currentVideoTime, bluePlayer, redPlayer, blueKicks, redKicks, blueViolations, redViolations]);
+  }, [
+    hasStartedPlaying,
+    currentVideoTime,
+    bluePlayer,
+    redPlayer,
+    blueKicks,
+    redKicks,
+    blueViolations,
+    redViolations,
+  ]);
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Match Analysis Results</CardTitle>
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Match Analysis Results
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr_200px] gap-0">
           {/* Blue Player Stats (Left) */}
           <div className="p-4 flex flex-col justify-center gap-4 border-r border-gray-200 dark:border-gray-700">
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">BLUE SCORE</div>
-              <div className="text-5xl font-bold text-blue-600 dark:text-blue-400" data-testid="score-blue">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                BLUE SCORE
+              </div>
+              <div
+                className="text-5xl font-bold text-blue-600 dark:text-blue-400"
+                data-testid="score-blue"
+              >
                 {dynamicStats.blueScore}
               </div>
             </div>
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">TOTAL KICKS</div>
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="kicks-blue">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                TOTAL KICKS
+              </div>
+              <div
+                className="text-3xl font-bold text-blue-600 dark:text-blue-400"
+                data-testid="kicks-blue"
+              >
                 {dynamicStats.blueKicksCount}
               </div>
             </div>
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">WARNINGS</div>
-              <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="warnings-blue">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                WARNINGS
+              </div>
+              <div
+                className="text-3xl font-bold text-yellow-600 dark:text-yellow-400"
+                data-testid="warnings-blue"
+              >
                 {dynamicStats.blueWarnings}
               </div>
             </div>
@@ -311,20 +347,35 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
           {/* Red Player Stats (Right) */}
           <div className="p-4 flex flex-col justify-center gap-4 border-l border-gray-200 dark:border-gray-700">
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">RED SCORE</div>
-              <div className="text-5xl font-bold text-red-600 dark:text-red-400" data-testid="score-red">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                RED SCORE
+              </div>
+              <div
+                className="text-5xl font-bold text-red-600 dark:text-red-400"
+                data-testid="score-red"
+              >
                 {dynamicStats.redScore}
               </div>
             </div>
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">TOTAL KICKS</div>
-              <div className="text-3xl font-bold text-red-600 dark:text-red-400" data-testid="kicks-red">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                TOTAL KICKS
+              </div>
+              <div
+                className="text-3xl font-bold text-red-600 dark:text-red-400"
+                data-testid="kicks-red"
+              >
                 {dynamicStats.redKicksCount}
               </div>
             </div>
             <div className="border rounded-lg p-3 text-center">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">WARNINGS</div>
-              <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="warnings-red">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                WARNINGS
+              </div>
+              <div
+                className="text-3xl font-bold text-yellow-600 dark:text-yellow-400"
+                data-testid="warnings-red"
+              >
                 {dynamicStats.redWarnings}
               </div>
             </div>
@@ -340,51 +391,59 @@ export default function MatchAnalysis() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [round, setRound] = useState<string>("entire-match");
   const [clipRequest, setClipRequest] = useState("");
-  const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(null);
+  const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(
+    null,
+  );
   const [clipResult, setClipResult] = useState<ClipAnalysisResult | null>(null);
   const { toast } = useToast();
 
   const analyzeVideoMutation = useMutation({
-    mutationFn: async ({ file, type }: { file: File; type: "match" | "clip" }) => {
+    mutationFn: async ({
+      file,
+      type,
+    }: {
+      file: File;
+      type: "match" | "clip";
+    }) => {
       const formData = new FormData();
-      formData.append('video', file);
-      
-      if (type === 'match') {
-        if (round && round !== 'entire-match') {
-          formData.append('round', round);
+      formData.append("video", file);
+
+      if (type === "match") {
+        if (round && round !== "entire-match") {
+          formData.append("round", round);
         }
-        const response = await fetch('/api/video-analysis/match', {
-          method: 'POST',
+        const response = await fetch("/api/video-analysis/match", {
+          method: "POST",
           body: formData,
         });
-        
+
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || 'Failed to analyze video');
+          throw new Error(error.message || "Failed to analyze video");
         }
-        
-        return { type: 'match', data: await response.json() };
+
+        return { type: "match", data: await response.json() };
       } else {
         if (!clipRequest) {
-          throw new Error('Please describe what you want to analyze');
+          throw new Error("Please describe what you want to analyze");
         }
-        formData.append('whatToAnalyze', clipRequest);
-        
-        const response = await fetch('/api/video-analysis/clip', {
-          method: 'POST',
+        formData.append("whatToAnalyze", clipRequest);
+
+        const response = await fetch("/api/video-analysis/clip", {
+          method: "POST",
           body: formData,
         });
-        
+
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || 'Failed to analyze video clip');
+          throw new Error(error.message || "Failed to analyze video clip");
         }
-        
-        return { type: 'clip', data: await response.json() };
+
+        return { type: "clip", data: await response.json() };
       }
     },
     onSuccess: (result) => {
-      if (result.type === 'match') {
+      if (result.type === "match") {
         setMatchResult(result.data);
       } else {
         setClipResult(result.data);
@@ -440,11 +499,11 @@ export default function MatchAnalysis() {
 
   return (
     <>
-      <Header 
-        title="Match Analysis" 
+      <Header
+        title="Match Analysis"
         description="AI-powered video match analysis"
       />
-      
+
       <div className="p-6 space-y-6">
         {/* Analysis Type Selection */}
         <Card>
@@ -456,7 +515,10 @@ export default function MatchAnalysis() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Analysis Type Tabs */}
-            <Tabs value={analysisType} onValueChange={(v) => setAnalysisType(v as "match" | "clip")}>
+            <Tabs
+              value={analysisType}
+              onValueChange={(v) => setAnalysisType(v as "match" | "clip")}
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="match" data-testid="tab-match-analysis">
                   Match Analysis
@@ -468,7 +530,9 @@ export default function MatchAnalysis() {
 
               <TabsContent value="match" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="video-file">Video File (MP4, max 500MB)</Label>
+                  <Label htmlFor="video-file">
+                    Video File (MP4, max 500MB)
+                  </Label>
                   <Input
                     id="video-file"
                     type="file"
@@ -479,23 +543,32 @@ export default function MatchAnalysis() {
                   />
                   {videoFile && (
                     <p className="text-sm text-gray-500">
-                      Selected: {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                      Selected: {videoFile.name} (
+                      {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="round">Round (Optional)</Label>
-                  <Select value={round} onValueChange={setRound} disabled={analyzeVideoMutation.isPending}>
+                  <Select
+                    value={round}
+                    onValueChange={setRound}
+                    disabled={analyzeVideoMutation.isPending}
+                  >
                     <SelectTrigger data-testid="select-round">
                       <SelectValue placeholder="Analyze entire match" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="entire-match">Entire Match</SelectItem>
                       <SelectItem value="no-rounds">No Rounds</SelectItem>
-                      {Array.from({ length: 50 }, (_, i) => i + 1).map(num => (
-                        <SelectItem key={num} value={num.toString()}>Round {num}</SelectItem>
-                      ))}
+                      {Array.from({ length: 50 }, (_, i) => i + 1).map(
+                        (num) => (
+                          <SelectItem key={num} value={num.toString()}>
+                            Round {num}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -503,7 +576,9 @@ export default function MatchAnalysis() {
 
               <TabsContent value="clip" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clip-video-file">Video File (MP4, max 500MB)</Label>
+                  <Label htmlFor="clip-video-file">
+                    Video File (MP4, max 500MB)
+                  </Label>
                   <Input
                     id="clip-video-file"
                     type="file"
@@ -514,13 +589,16 @@ export default function MatchAnalysis() {
                   />
                   {videoFile && (
                     <p className="text-sm text-gray-500">
-                      Selected: {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                      Selected: {videoFile.name} (
+                      {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="clip-request">What would you like to analyze?</Label>
+                  <Label htmlFor="clip-request">
+                    What would you like to analyze?
+                  </Label>
                   <Textarea
                     id="clip-request"
                     placeholder="e.g., Analyze my spinning hook kick technique"
@@ -535,7 +613,7 @@ export default function MatchAnalysis() {
             </Tabs>
 
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={handleAnalyze}
                 disabled={analyzeVideoMutation.isPending || !videoFile}
                 className="flex-1"
@@ -554,7 +632,7 @@ export default function MatchAnalysis() {
                 )}
               </Button>
               {(matchResult || clipResult || videoFile) && (
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleReset}
                   disabled={analyzeVideoMutation.isPending}
@@ -591,9 +669,7 @@ export default function MatchAnalysis() {
         {matchResult && !analyzeVideoMutation.isPending && (
           <div className="space-y-6">
             {/* Video Player with Stats */}
-            {matchResult.id && (
-              <VideoPlayerSection matchResult={matchResult} />
-            )}
+            {matchResult.id && <VideoPlayerSection matchResult={matchResult} />}
 
             <Card>
               <CardHeader>
@@ -605,7 +681,10 @@ export default function MatchAnalysis() {
               <CardContent>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <div className="text-gray-700 dark:text-gray-300" data-testid="text-match-analysis">
+                    <div
+                      className="text-gray-700 dark:text-gray-300"
+                      data-testid="text-match-analysis"
+                    >
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {matchResult.match_analysis}
                       </ReactMarkdown>
@@ -617,36 +696,36 @@ export default function MatchAnalysis() {
 
             <Tabs defaultValue="scores" className="w-full">
               <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                <TabsTrigger 
-                  value="scores" 
+                <TabsTrigger
+                  value="scores"
                   data-testid="tab-scores"
                   className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:dark:bg-blue-900/50 data-[state=active]:dark:text-blue-300 data-[state=active]:font-semibold"
                 >
                   Scores
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="punches" 
+                <TabsTrigger
+                  value="punches"
                   data-testid="tab-punches"
                   className="data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:dark:bg-red-900/50 data-[state=active]:dark:text-red-300 data-[state=active]:font-semibold"
                 >
                   Punches
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="kicks" 
+                <TabsTrigger
+                  value="kicks"
                   data-testid="tab-kicks"
                   className="data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:dark:bg-red-900/50 data-[state=active]:dark:text-red-300 data-[state=active]:font-semibold"
                 >
                   Kicks
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="violations" 
+                <TabsTrigger
+                  value="violations"
                   data-testid="tab-violations"
                   className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-700 data-[state=active]:dark:bg-yellow-900/50 data-[state=active]:dark:text-yellow-300 data-[state=active]:font-semibold"
                 >
                   Violations
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="advice" 
+                <TabsTrigger
+                  value="advice"
                   data-testid="tab-advice"
                   className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 data-[state=active]:dark:bg-indigo-900/50 data-[state=active]:dark:text-indigo-300 data-[state=active]:font-semibold"
                 >
@@ -660,22 +739,49 @@ export default function MatchAnalysis() {
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
-                            {idx === 0 ? '- blue' : '- red'}
+                          {player.name
+                            .toLowerCase()
+                            .split(" ")
+                            .map(
+                              (word: string) =>
+                                word.charAt(0).toUpperCase() + word.slice(1),
+                            )
+                            .join(" ")}
+                          <span
+                            className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                          >
+                            {idx === 0 ? "blue" : "red"}
                           </span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`score-total-${idx}`}>
+                        <div
+                          className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                          data-testid={`score-total-${idx}`}
+                        >
                           {player.total} points
                         </div>
                         <div className="space-y-2">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
-                              <span className={`text-sm font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
-                              <span className={`text-sm ${idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>{event.description}</span>
-                              <span className={`text-sm font-bold ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>+{event.value}</span>
+                            <div
+                              key={eventIdx}
+                              className={`flex justify-between items-center p-2 rounded ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                            >
+                              <span
+                                className={`text-sm font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
+                              >
+                                {event.timestamp}
+                              </span>
+                              <span
+                                className={`text-sm ${idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
+                              >
+                                {event.description}
+                              </span>
+                              <span
+                                className={`text-sm font-bold ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
+                              >
+                                +{event.value}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -691,21 +797,48 @@ export default function MatchAnalysis() {
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
-                            {idx === 0 ? '- blue' : '- red'}
+                          {player.name
+                            .toLowerCase()
+                            .split(" ")
+                            .map(
+                              (word: string) =>
+                                word.charAt(0).toUpperCase() + word.slice(1),
+                            )
+                            .join(" ")}
+                          <span
+                            className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                          >
+                            {idx === 0 ? "blue" : "red"}
                           </span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`punches-total-${idx}`}>
+                        <div
+                          className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                          data-testid={`punches-total-${idx}`}
+                        >
                           {player.total} punches
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
-                              <span className={`font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
-                              <span className={idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}>{event.description}</span>
+                            <div
+                              key={eventIdx}
+                              className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                            >
+                              <span
+                                className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
+                              >
+                                {event.timestamp}
+                              </span>
+                              <span
+                                className={
+                                  idx === 0
+                                    ? "text-blue-600 dark:text-blue-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }
+                              >
+                                {event.description}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -717,58 +850,106 @@ export default function MatchAnalysis() {
 
               <TabsContent value="kicks" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.kick_count_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
-                            {idx === 0 ? '- blue' : '- red'}
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`kicks-total-${idx}`}>
-                          {player.total} kicks
-                        </div>
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                          {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
-                              <span className={`font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
-                              <span className={idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}>{event.description}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {matchResult.kick_count_analysis?.players?.map(
+                    (player, idx) => (
+                      <Card key={idx}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                            {player.name
+                              .toLowerCase()
+                              .split(" ")
+                              .map(
+                                (word: string) =>
+                                  word.charAt(0).toUpperCase() + word.slice(1),
+                              )
+                              .join(" ")}
+                            <span
+                              className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                            >
+                              {idx === 0 ? "blue" : "red"}
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div
+                            className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                            data-testid={`kicks-total-${idx}`}
+                          >
+                            {player.total} kicks
+                          </div>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {player.events?.map((event, eventIdx) => (
+                              <div
+                                key={eventIdx}
+                                className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                              >
+                                <span
+                                  className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
+                                >
+                                  {event.timestamp}
+                                </span>
+                                <span
+                                  className={
+                                    idx === 0
+                                      ? "text-blue-600 dark:text-blue-400"
+                                      : "text-red-600 dark:text-red-400"
+                                  }
+                                >
+                                  {event.description}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ),
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.yellow_card_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`violations-total-${idx}`}>
-                          {player.total} violations
-                        </div>
-                        <div className="space-y-2">
-                          {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-sm">
-                              <span className="font-medium text-yellow-700 dark:text-yellow-300">{event.timestamp}</span>
-                              <span className="text-yellow-600 dark:text-yellow-400">{event.description}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {matchResult.yellow_card_analysis?.players?.map(
+                    (player, idx) => (
+                      <Card key={idx}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {player.name
+                              .toLowerCase()
+                              .split(" ")
+                              .map(
+                                (word: string) =>
+                                  word.charAt(0).toUpperCase() + word.slice(1),
+                              )
+                              .join(" ")}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div
+                            className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                            data-testid={`violations-total-${idx}`}
+                          >
+                            {player.total} violations
+                          </div>
+                          <div className="space-y-2">
+                            {player.events?.map((event, eventIdx) => (
+                              <div
+                                key={eventIdx}
+                                className="flex justify-between items-center p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-sm"
+                              >
+                                <span className="font-medium text-yellow-700 dark:text-yellow-300">
+                                  {event.timestamp}
+                                </span>
+                                <span className="text-yellow-600 dark:text-yellow-400">
+                                  {event.description}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ),
+                  )}
                 </div>
               </TabsContent>
 
@@ -776,101 +957,128 @@ export default function MatchAnalysis() {
                 <div className="grid grid-cols-1 gap-6">
                   {matchResult.advice_analysis?.players?.map((player, idx) => {
                     const isBlue = idx === 0;
-                    const playerColor = isBlue ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300';
-                    
+                    const playerColor = isBlue
+                      ? "text-blue-600 dark:text-blue-300"
+                      : "text-red-600 dark:text-red-300";
+
                     return (
                       <Card key={idx}>
                         <CardHeader className="pb-3">
-                          <CardTitle className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}>
+                          <CardTitle
+                            className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}
+                          >
                             <Target className="h-5 w-5" />
-                            {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                            <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
-                              {idx === 0 ? '- blue' : '- red'}
+                            {player.name
+                              .toLowerCase()
+                              .split(" ")
+                              .map(
+                                (word: string) =>
+                                  word.charAt(0).toUpperCase() + word.slice(1),
+                              )
+                              .join(" ")}
+                            <span
+                              className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                            >
+                              {idx === 0 ? "blue" : "red"}
                             </span>
-                            <span className="text-gray-600 dark:text-gray-400 font-normal">- Coaching Advice</span>
+                            <span className="text-gray-600 dark:text-gray-400 font-normal">
+                              - Coaching Advice
+                            </span>
                           </CardTitle>
                         </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* Tactical Advice */}
-                        <div className="space-y-3">
-                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <TrendingUp className="h-4 w-4" />
-                            Tactical
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.tactical_advice?.issues?.map((issue, i) => (
-                                  <li key={i}>{issue}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.tactical_advice?.improvements?.map((imp, i) => (
-                                  <li key={i}>{imp}</li>
-                                ))}
-                              </ul>
+                        <CardContent className="space-y-4">
+                          {/* Tactical Advice */}
+                          <div className="space-y-3">
+                            <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                              <TrendingUp className="h-4 w-4" />
+                              Tactical
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
+                                  Issues:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.tactical_advice?.issues?.map(
+                                    (issue, i) => <li key={i}>{issue}</li>,
+                                  )}
+                                </ul>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                                  Improvements:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.tactical_advice?.improvements?.map(
+                                    (imp, i) => <li key={i}>{imp}</li>,
+                                  )}
+                                </ul>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Technical Advice */}
-                        <div className="space-y-3 pt-2 border-t">
-                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <Activity className="h-4 w-4" />
-                            Technical
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.technical_advice?.issues?.map((issue, i) => (
-                                  <li key={i}>{issue}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.technical_advice?.improvements?.map((imp, i) => (
-                                  <li key={i}>{imp}</li>
-                                ))}
-                              </ul>
+                          {/* Technical Advice */}
+                          <div className="space-y-3 pt-2 border-t">
+                            <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                              <Activity className="h-4 w-4" />
+                              Technical
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
+                                  Issues:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.technical_advice?.issues?.map(
+                                    (issue, i) => <li key={i}>{issue}</li>,
+                                  )}
+                                </ul>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                                  Improvements:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.technical_advice?.improvements?.map(
+                                    (imp, i) => <li key={i}>{imp}</li>,
+                                  )}
+                                </ul>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Mental Advice */}
-                        <div className="space-y-3 pt-2 border-t">
-                          <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                            <BarChart3 className="h-4 w-4" />
-                            Mental
-                          </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.mental_advice?.issues?.map((issue, i) => (
-                                  <li key={i}>{issue}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                                {player.mental_advice?.improvements?.map((imp, i) => (
-                                  <li key={i}>{imp}</li>
-                                ))}
-                              </ul>
+                          {/* Mental Advice */}
+                          <div className="space-y-3 pt-2 border-t">
+                            <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                              <BarChart3 className="h-4 w-4" />
+                              Mental
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
+                                  Issues:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.mental_advice?.issues?.map(
+                                    (issue, i) => <li key={i}>{issue}</li>,
+                                  )}
+                                </ul>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                                  Improvements:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {player.mental_advice?.improvements?.map(
+                                    (imp, i) => <li key={i}>{imp}</li>,
+                                  )}
+                                </ul>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
+                        </CardContent>
+                      </Card>
+                    );
                   })}
                 </div>
               </TabsContent>
@@ -895,7 +1103,10 @@ export default function MatchAnalysis() {
               </div>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                  <div className="text-gray-700 dark:text-gray-300" data-testid="text-clip-analysis">
+                  <div
+                    className="text-gray-700 dark:text-gray-300"
+                    data-testid="text-clip-analysis"
+                  >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {clipResult.analysis}
                     </ReactMarkdown>
@@ -911,7 +1122,9 @@ export default function MatchAnalysis() {
           <Card>
             <CardContent className="p-12 text-center">
               <Video className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg font-medium text-gray-600 dark:text-gray-400">No analysis yet</p>
+              <p className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                No analysis yet
+              </p>
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                 Upload a video and click "Analyze Video" to get started
               </p>
