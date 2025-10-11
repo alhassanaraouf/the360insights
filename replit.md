@@ -15,18 +15,27 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Frontend**: React 18, TypeScript, Wouter for routing, TanStack Query for state management, Vite as build tool.
 -   **Backend**: Node.js with TypeScript, Express.js for REST API, Drizzle ORM for database interactions.
 -   **Database**: PostgreSQL (Neon serverless) for relational data persistence.
--   **AI Integration**: OpenAI API (GPT-4o) for performance insights, opponent analysis, and training plans.
+-   **AI Integration**: Gemini 2.0 Flash (via @google/genai SDK) for video analysis with Files API; OpenAI API (GPT-4o) for performance insights, opponent analysis, and training plans.
+-   **Video Processing**: Gemini Files API for video upload and processing, range-based HTTP streaming for efficient video playback.
 -   **Session Management**: Replit Key Value Store for persistent authentication sessions.
 -   **Real-time Features**: WebSocket integration for live match analysis.
 -   **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
 -   **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
--   **Object Storage**: Replit Object Storage for athlete profile pictures and other assets.
+-   **Object Storage**: Replit Object Storage for athlete profile pictures and other assets; Local file system storage for uploaded video files.
 
 ### Feature Specifications
 -   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
 -   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
 -   **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
+-   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback:
+    - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights
+    - Clip Analysis: Custom coaching advice for specific techniques
+    - Interactive Video Player: Timeline markers for kicks, scores, punches, and violations
+    - Side-by-side Stats Display: Real-time visualization of player scores, kicks, and warnings
+    - Video Streaming: Efficient range-based video streaming for smooth playback
+    - Event Timeline: Click markers to jump to specific moments in the match
+    - Hover Tooltips: Detailed event information on timeline markers
 -   **Rank-Up Calculator**: AI-powered rank advancement strategy with the following capabilities:
     - Compact visual progress indicators (7-stage analysis feedback)
     - Saved analyses management (view, delete, recalculate previous analyses)
@@ -63,6 +72,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   `ai_queries`: AI query history (indexed on: athleteId, timestamp)
 -   `training_plans`: Detailed training plans (indexed on: athleteId)
 -   `sponsorship_bids`: Sponsorship bids for athletes (indexed on: athleteId, sponsorUserId)
+-   `video_analysis`: Video analysis records with stored video paths, match/clip analysis data, and event timelines (indexed on: userId, analysisType)
 
 ## External Dependencies
 
