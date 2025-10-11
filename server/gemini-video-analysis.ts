@@ -458,19 +458,52 @@ Rules:
             });
 
             const responseText = result.text || '';
-            console.log('Raw advice response:', responseText.substring(0, 500));
+            console.log('Raw advice response length:', responseText.length);
+            console.log('First 200 chars:', responseText.substring(0, 200));
+            console.log('Last 200 chars:', responseText.substring(responseText.length - 200));
             
-            const cleaned = cleanJsonResponse(responseText);
-            const parsed = JSON.parse(cleaned);
+            // Since we're using responseMimeType: "application/json", the response should be valid JSON
+            // Just trim whitespace and parse directly
+            let parsed;
+            try {
+              const trimmed = responseText.trim();
+              parsed = JSON.parse(trimmed);
+              console.log('Successfully parsed advice directly');
+            } catch (e: any) {
+              console.log('Direct parse failed:', e.message);
+              console.log('Trying more aggressive cleaning...');
+              
+              // More aggressive: extract JSON from any surrounding text
+              let cleaned = responseText.trim();
+              const firstBrace = cleaned.indexOf('{');
+              const lastBrace = cleaned.lastIndexOf('}');
+              
+              if (firstBrace !== -1 && lastBrace !== -1) {
+                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+                console.log('Extracted JSON length:', cleaned.length);
+                try {
+                  parsed = JSON.parse(cleaned);
+                  console.log('Successfully parsed after extraction');
+                } catch (e2: any) {
+                  console.error('Parse failed even after extraction:', e2.message);
+                  throw new Error('Cannot parse advice JSON: ' + e2.message);
+                }
+              } else {
+                throw new Error('No JSON braces found in response');
+              }
+            }
             
             // Validate that we have proper data
             if (!parsed.players || parsed.players.length === 0) {
-              throw new Error('Invalid advice structure');
+              console.error('Parsed data:', JSON.stringify(parsed).substring(0, 500));
+              throw new Error('Invalid advice structure - missing or empty players array');
             }
             
+            console.log('Successfully validated advice for', parsed.players.length, 'players');
             return { data: parsed, error: null };
           } catch (error: any) {
             console.error('Advice analysis error:', error.message);
+            console.error('Full error:', error);
             return { data: getFallbackAdviceStructure(), error: error.message };
           }
         })()

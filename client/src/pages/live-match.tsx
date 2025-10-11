@@ -298,7 +298,7 @@ function VideoPlayerSection({ matchResult }: { matchResult: MatchAnalysisResult 
           </div>
 
           {/* Video Player (Center) */}
-          <div className="bg-black flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-900 flex items-center justify-center">
             <VideoPlayerWithMarkers
               videoUrl={`/api/video-analysis/${matchResult.id}/video`}
               events={timelineEvents}
