@@ -120,6 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: analysisResult.errors,
         fileName: req.file.originalname,
         fileSize: req.file.size,
+        videoPath: uploadedFilePath,
         processingTimeMs: analysisResult.processingTimeMs,
       });
 
@@ -134,8 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: 'Failed to analyze video',
         message: error.message 
       });
-    } finally {
-      // Cleanup uploaded file
+      // Only cleanup on error
       if (uploadedFilePath) {
         try {
           if (fs.existsSync(uploadedFilePath)) {
@@ -190,6 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clipAnalysis: analysisResult.analysis,
         fileName: req.file.originalname,
         fileSize: req.file.size,
+        videoPath: uploadedFilePath,
         processingTimeMs: analysisResult.processingTimeMs,
       });
 
@@ -204,8 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: 'Failed to analyze video clip',
         message: error.message 
       });
-    } finally {
-      // Cleanup uploaded file
+      // Only cleanup on error
       if (uploadedFilePath) {
         try {
           if (fs.existsSync(uploadedFilePath)) {
@@ -227,6 +227,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching video analyses:', error);
       res.status(500).json({ error: 'Failed to fetch video analyses' });
+    }
+  });
+
+  // Serve stored video files
+  app.get('/api/video-analysis/:id/video', async (req: any, res) => {
+    try {
+      const analysisId = parseInt(req.params.id);
+      const analysis = await storage.getVideoAnalysis(analysisId);
+      
+      if (!analysis || !analysis.videoPath) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(analysis.videoPath)) {
+        return res.status(404).json({ error: 'Video file not found on server' });
+      }
+
+      // Stream the video file
+      const stat = fs.statSync(analysis.videoPath);
+      const fileSize = stat.size;
+      const range = req.headers.range;
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunksize = (end - start) + 1;
+        const file = fs.createReadStream(analysis.videoPath, { start, end });
+        const head = {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+        };
+        res.writeHead(206, head);
+        file.pipe(res);
+      } else {
+        const head = {
+          'Content-Length': fileSize,
+          'Content-Type': 'video/mp4',
+        };
+        res.writeHead(200, head);
+        fs.createReadStream(analysis.videoPath).pipe(res);
+      }
+    } catch (error) {
+      console.error('Error serving video:', error);
+      res.status(500).json({ error: 'Failed to serve video' });
     }
   });
 
