@@ -63,7 +63,9 @@ export const kpiMetrics = pgTable("kpi_metrics", {
   value: decimal("value", { precision: 5, scale: 2 }).notNull(),
   trend: decimal("trend", { precision: 5, scale: 2 }),
   lastUpdated: timestamp("last_updated").defaultNow(),
-});
+}, (table) => ({
+  athleteIdIdx: index("kpi_metrics_athlete_id_idx").on(table.athleteId),
+}));
 
 export const strengths = pgTable("strengths", {
   id: serial("id").primaryKey(),
@@ -71,7 +73,9 @@ export const strengths = pgTable("strengths", {
   name: text("name").notNull(),
   description: text("description"),
   score: integer("score").notNull(),
-});
+}, (table) => ({
+  athleteIdIdx: index("strengths_athlete_id_idx").on(table.athleteId),
+}));
 
 export const weaknesses = pgTable("weaknesses", {
   id: serial("id").primaryKey(),
@@ -79,7 +83,9 @@ export const weaknesses = pgTable("weaknesses", {
   name: text("name").notNull(),
   description: text("description"),
   score: integer("score").notNull(),
-});
+}, (table) => ({
+  athleteIdIdx: index("weaknesses_athlete_id_idx").on(table.athleteId),
+}));
 
 // Removed opponents table - opponents are now treated as regular athletes
 
@@ -131,9 +137,11 @@ export const competitionParticipants = pgTable("competition_participants", {
   registrationDate: timestamp("registration_date").defaultNow(),
   status: varchar("status", { length: 20 }).default("registered"), // 'registered', 'confirmed', 'withdrawn'
   createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  unique().on(table.competitionId, table.athleteId), // Each athlete can only participate once per competition
-]);
+}, (table) => ({
+  competitionIdIdx: index("competition_participants_competition_id_idx").on(table.competitionId),
+  athleteIdIdx: index("competition_participants_athlete_id_idx").on(table.athleteId),
+  competitionAthleteUnique: unique().on(table.competitionId, table.athleteId), // Each athlete can only participate once per competition
+}));
 
 export const trainingRecommendations = pgTable("training_recommendations", {
   id: serial("id").primaryKey(),
@@ -142,7 +150,9 @@ export const trainingRecommendations = pgTable("training_recommendations", {
   description: text("description"),
   expectedUplift: decimal("expected_uplift", { precision: 5, scale: 2 }),
   priority: integer("priority"),
-});
+}, (table) => ({
+  athleteIdIdx: index("training_recommendations_athlete_id_idx").on(table.athleteId),
+}));
 
 export const careerEvents = pgTable("career_events", {
   id: serial("id").primaryKey(),
@@ -156,7 +166,10 @@ export const careerEvents = pgTable("career_events", {
   competitionLevel: text("competition_level"), // 'national', 'international', 'olympic', 'world_championship'
   eventResult: text("event_result"), // Competition finishing place/result
   metadata: jsonb("metadata"),
-});
+}, (table) => ({
+  athleteIdIdx: index("career_events_athlete_id_idx").on(table.athleteId),
+  dateIdx: index("career_events_date_idx").on(table.date),
+}));
 
 export const aiQueries = pgTable("ai_queries", {
   id: serial("id").primaryKey(),
@@ -165,7 +178,10 @@ export const aiQueries = pgTable("ai_queries", {
   response: text("response").notNull(),
   confidence: decimal("confidence", { precision: 5, scale: 2 }),
   timestamp: timestamp("timestamp").defaultNow(),
-});
+}, (table) => ({
+  athleteIdIdx: index("ai_queries_athlete_id_idx").on(table.athleteId),
+  timestampIdx: index("ai_queries_timestamp_idx").on(table.timestamp),
+}));
 
 export const trainingPlans = pgTable("training_plans", {
   id: serial("id").primaryKey(),
@@ -183,7 +199,9 @@ export const trainingPlans = pgTable("training_plans", {
   adaptationProtocol: text("adaptation_protocol"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  athleteIdIdx: index("training_plans_athlete_id_idx").on(table.athleteId),
+}));
 
 export const userCompetitionPreferences = pgTable("user_competition_preferences", {
   id: serial("id").primaryKey(),
@@ -217,7 +235,10 @@ export const sponsorshipBids = pgTable("sponsorship_bids", {
   status: varchar("status", { length: 20 }).notNull().default("PENDING"), // PENDING, ACCEPTED, REJECTED
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  athleteIdIdx: index("sponsorship_bids_athlete_id_idx").on(table.athleteId),
+  sponsorUserIdIdx: index("sponsorship_bids_sponsor_user_id_idx").on(table.sponsorUserId),
+}));
 
 // Bid settings table for controlling bid acceptance
 export const bidSettings = pgTable("bid_settings", {
