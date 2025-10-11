@@ -55,7 +55,7 @@ interface PerformanceInsight {
 
 export default function OpponentAnalysis() {
   const [selectedOpponent, setSelectedOpponent] = useState<string>("");
-  const [showAllWeightClass, setShowAllWeightClass] = useState<boolean>(true);
+  const [showAllWeightClass, setShowAllWeightClass] = useState<boolean>(false);
   const [opponentSelectorOpen, setOpponentSelectorOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
