@@ -15,7 +15,7 @@ const translations: TranslationData = {
     'nav.career': 'Career Journey',
     'nav.opponents': 'Opponents List',
     'nav.opponentAnalysis': 'AI Opponent Analysis',
-    'nav.liveMatch': 'Live Match Analysis',
+    'nav.liveMatch': 'Match Analysis',
     'nav.trainingPlanner': 'Training Planner',
     'nav.injuryPrevention': 'Injury Prevention',
     'nav.tacticalTraining': 'Tactical Training',
@@ -120,9 +120,9 @@ const translations: TranslationData = {
     'opponentAnalysis.winProbability': 'Win Probability',
     'opponentAnalysis.recommendations': 'Strategic Recommendations',
     
-    // Live Match
-    'liveMatch.title': 'Live Match Analysis',
-    'liveMatch.description': 'Real-time match insights and suggestions',
+    // Match Analysis
+    'liveMatch.title': 'Match Analysis',
+    'liveMatch.description': 'AI-powered video match analysis',
     'liveMatch.currentScore': 'Current Score',
     'liveMatch.round': 'Round',
     'liveMatch.timeRemaining': 'Time Remaining',
@@ -338,9 +338,9 @@ const translations: TranslationData = {
     'opponentAnalysis.winProbability': 'احتمالية الفوز',
     'opponentAnalysis.recommendations': 'التوصيات الاستراتيجية',
     
-    // Live Match
-    'liveMatch.title': 'تحليل المباراة المباشرة',
-    'liveMatch.description': 'رؤى واقتراحات المباراة في الوقت الفعلي',
+    // Match Analysis
+    'liveMatch.title': 'تحليل المباراة',
+    'liveMatch.description': 'تحليل المباراة بالفيديو باستخدام الذكاء الاصطناعي',
     'liveMatch.currentScore': 'النتيجة الحالية',
     'liveMatch.round': 'الجولة',
     'liveMatch.timeRemaining': 'الوقت المتبقي',
