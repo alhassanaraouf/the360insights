@@ -594,10 +594,6 @@ export default function RankUp() {
     });
 
     try {
-      // Add timeout for long-running requests (5 minutes to match AI processing time)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000);
-
       const response = await fetch("/api/rank-up/calculate", {
         method: "POST",
         body: JSON.stringify({
@@ -611,10 +607,6 @@ export default function RankUp() {
         headers: {
           "Content-Type": "application/json",
         },
-        signal: controller.signal,
-      }).finally(() => {
-        // Clear timeout to prevent stray abort calls
-        clearTimeout(timeoutId);
       });
 
       if (!response.ok) {
@@ -642,10 +634,7 @@ export default function RankUp() {
 
       toast({
         title: "Calculation Failed",
-        description:
-          error instanceof Error && error.name === "AbortError"
-            ? "The calculation took too long and was cancelled. Please try again."
-            : "Failed to calculate rank up requirements. Please try again.",
+        description: "Failed to calculate rank up requirements. Please try again.",
         variant: "destructive",
       });
     } finally {
