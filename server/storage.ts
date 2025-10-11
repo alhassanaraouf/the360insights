@@ -51,6 +51,9 @@ import {
   competitionParticipants,
   type CompetitionParticipant,
   type InsertCompetitionParticipant,
+  videoAnalysis,
+  type VideoAnalysis,
+  type InsertVideoAnalysis,
 
   competitions,
   trainingPlans,
@@ -237,6 +240,11 @@ export interface IStorage {
   // Bid Settings
   getBidSettings(): Promise<BidSettings>;
   updateBidSettings(updates: Partial<InsertBidSettings>): Promise<BidSettings>;
+
+  // Video Analysis
+  createVideoAnalysis(analysis: InsertVideoAnalysis): Promise<VideoAnalysis>;
+  getVideoAnalysis(id: number): Promise<VideoAnalysis | undefined>;
+  getVideoAnalysesByUserId(userId: string): Promise<VideoAnalysis[]>;
 
   // Performance Analysis Cache
   getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
@@ -1867,6 +1875,32 @@ export class DatabaseStorage implements IStorage {
       .values(cache)
       .returning();
     return newCache;
+  }
+
+  // Video Analysis Methods
+  async createVideoAnalysis(analysis: InsertVideoAnalysis): Promise<VideoAnalysis> {
+    const [result] = await db
+      .insert(videoAnalysis)
+      .values(analysis)
+      .returning();
+    return result;
+  }
+
+  async getVideoAnalysis(id: number): Promise<VideoAnalysis | undefined> {
+    const [result] = await db
+      .select()
+      .from(videoAnalysis)
+      .where(eq(videoAnalysis.id, id))
+      .limit(1);
+    return result;
+  }
+
+  async getVideoAnalysesByUserId(userId: string): Promise<VideoAnalysis[]> {
+    return await db
+      .select()
+      .from(videoAnalysis)
+      .where(eq(videoAnalysis.userId, userId))
+      .orderBy(desc(videoAnalysis.createdAt));
   }
 }
 

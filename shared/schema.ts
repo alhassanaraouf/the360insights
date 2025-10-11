@@ -401,6 +401,47 @@ export const insertBidSettingsSchema = createInsertSchema(bidSettings).omit({
 
 export const upsertUserSchema = createInsertSchema(users);
 
+// Video analysis table for Taekwondo match and clip analysis
+export const videoAnalysis = pgTable("video_analysis", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  analysisType: varchar("analysis_type", { length: 20 }).notNull(), // 'match' or 'clip'
+  sport: varchar("sport", { length: 50 }).default("Taekwondo"),
+  language: varchar("language", { length: 20 }).default("english"),
+  
+  // Match analysis specific fields
+  roundAnalyzed: integer("round_analyzed"), // null for entire match or 'no-rounds'
+  matchAnalysis: text("match_analysis"), // Narrative text
+  scoreAnalysis: jsonb("score_analysis"), // Score events JSON
+  punchAnalysis: jsonb("punch_analysis"), // Punch events JSON
+  kickCountAnalysis: jsonb("kick_count_analysis"), // Kick count JSON
+  yellowCardAnalysis: jsonb("yellow_card_analysis"), // Violations JSON
+  adviceAnalysis: jsonb("advice_analysis"), // Player advice JSON
+  
+  // Clip analysis specific fields
+  userRequest: text("user_request"), // What user wants analyzed
+  clipAnalysis: text("clip_analysis"), // Coaching advice text
+  
+  // Error tracking
+  errors: jsonb("errors"), // Track which components had errors
+  
+  // Metadata
+  fileName: text("file_name"),
+  fileSize: integer("file_size"),
+  processingTimeMs: integer("processing_time_ms"),
+  processedAt: timestamp("processed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("video_analysis_user_id_idx").on(table.userId),
+  analysisTypeIdx: index("video_analysis_type_idx").on(table.analysisType),
+}));
+
+export const insertVideoAnalysisSchema = createInsertSchema(videoAnalysis).omit({
+  id: true,
+  processedAt: true,
+  createdAt: true,
+});
+
 // Types
 export type Coach = typeof coaches.$inferSelect;
 export type InsertCoach = z.infer<typeof insertCoachSchema>;
@@ -450,3 +491,6 @@ export type InsertBidSettings = z.infer<typeof insertBidSettingsSchema>;
 
 export type User = typeof users.$inferSelect;
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
+
+export type VideoAnalysis = typeof videoAnalysis.$inferSelect;
+export type InsertVideoAnalysis = z.infer<typeof insertVideoAnalysisSchema>;

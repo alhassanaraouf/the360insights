@@ -22,12 +22,26 @@ import { db } from './db';
 import * as schema from '../shared/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import multer from 'multer';
+import { geminiVideoAnalysis } from "./gemini-video-analysis";
+import * as fs from "fs";
+import * as path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication middleware
   await setupAuth(app);
 
-
+  // Configure multer for video uploads
+  const videoUpload = multer({
+    dest: 'uploads/',
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'video/mp4') {
+        cb(null, true);
+      } else {
+        cb(new Error('Only MP4 files are allowed'));
+      }
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -60,6 +74,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+
+  // Video Analysis Routes
+  // Match analysis endpoint
+  app.post('/api/video-analysis/match', videoUpload.single('video'), async (req: any, res) => {
+    let uploadedFilePath: string | undefined;
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No video file uploaded' });
+      }
+
+      uploadedFilePath = req.file.path;
+      const round = req.body.round ? (req.body.round === 'no-rounds' ? 'no-rounds' : parseInt(req.body.round)) : null;
+      
+      // Progress tracking - in real app, use WebSockets/SSE
+      const onProgress = (stage: string, progress: number) => {
+        console.log(`Progress: ${stage} - ${progress}%`);
+      };
+
+      const analysisResult = await geminiVideoAnalysis.analyzeMatch(
+        uploadedFilePath,
+        round,
+        onProgress
+      );
+
+      // Store in database
+      let userId = null;
+      if (req.user) {
+        userId = req.user.claims?.sub || req.user.id;
+      }
+
+      const savedAnalysis = await storage.createVideoAnalysis({
+        userId,
+        analysisType: 'match',
+        sport: 'Taekwondo',
+        language: 'english',
+        roundAnalyzed: round === 'no-rounds' ? null : round,
+        matchAnalysis: analysisResult.match_analysis,
+        scoreAnalysis: analysisResult.score_analysis,
+        punchAnalysis: analysisResult.punch_analysis,
+        kickCountAnalysis: analysisResult.kick_count_analysis,
+        yellowCardAnalysis: analysisResult.yellow_card_analysis,
+        adviceAnalysis: analysisResult.advice_analysis,
+        errors: analysisResult.errors,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        processingTimeMs: analysisResult.processingTimeMs,
+      });
+
+      res.json({
+        id: savedAnalysis.id,
+        ...analysisResult
+      });
+
+    } catch (error: any) {
+      console.error('Match analysis error:', error);
+      res.status(500).json({ 
+        error: 'Failed to analyze video',
+        message: error.message 
+      });
+    } finally {
+      // Cleanup uploaded file
+      if (uploadedFilePath) {
+        try {
+          if (fs.existsSync(uploadedFilePath)) {
+            fs.unlinkSync(uploadedFilePath);
+          }
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup uploaded file:', cleanupError);
+        }
+      }
+    }
+  });
+
+  // Clip analysis endpoint
+  app.post('/api/video-analysis/clip', videoUpload.single('video'), async (req: any, res) => {
+    let uploadedFilePath: string | undefined;
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No video file uploaded' });
+      }
+
+      if (!req.body.whatToAnalyze) {
+        return res.status(400).json({ error: 'Analysis request is required' });
+      }
+
+      uploadedFilePath = req.file.path;
+      const whatToAnalyze = req.body.whatToAnalyze;
+      
+      // Progress tracking
+      const onProgress = (stage: string, progress: number) => {
+        console.log(`Progress: ${stage} - ${progress}%`);
+      };
+
+      const analysisResult = await geminiVideoAnalysis.analyzeClip(
+        uploadedFilePath,
+        whatToAnalyze,
+        onProgress
+      );
+
+      // Store in database
+      let userId = null;
+      if (req.user) {
+        userId = req.user.claims?.sub || req.user.id;
+      }
+
+      const savedAnalysis = await storage.createVideoAnalysis({
+        userId,
+        analysisType: 'clip',
+        sport: 'Taekwondo',
+        language: 'english',
+        userRequest: whatToAnalyze,
+        clipAnalysis: analysisResult.analysis,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        processingTimeMs: analysisResult.processingTimeMs,
+      });
+
+      res.json({
+        id: savedAnalysis.id,
+        ...analysisResult
+      });
+
+    } catch (error: any) {
+      console.error('Clip analysis error:', error);
+      res.status(500).json({ 
+        error: 'Failed to analyze video clip',
+        message: error.message 
+      });
+    } finally {
+      // Cleanup uploaded file
+      if (uploadedFilePath) {
+        try {
+          if (fs.existsSync(uploadedFilePath)) {
+            fs.unlinkSync(uploadedFilePath);
+          }
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup uploaded file:', cleanupError);
+        }
+      }
+    }
+  });
+
+  // Get user's video analyses
+  app.get('/api/video-analysis/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      const analyses = await storage.getVideoAnalysesByUserId(userId);
+      res.json(analyses);
+    } catch (error) {
+      console.error('Error fetching video analyses:', error);
+      res.status(500).json({ error: 'Failed to fetch video analyses' });
+    }
+  });
+
   // Athletes dashboard statistics endpoint (optimized for dashboard)
   app.get("/api/athletes/stats", async (req, res) => {
     try {
