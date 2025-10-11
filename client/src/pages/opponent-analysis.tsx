@@ -104,7 +104,9 @@ export default function OpponentAnalysis() {
       params.set('page', pageParam.toString());
       const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch opponents');
-      return response.json();
+      const data = await response.json();
+      console.log('[Opponent Query] Fetched data:', { endpoint, total: data.total, opponentsCount: data.opponents?.length, opponents: data.opponents });
+      return data;
     },
     getNextPageParam: (lastPage) => {
       // Backend now returns { opponents, total, page, limit, hasMore }
@@ -112,6 +114,8 @@ export default function OpponentAnalysis() {
     },
     initialPageParam: 1,
     enabled: !!selectedAthleteId,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
   });
 
   // Flatten all pages into a single array
