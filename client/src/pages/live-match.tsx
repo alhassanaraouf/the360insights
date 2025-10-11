@@ -659,8 +659,11 @@ export default function MatchAnalysis() {
                   {matchResult.score_analysis?.players?.map((player, idx) => (
                     <Card key={idx}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                           {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
+                            {idx === 0 ? '- blue' : '- red'}
+                          </span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -669,10 +672,10 @@ export default function MatchAnalysis() {
                         </div>
                         <div className="space-y-2">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-blue-100 dark:bg-blue-900/40 rounded">
-                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{event.timestamp}</span>
-                              <span className="text-sm text-blue-600 dark:text-blue-400">{event.description}</span>
-                              <span className="text-sm font-bold text-blue-700 dark:text-blue-300">+{event.value}</span>
+                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                              <span className={`text-sm font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
+                              <span className={`text-sm ${idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>{event.description}</span>
+                              <span className={`text-sm font-bold ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>+{event.value}</span>
                             </div>
                           ))}
                         </div>
@@ -687,8 +690,11 @@ export default function MatchAnalysis() {
                   {matchResult.punch_analysis?.players?.map((player, idx) => (
                     <Card key={idx}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                           {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
+                            {idx === 0 ? '- blue' : '- red'}
+                          </span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -697,9 +703,9 @@ export default function MatchAnalysis() {
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm">
-                              <span className="font-medium text-red-700 dark:text-red-300">{event.timestamp}</span>
-                              <span className="text-red-600 dark:text-red-400">{event.description}</span>
+                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                              <span className={`font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
+                              <span className={idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}>{event.description}</span>
                             </div>
                           ))}
                         </div>
@@ -714,8 +720,11 @@ export default function MatchAnalysis() {
                   {matchResult.kick_count_analysis?.players?.map((player, idx) => (
                     <Card key={idx}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                           {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
+                            {idx === 0 ? '- blue' : '- red'}
+                          </span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -724,9 +733,9 @@ export default function MatchAnalysis() {
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm">
-                              <span className="font-medium text-red-700 dark:text-red-300">{event.timestamp}</span>
-                              <span className="text-red-600 dark:text-red-400">{event.description}</span>
+                            <div key={eventIdx} className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
+                              <span className={`font-medium ${idx === 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>{event.timestamp}</span>
+                              <span className={idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}>{event.description}</span>
                             </div>
                           ))}
                         </div>
@@ -774,7 +783,11 @@ export default function MatchAnalysis() {
                         <CardHeader className="pb-3">
                           <CardTitle className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}>
                             <Target className="h-5 w-5" />
-                            {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} - Coaching Advice
+                            {player.name.toLowerCase().split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                            <span className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'}`}>
+                              {idx === 0 ? '- blue' : '- red'}
+                            </span>
+                            <span className="text-gray-600 dark:text-gray-400 font-normal">- Coaching Advice</span>
                           </CardTitle>
                         </CardHeader>
                       <CardContent className="space-y-4">
