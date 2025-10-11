@@ -620,21 +620,21 @@ export default function MatchAnalysis() {
                 <TabsTrigger 
                   value="scores" 
                   data-testid="tab-scores"
-                  className="data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:dark:bg-green-900/50 data-[state=active]:dark:text-green-300 data-[state=active]:font-semibold"
+                  className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:dark:bg-blue-900/50 data-[state=active]:dark:text-blue-300 data-[state=active]:font-semibold"
                 >
                   Scores
                 </TabsTrigger>
                 <TabsTrigger 
                   value="punches" 
                   data-testid="tab-punches"
-                  className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 data-[state=active]:dark:bg-purple-900/50 data-[state=active]:dark:text-purple-300 data-[state=active]:font-semibold"
+                  className="data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:dark:bg-red-900/50 data-[state=active]:dark:text-red-300 data-[state=active]:font-semibold"
                 >
                   Punches
                 </TabsTrigger>
                 <TabsTrigger 
                   value="kicks" 
                   data-testid="tab-kicks"
-                  className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:dark:bg-blue-900/50 data-[state=active]:dark:text-blue-300 data-[state=active]:font-semibold"
+                  className="data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:dark:bg-red-900/50 data-[state=active]:dark:text-red-300 data-[state=active]:font-semibold"
                 >
                   Kicks
                 </TabsTrigger>
@@ -657,23 +657,23 @@ export default function MatchAnalysis() {
               <TabsContent value="scores" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.score_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
+                    <Card key={idx} className="border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20">
+                      <CardHeader className="bg-blue-100 dark:bg-blue-900/30">
+                        <CardTitle className="flex items-center justify-between text-blue-700 dark:text-blue-300">
                           <span>{player.name}</span>
-                          <Award className="h-5 w-5 text-yellow-500" />
+                          <Award className="h-5 w-5 text-blue-500" />
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-primary mb-4" data-testid={`score-total-${idx}`}>
+                      <CardContent className="pt-6">
+                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4" data-testid={`score-total-${idx}`}>
                           {player.total} points
                         </div>
                         <div className="space-y-2">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                              <span className="text-sm font-medium">{event.timestamp}</span>
-                              <span className="text-sm">{event.description}</span>
-                              <span className="text-sm font-bold text-green-600">+{event.value}</span>
+                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-blue-100 dark:bg-blue-900/40 rounded">
+                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{event.timestamp}</span>
+                              <span className="text-sm text-blue-600 dark:text-blue-400">{event.description}</span>
+                              <span className="text-sm font-bold text-blue-700 dark:text-blue-300">+{event.value}</span>
                             </div>
                           ))}
                         </div>
@@ -686,19 +686,19 @@ export default function MatchAnalysis() {
               <TabsContent value="punches" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.punch_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle>{player.name}</CardTitle>
+                    <Card key={idx} className="border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/20">
+                      <CardHeader className="bg-red-100 dark:bg-red-900/30">
+                        <CardTitle className="text-red-700 dark:text-red-300">{player.name}</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-blue-600 mb-4" data-testid={`punches-total-${idx}`}>
+                      <CardContent className="pt-6">
+                        <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4" data-testid={`punches-total-${idx}`}>
                           {player.total} punches
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
-                              <span className="font-medium">{event.timestamp}</span>
-                              <span>{event.description}</span>
+                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm">
+                              <span className="font-medium text-red-700 dark:text-red-300">{event.timestamp}</span>
+                              <span className="text-red-600 dark:text-red-400">{event.description}</span>
                             </div>
                           ))}
                         </div>
@@ -711,19 +711,19 @@ export default function MatchAnalysis() {
               <TabsContent value="kicks" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.kick_count_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle>{player.name}</CardTitle>
+                    <Card key={idx} className="border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/20">
+                      <CardHeader className="bg-red-100 dark:bg-red-900/30">
+                        <CardTitle className="text-red-700 dark:text-red-300">{player.name}</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-green-600 mb-4" data-testid={`kicks-total-${idx}`}>
+                      <CardContent className="pt-6">
+                        <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4" data-testid={`kicks-total-${idx}`}>
                           {player.total} kicks
                         </div>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
-                              <span className="font-medium">{event.timestamp}</span>
-                              <span>{event.description}</span>
+                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/40 rounded text-sm">
+                              <span className="font-medium text-red-700 dark:text-red-300">{event.timestamp}</span>
+                              <span className="text-red-600 dark:text-red-400">{event.description}</span>
                             </div>
                           ))}
                         </div>
@@ -736,22 +736,22 @@ export default function MatchAnalysis() {
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.yellow_card_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                    <Card key={idx} className="border-yellow-200 dark:border-yellow-800 bg-yellow-50/30 dark:bg-yellow-950/20">
+                      <CardHeader className="bg-yellow-100 dark:bg-yellow-900/30">
+                        <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
                           {player.name}
                           <AlertCircle className="h-5 w-5 text-yellow-500" />
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold text-yellow-600 mb-4" data-testid={`violations-total-${idx}`}>
+                      <CardContent className="pt-6">
+                        <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-4" data-testid={`violations-total-${idx}`}>
                           {player.total} violations
                         </div>
                         <div className="space-y-2">
                           {player.events?.map((event, eventIdx) => (
-                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-950/30 rounded text-sm">
-                              <span className="font-medium">{event.timestamp}</span>
-                              <span>{event.description}</span>
+                            <div key={eventIdx} className="flex justify-between items-center p-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-sm">
+                              <span className="font-medium text-yellow-700 dark:text-yellow-300">{event.timestamp}</span>
+                              <span className="text-yellow-600 dark:text-yellow-400">{event.description}</span>
                             </div>
                           ))}
                         </div>
@@ -765,37 +765,38 @@ export default function MatchAnalysis() {
                 <div className="grid grid-cols-1 gap-6">
                   {matchResult.advice_analysis?.players?.map((player, idx) => {
                     const isBlue = idx === 0;
-                    const playerColor = isBlue ? 'text-blue-600' : 'text-red-600';
+                    const playerColor = isBlue ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300';
                     const borderColor = isBlue ? 'border-blue-200 dark:border-blue-800' : 'border-red-200 dark:border-red-800';
                     const bgColor = isBlue ? 'bg-blue-50/50 dark:bg-blue-950/20' : 'bg-red-50/50 dark:bg-red-950/20';
+                    const headerBg = isBlue ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-red-100 dark:bg-red-900/30';
                     
                     return (
-                      <Card key={idx} className={`${borderColor} ${bgColor}`}>
-                        <CardHeader>
-                          <CardTitle className={`flex items-center gap-2 ${playerColor} text-xl font-bold`}>
+                      <Card key={idx} className={`${borderColor} ${bgColor} border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20`}>
+                        <CardHeader className="bg-indigo-100 dark:bg-indigo-900/30">
+                          <CardTitle className={`flex items-center gap-2 text-indigo-700 dark:text-indigo-300 text-xl font-bold`}>
                             <Target className="h-6 w-6" />
                             {player.name} - Coaching Advice
                           </CardTitle>
                         </CardHeader>
-                      <CardContent className="space-y-6">
+                      <CardContent className="space-y-6 pt-6">
                         {/* Tactical Advice */}
-                        <div>
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
+                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
                             <TrendingUp className="h-4 w-4" />
                             Tactical
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.tactical_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.tactical_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
@@ -805,23 +806,23 @@ export default function MatchAnalysis() {
                         </div>
 
                         {/* Technical Advice */}
-                        <div>
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
+                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
                             <Activity className="h-4 w-4" />
                             Technical
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.technical_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.technical_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
@@ -831,23 +832,23 @@ export default function MatchAnalysis() {
                         </div>
 
                         {/* Mental Advice */}
-                        <div>
-                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <div className="p-4 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-lg">
+                          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
                             <BarChart3 className="h-4 w-4" />
                             Mental
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-red-600 mb-2">Issues:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Issues:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.mental_advice?.issues?.map((issue, i) => (
                                   <li key={i}>{issue}</li>
                                 ))}
                               </ul>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-600 mb-2">Improvements:</p>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded">
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Improvements:</p>
+                              <ul className="list-disc list-inside space-y-1 text-sm text-indigo-700 dark:text-indigo-300">
                                 {player.mental_advice?.improvements?.map((imp, i) => (
                                   <li key={i}>{imp}</li>
                                 ))}
