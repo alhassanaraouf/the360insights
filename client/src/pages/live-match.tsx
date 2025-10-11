@@ -909,7 +909,7 @@ export default function MatchAnalysis() {
 
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.yellow_card_analysis?.players?.map(
+                  {matchResult.yellow_card_analysis?.players?.slice().reverse().map(
                     (player, idx) => (
                       <Card key={idx}>
                         <CardHeader className="pb-3">
@@ -925,7 +925,7 @@ export default function MatchAnalysis() {
                             <span
                               className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
                             >
-                              {idx === 0 ? "- blue" : "- red"}
+                              {idx === 0 ? "blue" : "red"}
                             </span>
                           </CardTitle>
                         </CardHeader>
