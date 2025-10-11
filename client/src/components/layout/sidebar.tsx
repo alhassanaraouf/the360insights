@@ -119,10 +119,10 @@ export default function Sidebar() {
       icon: Calendar,
     },
     { name: "Rank Up", href: "/rank-up", icon: Target },
-    { name: "Sponsorship Hub", href: "/sponsorship-hub", icon: DollarSign },
     { name: "Drawsheet", href: "/competition-draws", icon: Trophy },
 
     { name: t("nav.insights"), href: "/ai-insights", icon: Brain },
+    { name: "Sponsorship Hub", href: "/sponsorship-hub", icon: DollarSign },
   ];
 
   return (
