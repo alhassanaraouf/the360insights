@@ -40,6 +40,10 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  // Serve static files from attached_assets before vite middleware
+  const attachedAssetsPath = path.resolve(import.meta.dirname, "..", "attached_assets");
+  app.use("/attached_assets", express.static(attachedAssetsPath));
+
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
