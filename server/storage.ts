@@ -900,7 +900,10 @@ export class DatabaseStorage implements IStorage {
       const worldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
       const olympicRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'olympic');
 
-      if (!athleteData.worldCategory) {
+      // Use the category from rankings, fallback to world category
+      const worldCategory = worldRank?.category || olympicRank?.category || athleteData.worldCategory;
+      
+      if (!worldCategory) {
         return { opponents: [], total: 0 };
       }
 
@@ -937,11 +940,13 @@ export class DatabaseStorage implements IStorage {
         ));
 
       // Build rank conditions for world OR Olympic ranking (current month only)
+      // Must match category from the ranking, not just world_category field
       let rankConditions = [];
       if (worldMinRank && worldMaxRank) {
         rankConditions.push(
           and(
             eq(athleteRanks.rankingType, 'world'),
+            eq(athleteRanks.category, worldCategory),
             gte(athleteRanks.ranking, worldMinRank),
             lte(athleteRanks.ranking, worldMaxRank)
           )
@@ -951,6 +956,7 @@ export class DatabaseStorage implements IStorage {
         rankConditions.push(
           and(
             eq(athleteRanks.rankingType, 'olympic'),
+            eq(athleteRanks.category, worldCategory),
             gte(athleteRanks.ranking, olympicMinRank),
             lte(athleteRanks.ranking, olympicMaxRank)
           )
@@ -958,7 +964,6 @@ export class DatabaseStorage implements IStorage {
       }
 
       let conditions = and(
-        eq(athletes.worldCategory, athleteData.worldCategory),
         ne(athletes.id, athleteId),
         rankConditions.length > 0 ? or(...rankConditions) : undefined
       );
@@ -1031,18 +1036,36 @@ export class DatabaseStorage implements IStorage {
 
       const athleteData = athlete[0];
 
-      if (!athleteData.worldCategory) {
+      // Get the most recent ranking date
+      const latestRankingDateResult = await db
+        .select({ maxDate: sql<string>`MAX(${athleteRanks.rankingDate})` })
+        .from(athleteRanks);
+      const latestRankingDate = latestRankingDateResult[0]?.maxDate;
+      
+      if (!latestRankingDate) {
         return { opponents: [], total: 0 };
       }
 
-      // Get athlete's rank for threat level calculation
+      // Get athlete's rank for threat level calculation (current month only)
       const fetchedAthleteRanks = await db.select().from(athleteRanks)
-        .where(eq(athleteRanks.athleteId, athleteId))
-        .limit(1);
+        .where(and(
+          eq(athleteRanks.athleteId, athleteId),
+          eq(athleteRanks.rankingDate, latestRankingDate)
+        ));
+      
       const athleteWorldRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'world');
+      const athleteOlympicRank = fetchedAthleteRanks.find(rank => rank.rankingType === 'olympic');
       const athleteRanking = athleteWorldRank?.ranking || 999;
 
-      // Build optimized query with JOIN using athleteRanks table directly
+      // Use the category from rankings, fallback to world category
+      const worldCategory = athleteWorldRank?.category || athleteOlympicRank?.category || athleteData.worldCategory;
+      
+      if (!worldCategory) {
+        return { opponents: [], total: 0 };
+      }
+
+      // Build optimized query with INNER JOIN to only include athletes 
+      // who actually compete in the same category (based on current rankings)
       // Use DISTINCT ON to ensure each athlete appears only once
       let baseQuery = db
         .selectDistinctOn([athletes.id], {
@@ -1061,13 +1084,13 @@ export class DatabaseStorage implements IStorage {
           worldRank: sql<number | null>`${athleteRanks.ranking}`
         })
         .from(athletes)
-        .leftJoin(athleteRanks, and(
+        .innerJoin(athleteRanks, and(
           eq(athleteRanks.athleteId, athletes.id),
-          eq(athleteRanks.rankingType, 'world')
+          eq(athleteRanks.rankingDate, latestRankingDate),
+          eq(athleteRanks.category, worldCategory)
         ));
 
       let conditions = and(
-        eq(athletes.worldCategory, athleteData.worldCategory),
         ne(athletes.id, athleteId)
       );
 
