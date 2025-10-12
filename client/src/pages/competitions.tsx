@@ -26,16 +26,24 @@ interface Competition {
   id: number;
   name: string;
   location: string;
+  country: string;
+  city?: string;
   startDate: string;
   endDate: string;
   status: string;
   category?: string;
+  gradeLevel?: string;
+  pointsAvailable?: string;
+  competitionType?: string;
+  registrationDeadline?: string;
   participants?: number;
   logo?: string;
   description?: string;
   organizer?: string;
   sourceUrl?: string;
   simplyCompeteEventId?: string;
+  lastSyncedAt?: string;
+  metadata?: any;
 }
 
 export default function Competitions() {
@@ -421,7 +429,7 @@ export default function Competitions() {
 
       {/* Competition Details Modal */}
       <Dialog open={!!selectedCompetition} onOpenChange={(open) => !open && setSelectedCompetition(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-competition-details">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-competition-details">
           <DialogHeader>
             <div className="flex items-start gap-4">
               {/* Logo */}
@@ -441,28 +449,46 @@ export default function Competitions() {
               
               <div className="flex-1">
                 <DialogTitle className="text-2xl">{selectedCompetition?.name}</DialogTitle>
-                <Badge className={`mt-2 ${getStatusColor(selectedCompetition?.status || "")} capitalize`}>
-                  {selectedCompetition?.status}
-                </Badge>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`${getStatusColor(selectedCompetition?.status || "")} capitalize`}>
+                    {selectedCompetition?.status}
+                  </Badge>
+                  {selectedCompetition?.gradeLevel && (
+                    <Badge variant="outline" className="capitalize">
+                      {selectedCompetition.gradeLevel}
+                    </Badge>
+                  )}
+                  {selectedCompetition?.competitionType && (
+                    <Badge variant="outline" className="capitalize">
+                      {selectedCompetition.competitionType}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            {/* Key Information */}
+            {/* Key Information Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Location */}
               <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
+                <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Location</div>
-                  <div className="text-base">{selectedCompetition?.location || "TBD"}</div>
+                  <div className="text-base">
+                    {selectedCompetition?.city && selectedCompetition?.country 
+                      ? `${selectedCompetition.city}, ${selectedCompetition.country}`
+                      : selectedCompetition?.location || selectedCompetition?.country || "TBD"}
+                  </div>
                 </div>
               </div>
 
+              {/* Dates */}
               <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Dates</div>
+                <Calendar className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Event Dates</div>
                   <div className="text-base">
                     {selectedCompetition?.startDate && format(new Date(selectedCompetition.startDate), "MMM d, yyyy")}
                     {selectedCompetition?.endDate && selectedCompetition.endDate !== selectedCompetition.startDate && 
@@ -471,20 +497,48 @@ export default function Competitions() {
                 </div>
               </div>
 
+              {/* Category */}
               {selectedCompetition?.category && (
                 <div className="flex items-start gap-3">
-                  <Award className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Category</div>
+                  <Award className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Weight Category</div>
                     <div className="text-base">{selectedCompetition.category}</div>
                   </div>
                 </div>
               )}
 
+              {/* Points Available */}
+              {selectedCompetition?.pointsAvailable && (
+                <div className="flex items-start gap-3">
+                  <Trophy className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Ranking Points</div>
+                    <div className="text-base font-semibold text-primary">
+                      {parseFloat(selectedCompetition.pointsAvailable).toLocaleString()} pts
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Registration Deadline */}
+              {selectedCompetition?.registrationDeadline && (
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Registration Deadline</div>
+                    <div className="text-base">
+                      {format(new Date(selectedCompetition.registrationDeadline), "MMM d, yyyy")}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Organizer */}
               {selectedCompetition?.organizer && (
                 <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
+                  <Users className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Organizer</div>
                     <div className="text-base">{selectedCompetition.organizer}</div>
                   </div>
@@ -492,20 +546,64 @@ export default function Competitions() {
               )}
             </div>
 
+            {/* Competition Type & Grade Info */}
+            {(selectedCompetition?.competitionType || selectedCompetition?.gradeLevel) && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">Competition Classification</h4>
+                <div className="flex flex-wrap gap-3">
+                  {selectedCompetition?.competitionType && (
+                    <div>
+                      <span className="text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wider">Type: </span>
+                      <span className="text-sm font-medium text-blue-900 dark:text-blue-100 capitalize">
+                        {selectedCompetition.competitionType}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCompetition?.gradeLevel && (
+                    <div>
+                      <span className="text-xs text-blue-700 dark:text-blue-300 uppercase tracking-wider">Grade: </span>
+                      <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        {selectedCompetition.gradeLevel}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             {selectedCompetition?.description && (
               <div>
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Description</h4>
-                <p className="text-base text-gray-700 dark:text-gray-300">{selectedCompetition.description}</p>
+                <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">{selectedCompetition.description}</p>
               </div>
             )}
 
-            {/* External Link */}
-            {selectedCompetition?.sourceUrl && (
-              <div>
+            {/* Additional Info */}
+            {(selectedCompetition?.simplyCompeteEventId || selectedCompetition?.lastSyncedAt) && (
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  {selectedCompetition?.simplyCompeteEventId && (
+                    <div>
+                      <span className="font-medium">Event ID:</span> {selectedCompetition.simplyCompeteEventId}
+                    </div>
+                  )}
+                  {selectedCompetition?.lastSyncedAt && (
+                    <div>
+                      <span className="font-medium">Last Updated:</span>{' '}
+                      {format(new Date(selectedCompetition.lastSyncedAt), "MMM d, yyyy 'at' h:mm a")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t">
+              {selectedCompetition?.sourceUrl && (
                 <Button
-                  variant="outline"
-                  className="w-full"
+                  variant="default"
+                  className="flex-1"
                   asChild
                 >
                   <a 
@@ -518,15 +616,12 @@ export default function Competitions() {
                     View on SimplyCompete
                   </a>
                 </Button>
-              </div>
-            )}
-
-            {/* Close Button */}
-            <div className="flex justify-end pt-4 border-t">
+              )}
               <Button 
                 variant="outline" 
                 onClick={() => setSelectedCompetition(null)}
                 data-testid="button-close-dialog"
+                className={selectedCompetition?.sourceUrl ? "" : "flex-1"}
               >
                 Close
               </Button>

@@ -27,7 +27,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
 -   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
--   **Competitions Directory**: Full-featured competition browser with search, filters (status, location), sorting, competition cards with logos, and detailed popup modals - following the same pattern as Athletes directory.
+-   **Competitions Directory**: Full-featured competition browser with search, filters (status, location), sorting, competition cards with logos, and comprehensive detailed popup modals showing all competition information (location, dates, category, grade level, competition type, ranking points, registration deadline, organizer, sync metadata) - following the same pattern as Athletes directory.
 -   **Competition Sync**: Background script for syncing competition data from SimplyCompete API with intelligent matching.
 -   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback:
     - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights
