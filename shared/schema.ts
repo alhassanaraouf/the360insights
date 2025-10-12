@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   bio: text("bio"), // User bio/description
   passwordHash: varchar("password_hash"), // For local authentication
+  role: varchar("role", { length: 50 }).notNull().default("athlete"), // athlete, org_admin, sponsor, admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
