@@ -3,6 +3,7 @@
 import { db } from '../server/db';
 import { competitions } from '../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { bucketStorage } from '../server/bucket-storage';
 
 interface SimplyCompeteEvent {
   id: string;
@@ -13,6 +14,7 @@ interface SimplyCompeteEvent {
     country?: string;
     city?: string;
   };
+  logo?: string; // Competition logo URL from API
   [key: string]: any;
 }
 
@@ -22,6 +24,8 @@ interface SyncResult {
   updated: number;
   skipped: number;
   errors: number;
+  logosUploaded: number;
+  logosFailed: number;
 }
 
 const BASE_URL = 'https://worldtkd.simplycompete.com/events/eventList';
@@ -163,6 +167,8 @@ async function syncCompetitions(): Promise<SyncResult> {
     updated: 0,
     skipped: 0,
     errors: 0,
+    logosUploaded: 0,
+    logosFailed: 0,
   };
 
   console.log('🚀 Starting competition sync from SimplyCompete API...\n');
@@ -178,61 +184,88 @@ async function syncCompetitions(): Promise<SyncResult> {
   const existingCompetitions = await db.select().from(competitions);
   console.log(`💾 Found ${existingCompetitions.length} existing competitions in database\n`);
 
-  // Process each API event
-  for (const apiEvent of apiEvents) {
-    try {
-      const eventName = apiEvent.name?.trim();
-      const eventStartDate = normalizeDate(apiEvent.startDate);
+  // Process competitions in parallel batches (similar to athlete imports)
+  const BATCH_SIZE = 20;
+  
+  for (let i = 0; i < apiEvents.length; i += BATCH_SIZE) {
+    const batchEvents = apiEvents.slice(i, i + BATCH_SIZE);
+    
+    await Promise.all(batchEvents.map(async (apiEvent) => {
+      try {
+        const eventName = apiEvent.name?.trim();
+        const eventStartDate = normalizeDate(apiEvent.startDate);
 
-      if (!eventName || !eventStartDate) {
-        console.log(`⏭️  Skipping event with missing name or date`);
-        result.skipped++;
-        continue;
-      }
+        if (!eventName || !eventStartDate) {
+          console.log(`⏭️  Skipping event with missing name or date`);
+          result.skipped++;
+          return;
+        }
 
-      // Try to match with existing competition by normalized name and exact date
-      const normalizedEventName = normalizeName(eventName);
-      const matchedCompetition = existingCompetitions.find((comp) => {
-        const normalizedCompName = normalizeName(comp.name);
-        
-        // Exact match after normalization
-        const exactMatch = normalizedCompName === normalizedEventName;
-        
-        // Substring match as fallback (more conservative than before)
-        const substringMatch = normalizedCompName.includes(normalizedEventName) ||
-                               normalizedEventName.includes(normalizedCompName);
-        
-        const dateMatch = normalizeDate(comp.startDate) === eventStartDate;
-        
-        // Require exact name match OR substring with date match
-        return dateMatch && (exactMatch || substringMatch);
-      });
+        // Try to match with existing competition by normalized name and exact date
+        const normalizedEventName = normalizeName(eventName);
+        const matchedCompetition = existingCompetitions.find((comp) => {
+          const normalizedCompName = normalizeName(comp.name);
+          
+          // Exact match after normalization
+          const exactMatch = normalizedCompName === normalizedEventName;
+          
+          // Substring match as fallback (more conservative than before)
+          const substringMatch = normalizedCompName.includes(normalizedEventName) ||
+                                 normalizedEventName.includes(normalizedCompName);
+          
+          const dateMatch = normalizeDate(comp.startDate) === eventStartDate;
+          
+          // Require exact name match OR substring with date match
+          return dateMatch && (exactMatch || substringMatch);
+        });
 
-      if (matchedCompetition) {
-        // Update existing competition with SimplyCompete data
-        const sourceUrl = `https://worldtkd.simplycompete.com/events/${apiEvent.id}`;
-        
-        await db
-          .update(competitions)
-          .set({
+        if (matchedCompetition) {
+          // Update existing competition with SimplyCompete data
+          const sourceUrl = `https://worldtkd.simplycompete.com/events/${apiEvent.id}`;
+          
+          // Prepare update data
+          const updateData: any = {
             simplyCompeteEventId: apiEvent.id,
             sourceUrl: sourceUrl,
             metadata: apiEvent as any,
             lastSyncedAt: new Date(),
-          })
-          .where(eq(competitions.id, matchedCompetition.id));
+          };
 
-        console.log(`✅ Updated: "${matchedCompetition.name}" → SimplyCompete ID: ${apiEvent.id}`);
-        result.matched++;
-        result.updated++;
-      } else {
-        console.log(`⏭️  No match found for: "${eventName}" (${eventStartDate})`);
-        result.skipped++;
+          // Handle logo upload if available
+          if (apiEvent.logo) {
+            try {
+              console.log(`📷 Uploading logo for competition "${matchedCompetition.name}"`);
+              const logoResult = await bucketStorage.uploadCompetitionLogoFromUrl(
+                matchedCompetition.id,
+                apiEvent.logo
+              );
+              updateData.logo = logoResult.url;
+              result.logosUploaded++;
+              console.log(`✅ Logo uploaded for competition ${matchedCompetition.id}`);
+            } catch (logoError) {
+              result.logosFailed++;
+              console.error(`❌ Failed to upload logo for competition ${matchedCompetition.id}:`, logoError);
+              // Continue with update even if logo upload fails
+            }
+          }
+          
+          await db
+            .update(competitions)
+            .set(updateData)
+            .where(eq(competitions.id, matchedCompetition.id));
+
+          console.log(`✅ Updated: "${matchedCompetition.name}" → SimplyCompete ID: ${apiEvent.id}`);
+          result.matched++;
+          result.updated++;
+        } else {
+          console.log(`⏭️  No match found for: "${eventName}" (${eventStartDate})`);
+          result.skipped++;
+        }
+      } catch (error) {
+        console.error(`❌ Error processing event "${apiEvent.name}":`, error);
+        result.errors++;
       }
-    } catch (error) {
-      console.error(`❌ Error processing event "${apiEvent.name}":`, error);
-      result.errors++;
-    }
+    }));
   }
 
   return result;
@@ -285,6 +318,8 @@ API Endpoint:
     console.log('='.repeat(60));
     console.log(`📊 Total API Events:      ${result.total}`);
     console.log(`✅ Matched & Updated:     ${result.updated}`);
+    console.log(`📷 Logos Uploaded:        ${result.logosUploaded}`);
+    console.log(`❌ Logo Upload Failed:    ${result.logosFailed}`);
     console.log(`⏭️  Skipped (no match):    ${result.skipped}`);
     console.log(`❌ Errors:                ${result.errors}`);
     console.log('='.repeat(60) + '\n');
