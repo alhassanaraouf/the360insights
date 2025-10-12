@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Trophy, Chrome, Lock, User, Mail } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { UserRole } from "@shared/access-control";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +18,8 @@ export default function Login() {
     password: '',
     firstName: '',
     lastName: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: UserRole.ATHLETE as string
   });
   const { toast } = useToast();
 
@@ -108,6 +111,7 @@ export default function Login() {
           password: formData.password,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          role: formData.role,
         }),
       });
 
@@ -283,6 +287,24 @@ export default function Login() {
                         disabled={isLoading}
                       />
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger id="role" data-testid="select-role">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UserRole.ATHLETE}>Athlete</SelectItem>
+                        <SelectItem value={UserRole.ORG_ADMIN}>Organization Admin</SelectItem>
+                        <SelectItem value={UserRole.SPONSOR}>Sponsor</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">
