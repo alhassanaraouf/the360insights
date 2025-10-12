@@ -51,9 +51,11 @@ A single source of truth that defines:
 - Sidebar component filters navigation items based on access
 
 #### 5. **User Registration**
-- Role selection added to registration form
+- Role selection added to registration form with validation
 - Three selectable roles: Athlete, Organization Admin, Sponsor
-- Admin role can only be assigned via database/system operations (security measure)
+- **Security hardening**: Server validates role against allowlist `[athlete, org_admin, sponsor]`
+- Admin role can only be assigned via database/system operations (prevents privilege escalation)
+- Invalid or privileged role attempts default to "athlete" and are logged for monitoring
 - Role defaults to "athlete" if not specified
 
 ## Role-to-Pages Mapping
