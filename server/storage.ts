@@ -1495,9 +1495,13 @@ export class DatabaseStorage implements IStorage {
       console.log(`Fallback: Found ${availableCompetitions.length} total competitions`);
     }
 
-    // Filter for upcoming competitions only
-    const upcomingCompetitions = availableCompetitions.filter(comp => comp.status === 'upcoming');
-    console.log(`Filtered to ${upcomingCompetitions.length} upcoming competitions`);
+    // Filter for upcoming competitions only (start date must be in the future)
+    const now = new Date();
+    const upcomingCompetitions = availableCompetitions.filter(comp => {
+      const startDate = new Date(comp.startDate);
+      return startDate > now;
+    });
+    console.log(`Filtered to ${upcomingCompetitions.length} upcoming competitions (with future start dates)`);
 
     // Get AI recommendations for strategic competition planning (primary approach)
     let aiRecommendations: CompetitionRecommendation;
