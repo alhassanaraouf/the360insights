@@ -122,6 +122,7 @@ export const competitions = pgTable("competitions", {
   status: varchar("status", { length: 20 }).default("upcoming"), // 'upcoming', 'ongoing', 'completed', 'cancelled'
   simplyCompeteEventId: varchar("simply_compete_event_id", { length: 255 }), // External SimplyCompete event ID
   sourceUrl: text("source_url"), // Full URL to SimplyCompete event page
+  logo: text("logo"), // Competition logo URL (stored in Replit Object Storage)
   metadata: jsonb("metadata"), // Full JSON data from SimplyCompete API
   lastSyncedAt: timestamp("last_synced_at"), // Last time this competition was synced from external source
   createdAt: timestamp("created_at").defaultNow(),
