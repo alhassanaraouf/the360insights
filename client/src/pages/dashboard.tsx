@@ -88,15 +88,14 @@ export default function Dashboard() {
     }
   });
 
-  // Filter upcoming competitions (all future competitions)
+  // Show all competitions (no filtering by status or preferences)
   const upcomingCompetitions = useMemo(() => {
     if (!globalCompetitions || !Array.isArray(globalCompetitions)) return [];
-
-    const now = new Date();
-    return globalCompetitions.filter(comp => {
-      const isUpcoming = comp.status === 'upcoming' || (comp.startDate && new Date(comp.startDate) > now);
-      return isUpcoming;
-    });
+    
+    // Return all competitions sorted by start date
+    return [...globalCompetitions].sort((a, b) => 
+      new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime()
+    );
   }, [globalCompetitions]);
 
   const isLoading = athletesLoading || competitionsLoading || topAthletesLoading;

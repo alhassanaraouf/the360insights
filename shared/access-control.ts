@@ -30,7 +30,6 @@ export const PageId = {
   LIVE_MATCH: "live_match",
   ACCOUNT_SETTINGS: "account_settings",
   DATA_SCRAPER: "data_scraper",
-  COMPETITION_PREFERENCES: "competition_preferences",
 } as const;
 
 export type PageId = typeof PageId[keyof typeof PageId];
@@ -49,7 +48,6 @@ export const PageIdToPath: Record<PageId, string> = {
   [PageId.LIVE_MATCH]: "/live-match",
   [PageId.ACCOUNT_SETTINGS]: "/account-settings",
   [PageId.DATA_SCRAPER]: "/data-scraper",
-  [PageId.COMPETITION_PREFERENCES]: "/competition-preferences",
 };
 
 export const PathToPageId: Record<string, PageId> = Object.fromEntries(
@@ -103,7 +101,6 @@ export const RolePagePolicy: Record<UserRole, Set<PageId>> = {
     PageId.LIVE_MATCH,
     PageId.ACCOUNT_SETTINGS,
     PageId.DATA_SCRAPER,
-    PageId.COMPETITION_PREFERENCES,
   ]),
 };
 
@@ -219,10 +216,5 @@ export const PageMetadata: Record<PageId, { title: string; description: string; 
     title: "Data Scraper",
     description: "Import external athlete data",
     icon: "Download",
-  },
-  [PageId.COMPETITION_PREFERENCES]: {
-    title: "Competition Preferences",
-    description: "Set competition preferences",
-    icon: "Settings",
   },
 };

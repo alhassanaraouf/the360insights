@@ -53,6 +53,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Session Management**: Replit Key Value Store for zero-configuration session persistence.
 -   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage.
 -   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis. JSON imports use batch processing (20 items per batch) with parallel logo uploads for efficiency.
+-   **Competition Access**: All competitions are always enabled for all users (removed user_competition_preferences system - October 2025).
 
 ### Database Schema
 -   `athletes`: Athlete profiles, performance metrics (indexed on: worldCategory, nationality, name)

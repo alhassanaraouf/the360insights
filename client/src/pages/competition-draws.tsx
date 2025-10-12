@@ -63,11 +63,8 @@ export default function CompetitionDraws() {
     queryKey: ['/api/competitions-with-participants'],
   });
 
-  // Show all upcoming competitions (no preference filtering)
-  const competitions = allCompetitions?.filter(comp => {
-    const isUpcoming = comp.status === 'upcoming';
-    return isUpcoming;
-  }) || [];
+  // Show all competitions (no filtering by status or preferences)
+  const competitions = allCompetitions || [];
 
   // Fetch competition participants from local database when a competition is selected
   const { data: localParticipants, isLoading: localParticipantsLoading } = useQuery<(CompetitionParticipant & { athlete: Athlete })[]>({
