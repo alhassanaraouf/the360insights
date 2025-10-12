@@ -7,12 +7,17 @@ import { format, isFuture, isPast } from "date-fns";
 interface Competition {
   id: number;
   title: string;
-  date: string;
+  name: string;
+  startDate: string;
+  endDate?: string;
+  city?: string;
+  country?: string;
   location?: string;
   status?: string;
   competitionLevel?: string;
   eventType: string;
   description?: string;
+  gradeLevel?: string;
 }
 
 interface UserCompetitionPreference {
@@ -58,14 +63,14 @@ export default function CompetitionCalendar({ competitions, allCompetitions, use
   
   const upcomingCompetitions = filterByPreferences(competitionData)
     .filter(comp => comp.eventType === 'competition')
-    .filter(comp => comp.status === 'upcoming' || (comp.date && isFuture(new Date(comp.date))))
-    .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime())
+    .filter(comp => comp.startDate && isFuture(new Date(comp.startDate)))
+    .sort((a, b) => new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime())
     .slice(0, 6);
 
   const recentCompetitions = filterByPreferences(competitionData)
     .filter(comp => comp.eventType === 'competition')
-    .filter(comp => comp.status === 'completed' || (comp.date && isPast(new Date(comp.date))))
-    .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+    .filter(comp => comp.startDate && isPast(new Date(comp.startDate)))
+    .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
     .slice(0, 4);
 
   const getCompetitionLevelColor = (level?: string) => {
@@ -130,7 +135,7 @@ export default function CompetitionCalendar({ competitions, allCompetitions, use
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="font-semibold text-foreground">{competition.title}</h3>
+                            <h3 className="font-semibold text-foreground">{competition.title || competition.name}</h3>
                             {competition.competitionLevel === 'olympic' && (
                               <Star className="h-4 w-4 text-yellow-500" />
                             )}
@@ -138,12 +143,12 @@ export default function CompetitionCalendar({ competitions, allCompetitions, use
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
-                              <span className="font-medium">{format(new Date(competition.date), 'MMM dd, yyyy')}</span>
+                              <span className="font-medium">{format(new Date(competition.startDate), 'MMM dd, yyyy')}</span>
                             </div>
-                            {competition.location && (
+                            {(competition.location || competition.city) && (
                               <div className="flex items-center space-x-1">
                                 <MapPin className="h-3 w-3" />
-                                <span>{competition.location}</span>
+                                <span>{competition.location || `${competition.city}, ${competition.country}`}</span>
                               </div>
                             )}
                           </div>
@@ -209,13 +214,13 @@ export default function CompetitionCalendar({ competitions, allCompetitions, use
                       }`} />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">{competition.title}</p>
+                      <p className="font-semibold text-foreground">{competition.title || competition.name}</p>
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <span className="font-medium">{format(new Date(competition.date), 'MMM dd, yyyy')}</span>
-                        {competition.location && (
+                        <span className="font-medium">{format(new Date(competition.startDate), 'MMM dd, yyyy')}</span>
+                        {(competition.location || competition.city) && (
                           <span className="flex items-center space-x-1">
                             <MapPin className="h-3 w-3" />
-                            <span>{competition.location}</span>
+                            <span>{competition.location || `${competition.city}, ${competition.country}`}</span>
                           </span>
                         )}
                       </div>
