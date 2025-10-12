@@ -502,6 +502,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve competition logos from object storage
+  app.get("/api/competitions/:id/logo", async (req, res) => {
+    try {
+      const competitionId = parseInt(req.params.id);
+      
+      if (!competitionId) {
+        return res.status(400).json({ error: "Invalid competition ID" });
+      }
+
+      // Get the logo buffer from object storage
+      const logoBuffer = await bucketStorage.getCompetitionLogoBuffer(competitionId);
+      
+      if (!logoBuffer) {
+        return res.status(404).json({ error: "Logo not found" });
+      }
+
+      // Set appropriate content type
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Content-Length', logoBuffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      
+      res.send(logoBuffer);
+    } catch (error) {
+      console.error("Error serving competition logo:", error);
+      res.status(500).json({ error: "Failed to serve logo" });
+    }
+  });
+
   // KPI Metrics
   app.get("/api/athletes/:id/kpis", async (req, res) => {
     try {
