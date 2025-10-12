@@ -205,20 +205,6 @@ export const trainingPlans = pgTable("training_plans", {
   athleteIdIdx: index("training_plans_athlete_id_idx").on(table.athleteId),
 }));
 
-export const userCompetitionPreferences = pgTable("user_competition_preferences", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  competitionId: integer("competition_id").notNull(),
-  competitionName: varchar("competition_name", { length: 255 }).notNull(),
-  competitionType: varchar("competition_type", { length: 100 }),
-  location: varchar("location", { length: 255 }),
-  dateRange: varchar("date_range", { length: 100 }),
-  isSelected: boolean("is_selected").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => ({
-  userCompetitionUnique: unique().on(table.userId, table.competitionId),
-}));
 
 
 // Sponsorship bids table
@@ -363,12 +349,6 @@ export const insertTrainingPlanSchema = createInsertSchema(trainingPlans).omit({
   updatedAt: true,
 });
 
-export const insertUserCompetitionPreferenceSchema = createInsertSchema(userCompetitionPreferences).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export const insertCompetitionParticipantSchema = createInsertSchema(competitionParticipants).omit({
   id: true,
   registrationDate: true,
@@ -471,8 +451,6 @@ export type InsertCompetition = z.infer<typeof insertCompetitionSchema>;
 
 export type TrainingPlan = typeof trainingPlans.$inferSelect;
 export type InsertTrainingPlan = z.infer<typeof insertTrainingPlanSchema>;
-export type UserCompetitionPreference = typeof userCompetitionPreferences.$inferSelect;
-export type InsertUserCompetitionPreference = z.infer<typeof insertUserCompetitionPreferenceSchema>;
 
 export type CompetitionParticipant = typeof competitionParticipants.$inferSelect;
 export type InsertCompetitionParticipant = z.infer<typeof insertCompetitionParticipantSchema>;
