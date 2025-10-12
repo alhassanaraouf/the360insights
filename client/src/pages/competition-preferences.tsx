@@ -126,6 +126,30 @@ export default function CompetitionPreferences() {
     }
   });
 
+  // Enable all competitions mutation
+  const enableAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/competition-preferences/enable-all", {
+        userId: user!.id
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/competition-preferences/${user?.id}`] });
+      toast({
+        title: "All Competitions Enabled",
+        description: `Successfully enabled ${data.count} competitions.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Enable All Failed",
+        description: "Unable to enable all competitions. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handlePreferenceToggle = (competitionId: number, isSelected: boolean) => {
     const newPreferences = new Map(preferences);
     newPreferences.set(competitionId, isSelected);
@@ -237,11 +261,22 @@ export default function CompetitionPreferences() {
                 <Badge variant="secondary" className="bg-primary/10 text-primary">
                   {selectedCount} Selected
                 </Badge>
+                <Button 
+                  onClick={() => enableAllMutation.mutate()}
+                  disabled={enableAllMutation.isPending}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-enable-all-competitions"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {enableAllMutation.isPending ? 'Enabling...' : 'Enable All'}
+                </Button>
                 {hasChanges && (
                   <Button 
                     onClick={() => savePreferencesMutation.mutate()}
                     disabled={savePreferencesMutation.isPending}
                     size="sm"
+                    data-testid="button-save-changes"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {savePreferencesMutation.isPending ? 'Saving...' : 'Save Changes'}
