@@ -1495,13 +1495,16 @@ export class DatabaseStorage implements IStorage {
       console.log(`Fallback: Found ${availableCompetitions.length} total competitions`);
     }
 
-    // Filter for upcoming competitions only (start date must be in the future)
-    const now = new Date();
+    // Filter for upcoming competitions only (start date must be after today)
+    // Use UTC to avoid timezone issues
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0); // Reset to start of day in UTC
+    
     const upcomingCompetitions = availableCompetitions.filter(comp => {
-      const startDate = new Date(comp.startDate);
-      return startDate > now;
+      const startDate = new Date(comp.startDate + 'T00:00:00Z'); // Parse as UTC
+      return startDate > today;
     });
-    console.log(`Filtered to ${upcomingCompetitions.length} upcoming competitions (with future start dates)`);
+    console.log(`Filtered to ${upcomingCompetitions.length} upcoming competitions (start date > today, UTC)`);
 
     // Get AI recommendations for strategic competition planning (primary approach)
     let aiRecommendations: CompetitionRecommendation;
