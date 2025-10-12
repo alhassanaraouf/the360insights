@@ -255,15 +255,6 @@ export default function Sidebar() {
                     </div>
                   </Link>
                 )}
-                
-                {hasAccess("/competition-preferences") && (
-                  <Link href="/competition-preferences">
-                    <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
-                      <Trophy className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">Competition Preferences</span>
-                    </div>
-                  </Link>
-                )}
 
                 {hasAccess("/data-scraper") && (
                   <Link href="/data-scraper">

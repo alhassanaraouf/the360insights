@@ -27,7 +27,6 @@ import CompetitionDraws from "@/pages/competition-draws";
 
 import AccountSettings from "@/pages/account-settings";
 import DataScraper from "@/pages/data-scraper";
-import CompetitionPreferences from "@/pages/competition-preferences";
 import ResponsiveLayout from "@/components/layout/responsive-layout";
 
 function Router() {
@@ -116,11 +115,6 @@ function Router() {
               <DataScraper />
             </ResponsiveLayout>
           </Route>
-          <Route path="/competition-preferences">
-            <ResponsiveLayout>
-              <CompetitionPreferences />
-            </ResponsiveLayout>
-          </Route>
 
         </>
       ) : (
@@ -138,7 +132,6 @@ function Router() {
           <Route path="/live-match" component={() => <Login />} />
           <Route path="/account-settings" component={() => <Login />} />
           <Route path="/data-scraper" component={() => <Login />} />
-          <Route path="/competition-preferences" component={() => <Login />} />
           <Route path="/athlete360" component={() => <Login />} />
           <Route path="/career-journey" component={() => <Login />} />
         </>

@@ -88,17 +88,6 @@ export default function Dashboard() {
     }
   });
 
-  // Fetch current user for competition preferences
-  const { data: currentUser } = useQuery({
-    queryKey: ["/api/auth/user"],
-  });
-
-  // Fetch user's competition preferences
-  const { data: userCompetitionPreferences } = useQuery({
-    queryKey: [`/api/competition-preferences/${(currentUser as any)?.id}`],
-    enabled: !!(currentUser as any)?.id,
-  });
-
   // Filter upcoming competitions (all future competitions)
   const upcomingCompetitions = useMemo(() => {
     if (!globalCompetitions || !Array.isArray(globalCompetitions)) return [];
@@ -135,9 +124,8 @@ export default function Dashboard() {
   const worldRankedAthletes = athleteStats?.worldRankedAthletes || 0;
   const olympicQualified = athleteStats?.olympicQualified || 0;
   
-  // Count only selected competitions from user preferences
-  const selectedCompetitions = Array.isArray(userCompetitionPreferences) ? 
-    userCompetitionPreferences.filter((pref: any) => pref.isSelected)?.length || 0 : 0;
+  // Count all upcoming competitions
+  const selectedCompetitions = upcomingCompetitions.length;
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
@@ -341,7 +329,6 @@ export default function Dashboard() {
           <CompetitionCalendar
             competitions={upcomingCompetitions}
             allCompetitions={Array.isArray(globalCompetitions) ? globalCompetitions : []}
-            userPreferences={Array.isArray(userCompetitionPreferences) ? userCompetitionPreferences : []}
           />
         </div>
 

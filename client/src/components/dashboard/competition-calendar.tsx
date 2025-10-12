@@ -20,21 +20,12 @@ interface Competition {
   gradeLevel?: string;
 }
 
-interface UserCompetitionPreference {
-  id: number;
-  userId: string;
-  competitionId: number;
-  competitionName: string;
-  isSelected: boolean;
-}
-
 interface CompetitionCalendarProps {
   competitions: Competition[];
   allCompetitions?: Competition[];
-  userPreferences?: UserCompetitionPreference[];
 }
 
-export default function CompetitionCalendar({ competitions, allCompetitions, userPreferences }: CompetitionCalendarProps) {
+export default function CompetitionCalendar({ competitions, allCompetitions }: CompetitionCalendarProps) {
   // If competitions are already provided (pre-filtered), use them directly without re-filtering
   // The dashboard has already filtered for upcoming competitions
   const upcomingCompetitions = competitions

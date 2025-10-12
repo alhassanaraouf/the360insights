@@ -33,17 +33,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface CompetitionPreference {
-  id: number;
-  userId: string;
-  competitionId: number;
-  competitionName: string;
-  competitionType: string;
-  location: string;
-  dateRange: string;
-  isSelected: boolean;
-}
-
 interface CompetitionWithParticipants extends Competition {
   participantCount: number;
   participants?: (CompetitionParticipant & { athlete: Athlete })[];
@@ -69,42 +58,15 @@ export default function CompetitionDraws() {
   const [statusFilter, setStatusFilter] = useState<string>("upcoming");
   const [divisionsSearchTerm, setDivisionsSearchTerm] = useState("");
 
-  // Fetch current user
-  const { data: user } = useQuery<{
-    id: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-  }>({
-    queryKey: ["/api/auth/user"],
-  });
-
-  // Fetch user's competition preferences
-  const { data: userPreferences = [] } = useQuery<CompetitionPreference[]>({
-    queryKey: [`/api/competition-preferences/${user?.id}`],
-    enabled: !!user?.id,
-  });
-
   // Fetch all competitions with participant counts
   const { data: allCompetitions, isLoading } = useQuery<CompetitionWithParticipants[]>({
     queryKey: ['/api/competitions-with-participants'],
   });
 
-  // Filter competitions to show only upcoming ones from user preferences
+  // Show all upcoming competitions (no preference filtering)
   const competitions = allCompetitions?.filter(comp => {
-    // Only show competitions if user has preferences and has explicitly selected this one
-    if (!userPreferences.length) {
-      return false; // No preferences = no competitions shown
-    }
-    
-    // Check if user has selected this competition
-    const userPreference = userPreferences.find(pref => pref.competitionId === comp.id);
-    const isSelectedByUser = userPreference?.isSelected === true;
-    
-    // Check if competition is upcoming
     const isUpcoming = comp.status === 'upcoming';
-    
-    return isSelectedByUser && isUpcoming;
+    return isUpcoming;
   }) || [];
 
   // Fetch competition participants from local database when a competition is selected
