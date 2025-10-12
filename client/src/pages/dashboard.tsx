@@ -99,24 +99,16 @@ export default function Dashboard() {
     enabled: !!(currentUser as any)?.id,
   });
 
-  // Filter upcoming competitions based on user preferences
+  // Filter upcoming competitions (all future competitions)
   const upcomingCompetitions = useMemo(() => {
     if (!globalCompetitions || !Array.isArray(globalCompetitions)) return [];
-    if (!userCompetitionPreferences || !Array.isArray(userCompetitionPreferences)) return [];
-
-    const selectedCompetitionIds = new Set(
-      userCompetitionPreferences
-        .filter(pref => pref.isSelected)
-        .map(pref => pref.competitionId)
-    );
 
     const now = new Date();
     return globalCompetitions.filter(comp => {
-      const isSelected = selectedCompetitionIds.has(comp.id);
       const isUpcoming = comp.status === 'upcoming' || (comp.startDate && new Date(comp.startDate) > now);
-      return isSelected && isUpcoming;
+      return isUpcoming;
     });
-  }, [globalCompetitions, userCompetitionPreferences]);
+  }, [globalCompetitions]);
 
   const isLoading = athletesLoading || competitionsLoading || topAthletesLoading;
 
