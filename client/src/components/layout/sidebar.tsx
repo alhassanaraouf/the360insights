@@ -25,6 +25,8 @@ import logoImage from "@assets/the360 insights Transparent symbol_1760181687601.
 import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
 import { useQuery } from "@tanstack/react-query";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { PageIdToPath } from "@shared/access-control";
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -35,6 +37,7 @@ export default function Sidebar() {
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const { selectedAthleteId } = useAthlete();
+  const { hasAccess } = useAccessControl();
 
   // Handle mouse move for resizing
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -179,7 +182,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 mobile-padding space-y-2 overflow-y-auto">
-          {navigation.map((item) => {
+          {navigation.filter(item => hasAccess(item.href)).map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href || location.startsWith(item.href + '?');
             const href = buildHref(item.href);
@@ -244,27 +247,32 @@ export default function Sidebar() {
 
             {isUserMenuOpen && (
               <div className="ml-2 space-y-1 border-l border-gray-200 pl-3">
-                <Link href="/account-settings">
-                  <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <Settings className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">Account Settings</span>
-                  </div>
-                </Link>
+                {hasAccess("/account-settings") && (
+                  <Link href="/account-settings">
+                    <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                      <Settings className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">Account Settings</span>
+                    </div>
+                  </Link>
+                )}
                 
-                <Link href="/competition-preferences">
-                  <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <Trophy className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">Competition Preferences</span>
-                  </div>
-                </Link>
+                {hasAccess("/competition-preferences") && (
+                  <Link href="/competition-preferences">
+                    <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                      <Trophy className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">Competition Preferences</span>
+                    </div>
+                  </Link>
+                )}
 
-
-                <Link href="/data-scraper">
-                  <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <Database className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">Data Scraper</span>
-                  </div>
-                </Link>
+                {hasAccess("/data-scraper") && (
+                  <Link href="/data-scraper">
+                    <div className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer">
+                      <Database className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">Data Scraper</span>
+                    </div>
+                  </Link>
+                )}
 
                 <button
                   onClick={() => (window.location.href = "/api/logout")}
