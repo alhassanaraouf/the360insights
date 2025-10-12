@@ -1643,6 +1643,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync participants from SimplyCompete API
+  app.post("/api/competitions/:id/sync-participants", async (req, res) => {
+    try {
+      const competitionId = parseInt(req.params.id);
+      
+      if (isNaN(competitionId)) {
+        return res.status(400).json({ error: "Invalid competition ID" });
+      }
+
+      // Get the competition from the database
+      const competition = await storage.getCompetition(competitionId);
+      if (!competition) {
+        return res.status(404).json({ error: "Competition not found" });
+      }
+
+      // Check if competition has a SimplyCompete event ID
+      const simplyCompeteEventId = (competition as any).simplyCompeteEventId;
+      if (!simplyCompeteEventId) {
+        return res.status(400).json({ 
+          error: "This competition doesn't have a SimplyCompete event ID" 
+        });
+      }
+
+      console.log(`Syncing participants for ${competition.name} from SimplyCompete...`);
+      
+      // Fetch all participants from SimplyCompete
+      const participants = await fetchAllSimplyCompeteParticipants(simplyCompeteEventId);
+      console.log(`Retrieved ${participants.length} participants from SimplyCompete`);
+
+      let synced = 0;
+      let matched = 0;
+      let created = 0;
+      const errors: string[] = [];
+
+      // Process each participant
+      for (const participant of participants) {
+        try {
+          const fullName = `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
+          const country = participant.country || "";
+          const weightCategory = participant.divisionName || "";
+          
+          if (!fullName) continue;
+
+          // Try to find athlete by name
+          const existingAthletes = await db
+            .select()
+            .from(schema.athletes)
+            .where(eq(schema.athletes.name, fullName))
+            .limit(1);
+          
+          let athlete = existingAthletes[0];
+          
+          if (!athlete) {
+            // Create new athlete
+            const [newAthlete] = await db.insert(schema.athletes).values({
+              name: fullName,
+              nationality: country,
+              sport: "Taekwondo",
+              gender: participant.divisionName?.startsWith('M-') ? 'Male' : 
+                     participant.divisionName?.startsWith('F-') ? 'Female' : undefined,
+              worldCategory: weightCategory,
+            }).returning();
+            athlete = newAthlete;
+            created++;
+            console.log(`Created new athlete: ${fullName}`);
+          } else {
+            matched++;
+          }
+
+          // Check if participant already exists in this competition
+          const existingParticipants = await storage.getCompetitionParticipants(competitionId);
+          const alreadyExists = existingParticipants.some(
+            (p: any) => p.athleteId === athlete!.id
+          );
+
+          if (!alreadyExists) {
+            // Add participant to competition
+            await storage.addCompetitionParticipant({
+              competitionId,
+              athleteId: athlete.id,
+              weightCategory: weightCategory,
+              status: 'registered'
+            });
+            synced++;
+          }
+        } catch (error: any) {
+          console.error(`Error processing participant:`, error);
+          errors.push(`Failed to process participant: ${error.message}`);
+        }
+      }
+
+      console.log(`✅ Sync complete: ${synced} participants added, ${matched} matched existing, ${created} new athletes created`);
+
+      res.json({
+        success: true,
+        message: `Synced ${synced} participants successfully`,
+        totalFetched: participants.length,
+        synced,
+        matched,
+        created,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error: any) {
+      console.error("Error syncing participants:", error);
+      res.status(500).json({ 
+        error: "Failed to sync participants",
+        details: error.message 
+      });
+    }
+  });
+
   // Rank Up functionality
   app.post("/api/rank-up/calculate", async (req, res) => {
     try {

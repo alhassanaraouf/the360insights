@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from "@/lib/i18n";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search,
   Calendar,
@@ -18,7 +21,10 @@ import {
   Clock,
   Award,
   X,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -48,6 +54,7 @@ interface Competition {
 
 export default function Competitions() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
@@ -56,6 +63,7 @@ export default function Competitions() {
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
+  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -73,6 +81,37 @@ export default function Competitions() {
   // Fetch all competitions
   const { data: allCompetitions, isLoading } = useQuery<Competition[]>({
     queryKey: ['/api/competitions'],
+  });
+
+  // Fetch participants for selected competition
+  const { data: participants, isLoading: participantsLoading } = useQuery<any[]>({
+    queryKey: [`/api/competitions/${selectedCompetition?.id}/participants`],
+    enabled: !!selectedCompetition?.id,
+  });
+
+  // Sync participants mutation
+  const syncParticipantsMutation = useMutation({
+    mutationFn: async (competitionId: number) => {
+      const response = await apiRequest('POST', `/api/competitions/${competitionId}/sync-participants`);
+      return response as any;
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Participants Synced",
+        description: data.message || `Successfully synced ${data.synced} participants`,
+      });
+      // Invalidate participants query to refetch
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/competitions/${selectedCompetition?.id}/participants`] 
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync participants",
+        variant: "destructive",
+      });
+    },
   });
 
   // Get unique locations for filter
@@ -577,6 +616,86 @@ export default function Competitions() {
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Description</h4>
                 <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">{selectedCompetition.description}</p>
               </div>
+            )}
+
+            {/* Participants Section */}
+            {selectedCompetition?.simplyCompeteEventId && (
+              <Collapsible 
+                open={isParticipantsOpen} 
+                onOpenChange={setIsParticipantsOpen}
+                className="border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-gray-500" />
+                    <h4 className="text-sm font-medium">
+                      Participants {participants && `(${participants.length})`}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        syncParticipantsMutation.mutate(selectedCompetition.id);
+                      }}
+                      disabled={syncParticipantsMutation.isPending}
+                      data-testid="button-sync-participants"
+                    >
+                      <RefreshCw className={`w-3 h-3 mr-1 ${syncParticipantsMutation.isPending ? 'animate-spin' : ''}`} />
+                      {syncParticipantsMutation.isPending ? 'Syncing...' : 'Sync'}
+                    </Button>
+                    {isParticipantsOpen ? (
+                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    )}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  {participantsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Loading participants...</p>
+                    </div>
+                  ) : participants && participants.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {participants.map((participant: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-medium text-primary">
+                                {participant.athlete?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {participant.athlete?.name || 'Unknown Athlete'}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {participant.weightCategory || participant.athlete?.worldCategory || 'No category'}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="ml-2">
+                            {participant.athlete?.nationality || 'N/A'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No participants yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Click Sync to fetch participants from SimplyCompete</p>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             {/* Additional Info */}
