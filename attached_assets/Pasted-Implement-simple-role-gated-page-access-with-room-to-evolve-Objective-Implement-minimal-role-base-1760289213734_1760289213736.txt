@@ -1,0 +1,60 @@
+Implement simple role-gated page access with room to evolve
+
+Objective
+- Implement minimal role-based access control that decides which pages a user can view.
+- Keep design simple now, but easy to extend later to permissions, org scope, and feature flags.
+
+Context
+- System: The360 platform.
+- Current roles: athlete, org_admin, sponsor, admin.
+- Page availability per role is defined in “The360 Insights Roles.”
+
+Scope (Must do now)
+- One role per user.
+- Each page declares which roles can view it.
+- Admin can view all pages.
+- Enforce on the server. UI can hide links, but server must be authoritative.
+
+Non-goals (For later)
+- No granular permissions or resource-level checks yet.
+- No org scoping or team overrides yet.
+- No feature flags yet.
+- No multi-role users yet.
+
+Required outputs
+- A role-to-pages policy source that can be owned by product without code changes in the future.
+- A centralized canAccess check usable by both server middleware and UI components.
+- Clear errors for unauthorized access.
+- Unit tests that fix the contract.
+- A short ADR documenting why the simple approach was chosen and how to evolve it.
+
+Authoritative role → page mapping (source of truth)
+- Athlete: Dashboard, Athlete360, Career Journey, Opponent Analysis, Training Plan, Rank Up, Draw Sheet, AI Insights
+- Org Admin: Dashboard, Athlete Directory, Athlete360, Career Journey, Training Plan, Rank Up, Draw Sheet, AI Insights, Sponsorship Hub
+- Sponsor: Dashboard, Athlete Directory, Athlete360, Career Journey, Sponsorship Hub, AI Insights
+- Admin: All of the above plus any admin pages
+
+Reference details live in “The360 Insights Roles.”
+
+Acceptance criteria
+- Given a user role and a page id/path, canAccess returns true only if role is allowed.
+- Admin always returns true.
+- Unauthorized requests are redirected or 403’d on the server.
+- UI helpers hide links the user cannot view, but server remains the source of truth.
+
+Design constraints
+- Centralize policy and access checks in one module.
+- Make the policy data-driven, not hard-coded across the app.
+- Keep policy shape forward-compatible:
+  - Pages own requiredRoles now, can migrate to requiredPermissions later.
+  - Introduce role → permissions mapping later without breaking callers.
+- Keep function signatures stable: canAccess(userRole, pageIdOrPath).
+
+Deliverables checklist
+- Policy registry with role-to-pages mapping based on the Roles doc above.
+- canAccess helper and minimal server middleware example using it.
+- UI helper for conditional rendering of links.
+
+Execution notes for the agent
+- Choose sensible names for page ids/paths that match current routing.
+- Keep the public API small and stable.
