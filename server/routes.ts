@@ -1794,6 +1794,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enable all competitions for a user
+  app.post("/api/competition-preferences/enable-all", isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      // Get all competitions
+      const allCompetitions = await db.select().from(schema.competitions);
+      
+      console.log(`Enabling ${allCompetitions.length} competitions for user ${userId}`);
+      
+      // Create/update preferences for all competitions
+      const preferences = allCompetitions.map(comp => ({
+        userId: userId,
+        competitionId: comp.id,
+        competitionName: comp.name,
+        competitionType: comp.gradeLevel,
+        location: [comp.country, comp.city].filter(Boolean).join(', '),
+        dateRange: comp.startDate,
+        isSelected: true
+      }));
+      
+      // Batch insert/update with upsert
+      for (const pref of preferences) {
+        await db.insert(schema.userCompetitionPreferences)
+          .values(pref)
+          .onConflictDoUpdate({
+            target: [schema.userCompetitionPreferences.userId, schema.userCompetitionPreferences.competitionId],
+            set: {
+              isSelected: true,
+              updatedAt: new Date(),
+            },
+          });
+      }
+      
+      res.json({ 
+        success: true, 
+        count: allCompetitions.length,
+        message: `Successfully enabled ${allCompetitions.length} competitions`
+      });
+    } catch (error) {
+      console.error("Error enabling all competitions:", error);
+      res.status(500).json({ error: "Failed to enable all competitions" });
+    }
+  });
+
   // Sport-wide statistics
   app.get("/api/sport-statistics", async (req, res) => {
     try {
