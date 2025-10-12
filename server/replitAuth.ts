@@ -11,6 +11,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import { UserRole } from "@shared/access-control";
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -261,6 +262,17 @@ export async function setupAuth(app: Express) {
     try {
       const { email, password, firstName, lastName, role } = req.body;
       
+      // Validate and sanitize role - only allow non-privileged roles during registration
+      const allowedRegistrationRoles = [UserRole.ATHLETE, UserRole.ORG_ADMIN, UserRole.SPONSOR];
+      let validatedRole = UserRole.ATHLETE; // Default to athlete
+      
+      if (role && allowedRegistrationRoles.includes(role as any)) {
+        validatedRole = role;
+      } else if (role) {
+        // Log suspicious attempts to claim admin or invalid roles
+        console.warn(`Registration attempt with invalid/privileged role: ${role} for email: ${email}`);
+      }
+      
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser && existingUser.passwordHash) {
@@ -277,7 +289,7 @@ export async function setupAuth(app: Express) {
           ...existingUser,
           firstName: firstName || existingUser.firstName,
           lastName: lastName || existingUser.lastName,
-          role: role || existingUser.role,
+          role: validatedRole,
           passwordHash,
         });
       } else {
@@ -287,7 +299,7 @@ export async function setupAuth(app: Express) {
           email,
           firstName,
           lastName,
-          role: role || 'athlete',
+          role: validatedRole,
           passwordHash,
           profileImageUrl: null,
         });

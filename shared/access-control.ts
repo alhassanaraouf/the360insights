@@ -66,8 +66,6 @@ export const RolePagePolicy: Record<UserRole, Set<PageId>> = {
     PageId.RANK_UP,
     PageId.DRAW_SHEET,
     PageId.AI_INSIGHTS,
-    PageId.LIVE_MATCH,
-    PageId.ACCOUNT_SETTINGS,
   ]),
   
   [UserRole.ORG_ADMIN]: new Set([
@@ -80,10 +78,6 @@ export const RolePagePolicy: Record<UserRole, Set<PageId>> = {
     PageId.DRAW_SHEET,
     PageId.AI_INSIGHTS,
     PageId.SPONSORSHIP_HUB,
-    PageId.LIVE_MATCH,
-    PageId.ACCOUNT_SETTINGS,
-    PageId.DATA_SCRAPER,
-    PageId.COMPETITION_PREFERENCES,
   ]),
   
   [UserRole.SPONSOR]: new Set([
@@ -93,7 +87,6 @@ export const RolePagePolicy: Record<UserRole, Set<PageId>> = {
     PageId.CAREER_JOURNEY,
     PageId.SPONSORSHIP_HUB,
     PageId.AI_INSIGHTS,
-    PageId.ACCOUNT_SETTINGS,
   ]),
   
   [UserRole.ADMIN]: new Set([
