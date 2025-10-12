@@ -70,7 +70,7 @@ export default function Competitions() {
   // Get unique locations for filter
   const locations = useMemo(() => {
     if (!allCompetitions) return [];
-    const uniqueLocations = [...new Set(allCompetitions.map(c => c.location))].filter(Boolean);
+    const uniqueLocations = Array.from(new Set(allCompetitions.map(c => c.location))).filter(Boolean);
     return uniqueLocations.sort();
   }, [allCompetitions]);
 
@@ -196,6 +196,7 @@ export default function Competitions() {
                       setFilterLocation("all");
                     }}
                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                    data-testid="button-clear-all-filters"
                   >
                     Clear all
                   </Button>
@@ -263,6 +264,7 @@ export default function Competitions() {
           <Card 
             className={`cursor-pointer hover:shadow-lg transition-all ${filterStatus === "upcoming" ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' : ''}`}
             onClick={() => setFilterStatus(filterStatus === "upcoming" ? "all" : "upcoming")}
+            data-testid="card-filter-upcoming"
           >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-blue-600">{statusCounts.upcoming}</div>
@@ -272,6 +274,7 @@ export default function Competitions() {
           <Card 
             className={`cursor-pointer hover:shadow-lg transition-all ${filterStatus === "ongoing" ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : ''}`}
             onClick={() => setFilterStatus(filterStatus === "ongoing" ? "all" : "ongoing")}
+            data-testid="card-filter-ongoing"
           >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-green-600">{statusCounts.ongoing}</div>
@@ -281,13 +284,14 @@ export default function Competitions() {
           <Card 
             className={`cursor-pointer hover:shadow-lg transition-all ${filterStatus === "completed" ? 'ring-2 ring-gray-500 bg-gray-50 dark:bg-gray-950' : ''}`}
             onClick={() => setFilterStatus(filterStatus === "completed" ? "all" : "completed")}
+            data-testid="card-filter-completed"
           >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-gray-600">{statusCounts.completed}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">Completed</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card data-testid="card-filter-total">
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{statusCounts.all}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">Total</div>

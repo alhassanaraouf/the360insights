@@ -97,7 +97,7 @@ export default function Sidebar() {
 
   // Helper function to add athlete ID to href if present
   const buildHref = (basePath: string) => {
-    if (selectedAthleteId && basePath !== "/" && basePath !== "/athletes" && basePath !== "/competition-draws" && basePath !== "/sponsorship-hub") {
+    if (selectedAthleteId && basePath !== "/" && basePath !== "/athletes" && basePath !== "/competitions" && basePath !== "/competition-draws" && basePath !== "/sponsorship-hub") {
       return `${basePath}?athlete=${selectedAthleteId}`;
     }
     return basePath;
@@ -106,6 +106,7 @@ export default function Sidebar() {
   const navigation = [
     { name: t("nav.dashboard"), href: "/", icon: Home },
     { name: "Athletes Directory", href: "/athletes", icon: Users },
+    { name: "Competitions", href: "/competitions", icon: Trophy },
     { name: t("nav.athlete360"), href: "/athlete360", icon: User },
     { name: t("nav.career"), href: "/career-journey", icon: FlagTriangleRight },
 
@@ -122,7 +123,7 @@ export default function Sidebar() {
       icon: Calendar,
     },
     { name: "Rank Up", href: "/rank-up", icon: Target },
-    { name: "Drawsheet", href: "/competition-draws", icon: Trophy },
+    { name: "Drawsheet", href: "/competition-draws", icon: Calendar },
 
     { name: t("nav.insights"), href: "/ai-insights", icon: Brain },
     { name: "Sponsorship Hub", href: "/sponsorship-hub", icon: DollarSign },
