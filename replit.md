@@ -21,7 +21,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Real-time Features**: WebSocket integration for live match analysis.
 -   **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
 -   **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
--   **Object Storage**: Replit Object Storage for athlete profile pictures and other assets; Local file system storage for uploaded video files.
+-   **Object Storage**: Replit Object Storage for athlete profile pictures, competition logos, and other assets; Local file system storage for uploaded video files.
 
 ### Feature Specifications
 -   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
@@ -52,7 +52,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Real-time Features**: WebSocket integration for live analysis.
 -   **Session Management**: Replit Key Value Store for zero-configuration session persistence.
 -   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage.
--   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis.
+-   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis. JSON imports use batch processing (20 items per batch) with parallel logo uploads for efficiency.
 
 ### Database Schema
 -   `athletes`: Athlete profiles, performance metrics (indexed on: worldCategory, nationality, name)
@@ -65,7 +65,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   `athlete_ranks`: Consolidated ranking system (world, Olympic, national, continental, regional) (indexed on: athleteId, rankingType, category, ranking)
 -   `coaches`: Coach information
 -   `users`: User profiles with authentication details and bio
--   `competitions`: Competition events with SimplyCompete integration fields (`sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId`) (indexed on: simplyCompeteEventId)
+-   `competitions`: Competition events with SimplyCompete integration fields (`sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId`, `logo`) - logos stored in Replit Object Storage (indexed on: simplyCompeteEventId)
 -   `competition_participants`: Links athletes to competitions (indexed on: competitionId, athleteId)
 -   `opponent_analysis_cache`: Stores AI-powered opponent analysis results with monthly expiration.
 -   `performance_analysis_cache`: Stores AI-powered performance analysis results with 30-day expiration.

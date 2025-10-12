@@ -2828,6 +2828,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalCompetitions: result.totalProcessed,
           saved: result.saved,
           errors: result.errors,
+          logosUploaded: result.logosUploaded,
+          logosFailed: result.logosFailed,
           competitions: result.competitions.slice(0, 20) // Return first 20 as preview
         });
       } catch (parseError) {

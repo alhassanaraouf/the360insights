@@ -1443,116 +1443,167 @@ export async function importJsonCompetitions(jsonData: any[]): Promise<{
   saved: number;
   errors: number;
   competitions: any[];
+  logosUploaded: number;
+  logosFailed: number;
 }> {
   let saved = 0;
   let errors = 0;
+  let logosUploaded = 0;
+  let logosFailed = 0;
   const processedCompetitions: any[] = [];
 
   console.log(`Starting competition import with ${jsonData.length} items`);
 
-  for (const item of jsonData) {
-    try {
-      console.log("Processing competition item:", item);
+  // Map competition level
+  const getCompetitionLevel = (eventType: string, eventLevel: string) => {
+    if (eventType === "Championship" || eventLevel === "World Championship")
+      return "world_championship";
+    if (eventType === "Grand Prix") return "international";
+    if (eventType === "Continental Championship") return "international";
+    if (eventType === "Olympic Games") return "olympic";
+    if (eventLevel === "National") return "national";
+    return "international";
+  };
 
-      // Map JSON fields to expected format
-      const title = item.title || item.event_name || "";
-      const date = item.date || item.start_date || "";
+  // Process competitions in batches of 20 (same as athlete imports)
+  const BATCH_SIZE = 20;
+  
+  for (let i = 0; i < jsonData.length; i += BATCH_SIZE) {
+    const batch = jsonData.slice(i, i + BATCH_SIZE);
+    
+    console.log(`\n📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(jsonData.length / BATCH_SIZE)}`);
+    
+    await Promise.all(batch.map(async (item) => {
+      try {
+        // Map JSON fields to expected format
+        const title = item.title || item.event_name || "";
+        const date = item.date || item.start_date || "";
 
-      // Validate required fields
-      if (!title || !date) {
-        console.error("Missing required fields (title or date):", item);
+        // Validate required fields
+        if (!title || !date) {
+          console.error("Missing required fields (title or date):", item);
+          errors++;
+          return;
+        }
+
+        // Extract event ID from various possible field names
+        const eventId = item.event_id || item.eventId || item.id || item.simplyCompeteEventId || null;
+        
+        // Prepare competition data for insertion into competitions table
+        const competitionData: InsertCompetition = {
+          name: title,
+          country: item.country || "Unknown",
+          city:
+            item.city ||
+            (item.location ? item.location.split(",")[0]?.trim() : null),
+          startDate: date,
+          endDate: item.end_date || null,
+          category: item.category || null,
+          gradeLevel: item.g_rank || null,
+          pointsAvailable: (
+            parseFloat(item.points_available || "0") ||
+            (item.g_rank === "G-1"
+              ? 300
+              : item.g_rank === "G-2"
+                ? 400
+                : item.g_rank === "G-4"
+                  ? 500
+                  : item.event_type === "World Championship"
+                    ? 600
+                    : item.event_type === "Olympic Games"
+                      ? 700
+                      : 200)
+          ).toString(),
+          competitionType: getCompetitionLevel(item.event_type, item.event_level),
+          registrationDeadline: item.registration_deadline || null,
+          status: item.status || "upcoming",
+          simplyCompeteEventId: eventId ? eventId.toString() : null,
+        };
+
+        // Check if competition already exists (by name and date)
+        const existingCompetition = await db.query.competitions.findFirst({
+          where: and(
+            eq(schema.competitions.name, competitionData.name),
+            eq(schema.competitions.startDate, competitionData.startDate),
+          ),
+        });
+
+        if (existingCompetition) {
+          // Update existing competition with logo if available
+          if (item.logo) {
+            try {
+              const { bucketStorage } = await import('./bucket-storage.js');
+              const logoResult = await bucketStorage.uploadCompetitionLogoFromUrl(
+                existingCompetition.id,
+                item.logo
+              );
+              
+              // Update competition with logo URL
+              await db
+                .update(schema.competitions)
+                .set({ logo: logoResult.url })
+                .where(eq(schema.competitions.id, existingCompetition.id));
+              
+              logosUploaded++;
+              console.log(`✅ Logo uploaded for existing competition: ${competitionData.name}`);
+            } catch (logoError) {
+              logosFailed++;
+              console.error(`❌ Failed to upload logo for competition ${existingCompetition.id}:`, logoError);
+            }
+          }
+          
+          processedCompetitions.push(existingCompetition);
+          return;
+        }
+
+        // Insert new competition
+        const [newCompetition] = await db
+          .insert(schema.competitions)
+          .values(competitionData)
+          .returning();
+
+        saved++;
+        processedCompetitions.push(newCompetition);
+        console.log(`✓ Saved competition: ${competitionData.name}`);
+
+        // Upload logo if available
+        if (item.logo && newCompetition) {
+          try {
+            const { bucketStorage } = await import('./bucket-storage.js');
+            const logoResult = await bucketStorage.uploadCompetitionLogoFromUrl(
+              newCompetition.id,
+              item.logo
+            );
+            
+            // Update competition with logo URL
+            await db
+              .update(schema.competitions)
+              .set({ logo: logoResult.url })
+              .where(eq(schema.competitions.id, newCompetition.id));
+            
+            logosUploaded++;
+            console.log(`✅ Logo uploaded for competition: ${competitionData.name}`);
+          } catch (logoError) {
+            logosFailed++;
+            console.error(`❌ Failed to upload logo for competition ${newCompetition.id}:`, logoError);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing competition:", error, item);
         errors++;
-        continue;
       }
-
-      // Map competition level
-      const getCompetitionLevel = (eventType: string, eventLevel: string) => {
-        if (eventType === "Championship" || eventLevel === "World Championship")
-          return "world_championship";
-        if (eventType === "Grand Prix") return "international";
-        if (eventType === "Continental Championship") return "international";
-        if (eventType === "Olympic Games") return "olympic";
-        if (eventLevel === "National") return "national";
-        return "international";
-      };
-
-      // Extract event ID from various possible field names
-      const eventId = item.event_id || item.eventId || item.id || item.simplyCompeteEventId || null;
-      
-      // Prepare competition data for insertion into competitions table
-      const competitionData: InsertCompetition = {
-        name: title,
-        country: item.country || "Unknown",
-        city:
-          item.city ||
-          (item.location ? item.location.split(",")[0]?.trim() : null),
-        startDate: date,
-        endDate: item.end_date || null,
-        category: item.category || null,
-        gradeLevel: item.g_rank || null,
-        pointsAvailable: (
-          parseFloat(item.points_available || "0") ||
-          (item.g_rank === "G-1"
-            ? 300
-            : item.g_rank === "G-2"
-              ? 400
-              : item.g_rank === "G-4"
-                ? 500
-                : item.event_type === "World Championship"
-                  ? 600
-                  : item.event_type === "Olympic Games"
-                    ? 700
-                    : 200)
-        ).toString(),
-        competitionType: getCompetitionLevel(item.event_type, item.event_level),
-        registrationDeadline: item.registration_deadline || null,
-        status: item.status || "upcoming",
-        simplyCompeteEventId: eventId ? eventId.toString() : null,
-      };
-
-      console.log("Inserting competition:", competitionData.name);
-      if (competitionData.simplyCompeteEventId) {
-        console.log(`  → Event ID: ${competitionData.simplyCompeteEventId}`);
-      }
-
-      // Check if competition already exists (by name and date)
-      const existingCompetition = await db.query.competitions.findFirst({
-        where: and(
-          eq(schema.competitions.name, competitionData.name),
-          eq(schema.competitions.startDate, competitionData.startDate),
-        ),
-      });
-
-      if (existingCompetition) {
-        console.log(
-          `Competition already exists: ${competitionData.name} on ${competitionData.startDate}`,
-        );
-        processedCompetitions.push(existingCompetition);
-        continue;
-      }
-
-      // Insert new competition
-      const [newCompetition] = await db
-        .insert(schema.competitions)
-        .values(competitionData)
-        .returning();
-
-      saved++;
-      processedCompetitions.push(newCompetition);
-      console.log(`✓ Saved competition: ${competitionData.name}`);
-    } catch (error) {
-      console.error("Error processing competition:", error, item);
-      errors++;
-    }
+    }));
   }
 
-  console.log(`Competition import completed: ${saved} saved, ${errors} errors`);
+  console.log(`\nCompetition import completed: ${saved} saved, ${errors} errors, ${logosUploaded} logos uploaded, ${logosFailed} logos failed`);
 
   return {
     totalProcessed: jsonData.length,
     saved,
     errors,
     competitions: processedCompetitions,
+    logosUploaded,
+    logosFailed,
   };
 }
 

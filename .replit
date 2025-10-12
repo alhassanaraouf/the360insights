@@ -65,6 +65,10 @@ localPort = 42461
 externalPort = 6000
 
 [[ports]]
+localPort = 43181
+externalPort = 3003
+
+[[ports]]
 localPort = 43297
 externalPort = 5000
 
@@ -77,4 +81,4 @@ integrations = ["javascript_openai:1.0.0", "javascript_gemini:1.0.0"]
 expertMode = true
 
 [objectStorage]
-defaultBucketID = "replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b"
+defaultBucketID = "replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945"
