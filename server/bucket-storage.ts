@@ -61,6 +61,44 @@ export class BucketStorageService {
     }
   }
 
+  async uploadCompetitionLogo(competitionId: number, imageBuffer: Buffer, fileName: string): Promise<ImageUploadResult> {
+    try {
+      const fileExtension = fileName.split('.').pop() || 'jpg';
+      const key = `competitions/${competitionId}/logo.${fileExtension}`;
+      
+      console.log(`📤 Uploading ${key} to bucket: ${this.bucketId}`);
+      console.log(`   Size: ${imageBuffer.length} bytes`);
+      
+      // Upload to Replit Object Storage
+      const uploadResult = await client.uploadFromBytes(key, imageBuffer);
+      
+      console.log('Upload result:', uploadResult);
+      
+      // Handle different response formats from Replit Object Storage
+      if (uploadResult.ok === false || (!uploadResult.ok && !uploadResult.success)) {
+        console.error('Upload failed:', uploadResult.error || uploadResult);
+        throw new Error(`Upload failed: ${uploadResult.error?.message || uploadResult.message || 'Unknown error'}`);
+      }
+
+      // Verify upload was successful
+      if (!uploadResult.ok && !uploadResult.success) {
+        throw new Error('Upload completed but status unclear');
+      }
+
+      // Return our API URL that will serve the image through the backend
+      const downloadUrl = `/api/competitions/${competitionId}/logo`;
+      
+      return {
+        url: downloadUrl,
+        key,
+        size: imageBuffer.length
+      };
+    } catch (error) {
+      console.error('Error uploading competition logo:', error);
+      throw new Error('Failed to upload competition logo');
+    }
+  }
+
   async downloadImageFromUrl(imageUrl: string, retries = 2): Promise<Buffer> {
     let lastError: Error | null = null;
     
@@ -310,6 +348,109 @@ export class BucketStorageService {
     }
 
     return { successful, failed, errors };
+  }
+
+  async checkCompetitionLogoExists(competitionId: number): Promise<boolean> {
+    try {
+      const prefix = `competitions/${competitionId}/`;
+      const listResult = await client.list({ prefix });
+      
+      if (!listResult || (!listResult.success && !listResult.ok)) {
+        return false;
+      }
+      
+      const items = listResult.data || listResult.items || listResult.value || [];
+      return items && items.length > 0;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error checking if logo exists for competition ${competitionId}:`, errorMessage);
+      return false;
+    }
+  }
+
+  async uploadCompetitionLogoFromUrl(competitionId: number, imageUrl: string, fileName?: string): Promise<ImageUploadResult> {
+    try {
+      const logoExists = await this.checkCompetitionLogoExists(competitionId);
+      
+      if (logoExists) {
+        console.log(`Logo already exists for competition ${competitionId}, skipping download`);
+        return {
+          url: `/api/competitions/${competitionId}/logo`,
+          key: `competitions/${competitionId}/logo.jpg`,
+          size: 0
+        };
+      }
+      
+      const imageBuffer = await this.downloadImageFromUrl(imageUrl);
+      
+      const finalFileName = fileName || `competition-${competitionId}-${Date.now()}.jpg`;
+      
+      return await this.uploadCompetitionLogo(competitionId, imageBuffer, finalFileName);
+    } catch (error) {
+      console.error('Error uploading competition logo from URL:', error);
+      throw new Error('Failed to upload competition logo from URL');
+    }
+  }
+
+  async getCompetitionLogoBuffer(competitionId: number): Promise<Buffer | null> {
+    try {
+      const prefix = `competitions/${competitionId}/`;
+      const listResult = await client.list({ prefix });
+      
+      // Check different possible response formats
+      if (!listResult || (!listResult.success && !listResult.ok)) {
+        return null;
+      }
+      
+      // Handle different response formats
+      let items = listResult.data || listResult.items || listResult.value || [];
+      
+      if (!items || items.length === 0) {
+        return null;
+      }
+      
+      // Try to find the logo image
+      let selectedKey = null;
+      
+      // Look for logo images first
+      for (const item of items) {
+        const key = item.key || item.name;
+        if (key.includes('logo')) {
+          selectedKey = key;
+          break;
+        }
+      }
+      
+      // If no logo image, take the first one
+      if (!selectedKey) {
+        selectedKey = items[0].key || items[0].name;
+      }
+      
+      // Download the selected image
+      const downloadResult = await client.downloadAsBytes(selectedKey);
+      
+      // Handle different response formats
+      if (!downloadResult || (!downloadResult.success && !downloadResult.ok)) {
+        return null;
+      }
+      
+      // For Replit Object Storage, the response format is { ok: true, value: [buffer] }
+      if (downloadResult.ok && downloadResult.value && Array.isArray(downloadResult.value)) {
+        const imageBuffer = downloadResult.value[0];
+        return Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+      }
+      
+      // Fallback to other possible formats
+      const data = downloadResult.data || downloadResult.bytes;
+      if (!data) {
+        return null;
+      }
+      
+      return Buffer.from(data);
+    } catch (error) {
+      console.error(`Error getting competition logo buffer for ${competitionId}:`, error);
+      return null;
+    }
   }
 }
 
