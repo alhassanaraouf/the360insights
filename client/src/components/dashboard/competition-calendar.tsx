@@ -35,40 +35,14 @@ interface CompetitionCalendarProps {
 }
 
 export default function CompetitionCalendar({ competitions, allCompetitions, userPreferences }: CompetitionCalendarProps) {
-  // Use global competition data if available, otherwise fall back to athlete-specific
-  const competitionData = allCompetitions || competitions;
-  
-  // Filter competitions based on user preferences
-  const filterByPreferences = (comps: Competition[]) => {
-    if (!userPreferences || userPreferences.length === 0) {
-      // If no preferences set, show no competitions (user must make selections)
-      return [];
-    }
-    
-    // Create a set of selected competition IDs for faster lookup
-    const selectedCompetitionIds = new Set(
-      userPreferences
-        .filter(pref => pref.isSelected)
-        .map(pref => pref.competitionId)
-    );
-    
-    // If no competitions are selected, show no competitions
-    if (selectedCompetitionIds.size === 0) {
-      return [];
-    }
-    
-    // Filter competitions to only show selected ones
-    return comps.filter(comp => selectedCompetitionIds.has(comp.id));
-  };
-  
-  const upcomingCompetitions = filterByPreferences(competitionData)
-    .filter(comp => comp.eventType === 'competition')
-    .filter(comp => comp.startDate && isFuture(new Date(comp.startDate)))
+  // If competitions are already provided (pre-filtered), use them directly without re-filtering
+  // The dashboard has already filtered for upcoming competitions
+  const upcomingCompetitions = competitions
     .sort((a, b) => new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime())
     .slice(0, 6);
 
-  const recentCompetitions = filterByPreferences(competitionData)
-    .filter(comp => comp.eventType === 'competition')
+  // For recent competitions, filter from all competitions to show past events
+  const recentCompetitions = (allCompetitions || [])
     .filter(comp => comp.startDate && isPast(new Date(comp.startDate)))
     .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
     .slice(0, 4);
