@@ -1,30 +1,19 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "wouter";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from "@/lib/i18n";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { 
   Search,
   Calendar,
   MapPin,
   Trophy,
-  Users,
-  Globe,
-  Clock,
   Award,
-  X,
-  ExternalLink,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -54,16 +43,14 @@ interface Competition {
 
 export default function Competitions() {
   const { t } = useLanguage();
-  const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("upcoming");
   const [filterLocation, setFilterLocation] = useState("all");
-  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
-  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -83,36 +70,6 @@ export default function Competitions() {
     queryKey: ['/api/competitions'],
   });
 
-  // Fetch participants for selected competition
-  const { data: participants, isLoading: participantsLoading } = useQuery<any[]>({
-    queryKey: [`/api/competitions/${selectedCompetition?.id}/participants`],
-    enabled: !!selectedCompetition?.id,
-  });
-
-  // Sync participants mutation - uses stealth browser in backend to bypass Cloudflare
-  const syncParticipantsMutation = useMutation({
-    mutationFn: async (competition: Competition) => {
-      const result = await apiRequest('POST', `/api/competitions/${competition.id}/sync-participants`, {});
-      return result as any;
-    },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Participants Synced",
-        description: `Successfully synced ${data.stats.synced} participants (${data.stats.matched} matched, ${data.stats.created} created)`,
-      });
-      // Invalidate participants query to refetch
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/competitions/${selectedCompetition?.id}/participants`] 
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to sync participants",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Get unique locations for filter
   const locations = useMemo(() => {
@@ -352,37 +309,31 @@ export default function Competitions() {
             {paginatedCompetitions.map((competition) => (
               <Card 
                 key={competition.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => setSelectedCompetition(competition)}
+                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
+                onClick={() => navigate(`/competition/${competition.id}`)}
                 data-testid={`card-competition-${competition.id}`}
               >
+                {/* Logo Header - Bigger and more prominent */}
+                <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b">
+                  {competition.logo ? (
+                    <img 
+                      src={competition.logo} 
+                      alt={competition.name}
+                      className="h-24 w-auto object-contain p-4"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=200&h=200&fit=crop";
+                      }}
+                    />
+                  ) : (
+                    <Trophy className="w-16 h-16 text-primary/40" />
+                  )}
+                  <Badge className={`absolute top-3 right-3 ${getStatusColor(competition.status)} capitalize`}>
+                    {competition.status}
+                  </Badge>
+                </div>
+                
                 <CardHeader className="pb-3">
-                  <div className="flex items-start space-x-4">
-                    {/* Competition Logo */}
-                    <div className="w-16 h-16 flex-shrink-0">
-                      {competition.logo ? (
-                        <img 
-                          src={competition.logo} 
-                          alt={competition.name}
-                          className="w-full h-full object-contain rounded-lg border border-gray-200 dark:border-gray-700"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=100&h=100&fit=crop";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
-                          <Trophy className="w-8 h-8 text-primary" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg line-clamp-2">{competition.name}</CardTitle>
-                      <Badge className={`mt-1 ${getStatusColor(competition.status)} capitalize`}>
-                        {competition.status}
-                      </Badge>
-                    </div>
-                  </div>
+                  <CardTitle className="text-lg line-clamp-2">{competition.name}</CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
@@ -416,7 +367,7 @@ export default function Competitions() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedCompetition(competition);
+                      navigate(`/competition/${competition.id}`);
                     }}
                     data-testid={`button-view-details-${competition.id}`}
                   >
@@ -465,9 +416,6 @@ export default function Competitions() {
           </div>
         )}
       </div>
-
-      {/* Competition Details Modal */}
-      <Dialog open={!!selectedCompetition} onOpenChange={(open) => !open && setSelectedCompetition(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-competition-details">
           <DialogHeader>
             <div className="flex items-start gap-4">
