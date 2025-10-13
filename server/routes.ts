@@ -1755,6 +1755,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           }
 
+          // Log the raw response for debugging
+          console.log(`📄 Raw response (first 500 chars): ${textContent.substring(0, 500)}`);
+          
+          // Check if response looks like JSON
+          if (!textContent.trim().startsWith('{') && !textContent.trim().startsWith('[')) {
+            console.error(`❌ Response is not JSON. Got HTML or text instead. Full response: ${textContent.substring(0, 1000)}`);
+            throw new Error('Received non-JSON response from SimplyCompete - possibly a Cloudflare challenge page');
+          }
+
           const data = JSON.parse(textContent);
           
           if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
