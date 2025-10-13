@@ -25,7 +25,6 @@ import multer from 'multer';
 import { geminiVideoAnalysis } from "./gemini-video-analysis";
 import * as fs from "fs";
 import * as path from "path";
-import puppeteer from 'puppeteer';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication middleware
@@ -1404,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Function to fetch all participants from SimplyCompete API with pagination using Puppeteer to bypass Cloudflare
+  // Function to fetch all participants from SimplyCompete API with pagination
   async function fetchAllSimplyCompeteParticipants(eventId: string, nodeId?: string) {
     const allParticipants: any[] = [];
     let pageNo = 0;
@@ -1419,32 +1418,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`📡 Fetching participants from: ${url}`);
         
-        // Use Puppeteer to bypass Cloudflare
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        // Use realistic browser headers to bypass basic Cloudflare protection
+        const headers = {
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Encoding': 'gzip, deflate, br, zstd',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Priority': 'u=1, i',
+          'Referer': 'https://worldtkd.simplycompete.com/events',
+          'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        };
         
-        const page = await browser.newPage();
+        const response = await fetch(url, { headers });
         
-        // Set realistic headers
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        
-        await page.goto(url, { 
-          waitUntil: 'networkidle0',
-          timeout: 30000 
-        });
-        
-        // Get the JSON response from the page
-        const textContent = await page.evaluate(() => document.body.textContent);
-        await browser.close();
-        
-        if (!textContent) {
-          console.error(`Failed to fetch page ${pageNo}: Empty response`);
+        if (!response.ok) {
+          console.error(`Failed to fetch page ${pageNo}:`, response.status, response.statusText);
+          if (response.status === 403) {
+            console.error('❌ Cloudflare blocked the request. This endpoint requires browser-based access.');
+            throw new Error('Cloudflare protection detected. Cannot fetch participants via server-side requests.');
+          }
           break;
         }
 
-        const data = JSON.parse(textContent);
+        const data = await response.json();
         
         if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
           const participants = data.data.data.participantList;
