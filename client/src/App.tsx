@@ -23,6 +23,7 @@ import RankUp from "@/pages/rank-up";
 import SponsorshipHub from "@/pages/sponsorship-hub";
 import CompetitionDraws from "@/pages/competition-draws";
 import Competitions from "@/pages/competitions";
+import CompetitionDetail from "@/pages/competition-detail";
 
 
 
@@ -104,6 +105,11 @@ function Router() {
               <Competitions />
             </ResponsiveLayout>
           </Route>
+          <Route path="/competition/:id">
+            <ResponsiveLayout>
+              <CompetitionDetail />
+            </ResponsiveLayout>
+          </Route>
 
           <Route path="/ai-insights">
             <ResponsiveLayout>
@@ -132,6 +138,7 @@ function Router() {
           <Route path="/sponsorship-hub" component={() => <Login />} />
           <Route path="/competition-draws" component={() => <Login />} />
           <Route path="/competitions" component={() => <Login />} />
+          <Route path="/competition/:id" component={() => <Login />} />
           <Route path="/athletes" component={() => <Login />} />
           <Route path="/training-planner" component={() => <Login />} />
           <Route path="/ai-insights" component={() => <Login />} />
