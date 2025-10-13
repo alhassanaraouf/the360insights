@@ -20,7 +20,7 @@ import { scrapeCountryAthletes, scrapeWorldRankings, commonCountryCodes, importJ
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import multer from 'multer';
 import { geminiVideoAnalysis } from "./gemini-video-analysis";
 import * as fs from "fs";
@@ -1675,8 +1675,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Proxy endpoint to fetch participants from SimplyCompete using stealth browser (bypasses Cloudflare like Python cloudscraper)
-  app.get("/api/competitions/:id/fetch-participants-proxy", async (req, res) => {
+  // Sync participants from SimplyCompete using stealth browser (bypasses Cloudflare like Python cloudscraper)
+  app.post("/api/competitions/:id/sync-participants", async (req, res) => {
     try {
       const competitionId = parseInt(req.params.id);
       
@@ -1724,79 +1724,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       });
 
-      const allParticipants: any[] = [];
-      let pageNo = 0;
-      let hasMorePages = true;
-
       try {
-        while (hasMorePages) {
-          const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
-          
-          console.log(`📡 Fetching page ${pageNo} with stealth browser: ${url}`);
-          
-          const page = await browser.newPage();
-          
-          // Set realistic viewport and user agent
-          await page.setViewport({ width: 1920, height: 1080 });
-          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
-          
-          // Navigate and wait for response
-          await page.goto(url, { 
-            waitUntil: 'networkidle0',
-            timeout: 30000 
-          });
-          
-          // Extract JSON from page
-          const textContent = await page.evaluate(() => document.body.textContent);
-          await page.close();
-          
-          if (!textContent) {
-            console.error(`Empty response on page ${pageNo}`);
-            break;
-          }
+        // Fetch only page 0 (first 500 participants)
+        const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=0`;
+        
+        console.log(`📡 Fetching participants with stealth browser: ${url}`);
+        
+        const page = await browser.newPage();
+        
+        // Set realistic viewport and user agent
+        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+        
+        // Navigate and wait for response
+        await page.goto(url, { 
+          waitUntil: 'networkidle0',
+          timeout: 30000 
+        });
+        
+        // Extract JSON from page
+        const textContent = await page.evaluate(() => document.body.textContent);
+        await page.close();
+        await browser.close();
+        
+        if (!textContent) {
+          throw new Error('Empty response from SimplyCompete');
+        }
 
-          // Log the raw response for debugging
-          console.log(`📄 Raw response (first 500 chars): ${textContent.substring(0, 500)}`);
-          
-          // Check if response looks like JSON
-          if (!textContent.trim().startsWith('{') && !textContent.trim().startsWith('[')) {
-            console.error(`❌ Response is not JSON. Got HTML or text instead. Full response: ${textContent.substring(0, 1000)}`);
-            throw new Error('Received non-JSON response from SimplyCompete - possibly a Cloudflare challenge page');
-          }
+        // Log the raw response for debugging
+        console.log(`📄 Raw response (first 500 chars): ${textContent.substring(0, 500)}`);
+        
+        // Check if response looks like JSON
+        if (!textContent.trim().startsWith('{') && !textContent.trim().startsWith('[')) {
+          console.error(`❌ Response is not JSON. Got HTML or text instead. Full response: ${textContent.substring(0, 1000)}`);
+          throw new Error('Received non-JSON response from SimplyCompete - possibly a Cloudflare challenge page');
+        }
 
-          const data = JSON.parse(textContent);
-          
-          if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
-            const participants = data.data.data.participantList;
+        const data = JSON.parse(textContent);
+        
+        if (!data.data?.data?.participantList || !Array.isArray(data.data.data.participantList)) {
+          throw new Error('Invalid response format from SimplyCompete');
+        }
+
+        const participants = data.data.data.participantList;
+        console.log(`✅ Successfully fetched ${participants.length} participants using stealth browser`);
+
+        // Process participants and sync to database
+        let synced = 0;
+        let matched = 0;
+        let created = 0;
+        const errors: string[] = [];
+
+        for (const participant of participants) {
+          try {
+            const fullName = `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
+            const country = participant.country || "";
+            const weightCategory = participant.divisionName || "";
             
-            if (participants.length === 0) {
-              hasMorePages = false;
+            if (!fullName) continue;
+
+            // Try to find athlete by name
+            const existingAthletes = await db
+              .select()
+              .from(schema.athletes)
+              .where(eq(schema.athletes.name, fullName))
+              .limit(1);
+
+            let athleteId: number;
+
+            if (existingAthletes.length > 0) {
+              athleteId = existingAthletes[0].id;
+              matched++;
             } else {
-              allParticipants.push(...participants);
-              pageNo++;
-              console.log(`✅ Page ${pageNo - 1}: Found ${participants.length} participants (total: ${allParticipants.length})`);
+              // Create new athlete
+              const [newAthlete] = await db
+                .insert(schema.athletes)
+                .values({
+                  name: fullName,
+                  sport: "Taekwondo",
+                  nationality: country || "Unknown",
+                  worldCategory: weightCategory || "Unknown",
+                })
+                .returning();
               
-              if (pageNo > 100) {
-                console.warn('Reached maximum page limit (100)');
-                break;
-              }
+              athleteId = newAthlete.id;
+              created++;
             }
-          } else {
-            hasMorePages = false;
+
+            // Check if already linked to competition
+            const existing = await db
+              .select()
+              .from(schema.competitionParticipants)
+              .where(and(
+                eq(schema.competitionParticipants.competitionId, competitionId),
+                eq(schema.competitionParticipants.athleteId, athleteId)
+              ))
+              .limit(1);
+
+            if (existing.length === 0) {
+              await db.insert(schema.competitionParticipants).values({
+                competitionId,
+                athleteId,
+              });
+              synced++;
+            }
+          } catch (error: any) {
+            errors.push(`Failed to process ${participant.preferredFirstName} ${participant.preferredLastName}: ${error.message}`);
           }
         }
 
-        await browser.close();
-        console.log(`✅ Successfully fetched ${allParticipants.length} participants using stealth browser`);
-        res.json({ participants: allParticipants });
+        console.log(`✅ Sync complete: ${synced} synced, ${matched} matched, ${created} created`);
+
+        res.json({
+          success: true,
+          stats: {
+            total: participants.length,
+            synced,
+            matched,
+            created,
+            errors: errors.length,
+          },
+          errors: errors.slice(0, 10), // Return first 10 errors only
+        });
       } catch (error: any) {
         await browser.close();
         throw error;
       }
     } catch (error: any) {
-      console.error("Error in stealth browser proxy:", error);
+      console.error("Error in stealth browser sync:", error);
       res.status(500).json({ 
-        error: "Failed to fetch participants with stealth browser",
+        error: "Failed to sync participants with stealth browser",
         details: error.message 
       });
     }

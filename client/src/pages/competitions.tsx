@@ -89,29 +89,16 @@ export default function Competitions() {
     enabled: !!selectedCompetition?.id,
   });
 
-  // Sync participants mutation - uses backend proxy to avoid CORS
+  // Sync participants mutation - uses stealth browser in backend to bypass Cloudflare
   const syncParticipantsMutation = useMutation({
     mutationFn: async (competition: Competition) => {
-      // Step 1: Fetch participants via backend proxy (avoids CORS)
-      const proxyResponse = await fetch(`/api/competitions/${competition.id}/fetch-participants-proxy`);
-      if (!proxyResponse.ok) {
-        const error = await proxyResponse.json();
-        throw new Error(error.error || 'Failed to fetch participants');
-      }
-      
-      const { participants } = await proxyResponse.json();
-
-      // Step 2: Send fetched participants to backend for processing
-      const result = await apiRequest('POST', `/api/competitions/${competition.id}/process-participants`, {
-        participants
-      });
-      
+      const result = await apiRequest('POST', `/api/competitions/${competition.id}/sync-participants`, {});
       return result as any;
     },
     onSuccess: (data: any) => {
       toast({
         title: "Participants Synced",
-        description: data.message || `Successfully synced ${data.synced} participants`,
+        description: `Successfully synced ${data.stats.synced} participants (${data.stats.matched} matched, ${data.stats.created} created)`,
       });
       // Invalidate participants query to refetch
       queryClient.invalidateQueries({ 
