@@ -89,11 +89,55 @@ export default function Competitions() {
     enabled: !!selectedCompetition?.id,
   });
 
-  // Sync participants mutation
+  // Sync participants mutation - fetches from SimplyCompete client-side (bypasses Cloudflare)
   const syncParticipantsMutation = useMutation({
-    mutationFn: async (competitionId: number) => {
-      const response = await apiRequest('POST', `/api/competitions/${competitionId}/sync-participants`);
-      return response as any;
+    mutationFn: async (competition: Competition) => {
+      const simplyCompeteEventId = (competition as any).simplyCompeteEventId;
+      if (!simplyCompeteEventId) {
+        throw new Error("This competition doesn't have a SimplyCompete event ID");
+      }
+
+      // Fetch participants from SimplyCompete directly in browser (bypasses Cloudflare)
+      const allParticipants: any[] = [];
+      let pageNo = 0;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch participants: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
+          const participants = data.data.data.participantList;
+          
+          if (participants.length === 0) {
+            hasMorePages = false;
+          } else {
+            allParticipants.push(...participants);
+            pageNo++;
+            
+            // Safety check to prevent infinite loops
+            if (pageNo > 100) {
+              console.warn('Reached maximum page limit (100)');
+              break;
+            }
+          }
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      // Send fetched participants to backend for processing
+      const result = await apiRequest('POST', `/api/competitions/${competition.id}/process-participants`, {
+        participants: allParticipants
+      });
+      
+      return result as any;
     },
     onSuccess: (data: any) => {
       toast({
@@ -638,7 +682,7 @@ export default function Competitions() {
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        syncParticipantsMutation.mutate(selectedCompetition.id);
+                        syncParticipantsMutation.mutate(selectedCompetition);
                       }}
                       disabled={syncParticipantsMutation.isPending}
                       data-testid="button-sync-participants"
