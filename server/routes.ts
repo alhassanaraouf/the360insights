@@ -25,6 +25,7 @@ import multer from 'multer';
 import { geminiVideoAnalysis } from "./gemini-video-analysis";
 import * as fs from "fs";
 import * as path from "path";
+import puppeteer from 'puppeteer';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication middleware
@@ -1408,8 +1409,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const allParticipants: any[] = [];
     let pageNo = 0;
     let hasMorePages = true;
-
-    const puppeteer = require('puppeteer');
 
     while (hasMorePages) {
       try {
