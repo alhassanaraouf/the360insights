@@ -1403,11 +1403,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Function to fetch all participants from SimplyCompete API with pagination
+  // Function to fetch all participants from SimplyCompete API with pagination using Puppeteer to bypass Cloudflare
   async function fetchAllSimplyCompeteParticipants(eventId: string, nodeId?: string) {
     const allParticipants: any[] = [];
     let pageNo = 0;
     let hasMorePages = true;
+
+    const puppeteer = require('puppeteer');
 
     while (hasMorePages) {
       try {
@@ -1418,13 +1420,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`📡 Fetching participants from: ${url}`);
         
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.error(`Failed to fetch page ${pageNo}:`, response.status, response.statusText);
+        // Use Puppeteer to bypass Cloudflare
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        
+        // Set realistic headers
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        await page.goto(url, { 
+          waitUntil: 'networkidle0',
+          timeout: 30000 
+        });
+        
+        // Get the JSON response from the page
+        const textContent = await page.evaluate(() => document.body.textContent);
+        await browser.close();
+        
+        if (!textContent) {
+          console.error(`Failed to fetch page ${pageNo}: Empty response`);
           break;
         }
 
-        const data = await response.json();
+        const data = JSON.parse(textContent);
         
         if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
           const participants = data.data.data.participantList;
