@@ -25,10 +25,15 @@ import multer from 'multer';
 import { geminiVideoAnalysis } from "./gemini-video-analysis";
 import * as fs from "fs";
 import * as path from "path";
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication middleware
   await setupAuth(app);
+
+  // Enable stealth mode for Puppeteer (JavaScript equivalent of Python cloudscraper)
+  puppeteer.use(StealthPlugin());
 
   // Configure multer for video uploads
   const videoUpload = multer({
@@ -1668,7 +1673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Proxy endpoint to fetch participants from SimplyCompete (avoids CORS)
+  // Proxy endpoint to fetch participants from SimplyCompete using stealth browser (bypasses Cloudflare like Python cloudscraper)
   app.get("/api/competitions/:id/fetch-participants-proxy", async (req, res) => {
     try {
       const competitionId = parseInt(req.params.id);
@@ -1690,60 +1695,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Fetch all participants from SimplyCompete via backend (no CORS issues)
+      console.log(`🚀 Using stealth browser to bypass Cloudflare (like Python cloudscraper)...`);
+      
+      // Launch stealth browser (JavaScript equivalent of Python cloudscraper)
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu'
+        ]
+      });
+
       const allParticipants: any[] = [];
       let pageNo = 0;
       let hasMorePages = true;
 
-      while (hasMorePages) {
-        const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
-        
-        console.log(`📡 Proxying request to: ${url}`);
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.error(`❌ Upstream error from SimplyCompete: ${response.status} ${response.statusText}`);
+      try {
+        while (hasMorePages) {
+          const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
           
-          if (response.status === 403) {
-            return res.status(502).json({ 
-              error: "SimplyCompete API blocked the request (403 Forbidden). This may be due to Cloudflare protection or access restrictions.",
-              upstreamStatus: response.status
-            });
-          }
+          console.log(`📡 Fetching page ${pageNo} with stealth browser: ${url}`);
           
-          return res.status(502).json({ 
-            error: `Failed to fetch from SimplyCompete: ${response.statusText}`,
-            upstreamStatus: response.status
+          const page = await browser.newPage();
+          
+          // Set realistic viewport and user agent
+          await page.setViewport({ width: 1920, height: 1080 });
+          await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+          
+          // Navigate and wait for response
+          await page.goto(url, { 
+            waitUntil: 'networkidle0',
+            timeout: 30000 
           });
-        }
-
-        const data = await response.json();
-        
-        if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
-          const participants = data.data.data.participantList;
           
-          if (participants.length === 0) {
-            hasMorePages = false;
-          } else {
-            allParticipants.push(...participants);
-            pageNo++;
-            
-            if (pageNo > 100) {
-              console.warn('Reached maximum page limit (100)');
-              break;
-            }
+          // Extract JSON from page
+          const textContent = await page.evaluate(() => document.body.textContent);
+          await page.close();
+          
+          if (!textContent) {
+            console.error(`Empty response on page ${pageNo}`);
+            break;
           }
-        } else {
-          hasMorePages = false;
-        }
-      }
 
-      console.log(`✅ Fetched ${allParticipants.length} participants via proxy`);
-      res.json({ participants: allParticipants });
+          const data = JSON.parse(textContent);
+          
+          if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
+            const participants = data.data.data.participantList;
+            
+            if (participants.length === 0) {
+              hasMorePages = false;
+            } else {
+              allParticipants.push(...participants);
+              pageNo++;
+              console.log(`✅ Page ${pageNo - 1}: Found ${participants.length} participants (total: ${allParticipants.length})`);
+              
+              if (pageNo > 100) {
+                console.warn('Reached maximum page limit (100)');
+                break;
+              }
+            }
+          } else {
+            hasMorePages = false;
+          }
+        }
+
+        await browser.close();
+        console.log(`✅ Successfully fetched ${allParticipants.length} participants using stealth browser`);
+        res.json({ participants: allParticipants });
+      } catch (error: any) {
+        await browser.close();
+        throw error;
+      }
     } catch (error: any) {
-      console.error("Error in proxy endpoint:", error);
+      console.error("Error in stealth browser proxy:", error);
       res.status(500).json({ 
-        error: "Failed to fetch participants",
+        error: "Failed to fetch participants with stealth browser",
         details: error.message 
       });
     }
