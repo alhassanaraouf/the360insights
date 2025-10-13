@@ -185,11 +185,6 @@ export default function Sidebar() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">
-                The360 Insights
-              </h1>
-            </div>
           </div>
         </div>
 
