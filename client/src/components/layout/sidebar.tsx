@@ -178,11 +178,11 @@ export default function Sidebar() {
       >
         <div className="mobile-padding border-b border-gray-200">
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
+            <div className="w-32 h-32 flex items-center justify-center flex-shrink-0">
               <img
                 src={logoImage}
                 alt="The360 Insights Symbol"
-                className="w-40 h-100can yo object-contain"
+                className="w-full h-full object-contain"
               />
             </div>
             <div className="min-w-0">
