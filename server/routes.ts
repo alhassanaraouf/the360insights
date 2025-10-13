@@ -1668,13 +1668,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync participants from SimplyCompete API
-  app.post("/api/competitions/:id/sync-participants", async (req, res) => {
+  // Process participants data received from client (bypasses Cloudflare via browser)
+  app.post("/api/competitions/:id/process-participants", async (req, res) => {
     try {
       const competitionId = parseInt(req.params.id);
+      const { participants } = req.body;
       
       if (isNaN(competitionId)) {
         return res.status(400).json({ error: "Invalid competition ID" });
+      }
+
+      if (!participants || !Array.isArray(participants)) {
+        return res.status(400).json({ error: "Invalid participants data" });
       }
 
       // Get the competition from the database
@@ -1683,19 +1688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Competition not found" });
       }
 
-      // Check if competition has a SimplyCompete event ID
-      const simplyCompeteEventId = (competition as any).simplyCompeteEventId;
-      if (!simplyCompeteEventId) {
-        return res.status(400).json({ 
-          error: "This competition doesn't have a SimplyCompete event ID" 
-        });
-      }
-
-      console.log(`Syncing participants for ${competition.name} from SimplyCompete...`);
-      
-      // Fetch all participants from SimplyCompete
-      const participants = await fetchAllSimplyCompeteParticipants(simplyCompeteEventId);
-      console.log(`Retrieved ${participants.length} participants from SimplyCompete`);
+      console.log(`Processing ${participants.length} participants for ${competition.name}...`);
 
       let synced = 0;
       let matched = 0;
@@ -1771,9 +1764,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: errors.length > 0 ? errors : undefined
       });
     } catch (error: any) {
-      console.error("Error syncing participants:", error);
+      console.error("Error processing participants:", error);
       res.status(500).json({ 
-        error: "Failed to sync participants",
+        error: "Failed to process participants",
         details: error.message 
       });
     }
