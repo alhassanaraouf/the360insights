@@ -1409,45 +1409,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let pageNo = 0;
     let hasMorePages = true;
 
-    // Get authentication cookie
-    const fullCookie = process.env.SIMPLYCOMPETE_FULL_COOKIE;
-    if (!fullCookie) {
-      console.error("❌ SIMPLYCOMPETE_FULL_COOKIE secret not found");
-      throw new Error("SIMPLYCOMPETE_FULL_COOKIE secret is required for participant sync");
-    }
-
     while (hasMorePages) {
       try {
-        let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&pageNo=${pageNo}`;
+        let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
         if (nodeId) {
           url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
         }
         
-        // Include authentication headers
-        const headers = {
-          'Accept': 'application/json, text/plain, */*',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Cache-Control': 'no-cache',
-          'Cookie': fullCookie,
-          'Pragma': 'no-cache',
-          'Referer': 'https://worldtkd.simplycompete.com/events',
-          'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'empty',
-          'Sec-Fetch-Mode': 'cors',
-          'Sec-Fetch-Site': 'same-origin',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'X-Requested-With': 'XMLHttpRequest'
-        };
+        console.log(`📡 Fetching participants from: ${url}`);
         
-        const response = await fetch(url, { headers });
+        const response = await fetch(url);
         if (!response.ok) {
-          if (response.status === 403) {
-            console.error("🔒 Cookie expired. Please refresh SIMPLYCOMPETE_FULL_COOKIE in Secrets.");
-            throw new Error("Authentication failed: Cookie expired. Please refresh SIMPLYCOMPETE_FULL_COOKIE in Secrets.");
-          }
           console.error(`Failed to fetch page ${pageNo}:`, response.status, response.statusText);
           break;
         }
