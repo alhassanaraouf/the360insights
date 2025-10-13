@@ -14,7 +14,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import logoImage from "@assets/the360 insights Transparent logo_1760181687601.png";
+import logoImage from "@assets/WhatsApp_Image_2025-10-13_at_16.17.37-removebg-preview_1760361839078.png";
 
 export default function Landing() {
   return (

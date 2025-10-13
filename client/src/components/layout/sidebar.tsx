@@ -21,7 +21,7 @@ import {
   DollarSign,
   GripVertical,
 } from "lucide-react";
-import logoImage from "@assets/the360 insights Transparent symbol_1760181687601.png";
+import logoImage from "@assets/WhatsApp_Image_2025-10-13_at_16.17.37-removebg-preview_1760361839078.png";
 import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
 import { useQuery } from "@tanstack/react-query";
