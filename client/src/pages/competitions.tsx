@@ -314,12 +314,12 @@ export default function Competitions() {
                 data-testid={`card-competition-${competition.id}`}
               >
                 {/* Logo Header - Bigger and more prominent */}
-                <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b">
+                <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b overflow-hidden">
                   {competition.logo ? (
                     <img 
                       src={competition.logo} 
                       alt={competition.name}
-                      className="h-24 w-auto object-contain p-4"
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=200&h=200&fit=crop";
                       }}
