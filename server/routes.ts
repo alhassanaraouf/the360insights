@@ -1668,6 +1668,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proxy endpoint to fetch participants from SimplyCompete (avoids CORS)
+  app.get("/api/competitions/:id/fetch-participants-proxy", async (req, res) => {
+    try {
+      const competitionId = parseInt(req.params.id);
+      
+      if (isNaN(competitionId)) {
+        return res.status(400).json({ error: "Invalid competition ID" });
+      }
+
+      // Get the competition from the database
+      const competition = await storage.getCompetition(competitionId);
+      if (!competition) {
+        return res.status(404).json({ error: "Competition not found" });
+      }
+
+      const simplyCompeteEventId = (competition as any).simplyCompeteEventId;
+      if (!simplyCompeteEventId) {
+        return res.status(400).json({ 
+          error: "This competition doesn't have a SimplyCompete event ID" 
+        });
+      }
+
+      // Fetch all participants from SimplyCompete via backend (no CORS issues)
+      const allParticipants: any[] = [];
+      let pageNo = 0;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=500&pageNo=${pageNo}`;
+        
+        console.log(`📡 Proxying request to: ${url}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error(`❌ Upstream error from SimplyCompete: ${response.status} ${response.statusText}`);
+          
+          if (response.status === 403) {
+            return res.status(502).json({ 
+              error: "SimplyCompete API blocked the request (403 Forbidden). This may be due to Cloudflare protection or access restrictions.",
+              upstreamStatus: response.status
+            });
+          }
+          
+          return res.status(502).json({ 
+            error: `Failed to fetch from SimplyCompete: ${response.statusText}`,
+            upstreamStatus: response.status
+          });
+        }
+
+        const data = await response.json();
+        
+        if (data.data?.data?.participantList && Array.isArray(data.data.data.participantList)) {
+          const participants = data.data.data.participantList;
+          
+          if (participants.length === 0) {
+            hasMorePages = false;
+          } else {
+            allParticipants.push(...participants);
+            pageNo++;
+            
+            if (pageNo > 100) {
+              console.warn('Reached maximum page limit (100)');
+              break;
+            }
+          }
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      console.log(`✅ Fetched ${allParticipants.length} participants via proxy`);
+      res.json({ participants: allParticipants });
+    } catch (error: any) {
+      console.error("Error in proxy endpoint:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch participants",
+        details: error.message 
+      });
+    }
+  });
+
   // Process participants data received from client (bypasses Cloudflare via browser)
   app.post("/api/competitions/:id/process-participants", async (req, res) => {
     try {
