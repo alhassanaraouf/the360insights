@@ -21,7 +21,7 @@ import {
   DollarSign,
   GripVertical,
 } from "lucide-react";
-import logoImage from "@assets/d66c4fb8-705f-4ba4-b8ea-7cd8e7272e81_1760364096629.png";
+import logoImage from "@assets/76391ba4-3093-4647-ba0e-5a5f17895db7_1760365957109.png";
 import { useLanguage } from "@/lib/i18n";
 import { useAthlete } from "@/lib/athlete-context";
 import { useQuery } from "@tanstack/react-query";

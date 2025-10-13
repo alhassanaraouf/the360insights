@@ -14,7 +14,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import logoImage from "@assets/WhatsApp_Image_2025-10-13_at_16.17.37-removebg-preview_1760361839078.png";
+import logoImage from "@assets/76391ba4-3093-4647-ba0e-5a5f17895db7_1760365957109.png";
 
 export default function Landing() {
   return (
