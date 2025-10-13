@@ -25,6 +25,8 @@ import multer from 'multer';
 import { geminiVideoAnalysis } from "./gemini-video-analysis";
 import * as fs from "fs";
 import * as path from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
@@ -1697,9 +1699,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🚀 Using stealth browser to bypass Cloudflare (like Python cloudscraper)...`);
       
+      // Find system Chromium path (Nix-provided)
+      const execAsync = promisify(exec);
+      
+      let chromiumPath: string;
+      try {
+        const { stdout } = await execAsync('which chromium');
+        chromiumPath = stdout.trim();
+        console.log(`📍 Using system Chromium at: ${chromiumPath}`);
+      } catch (error) {
+        throw new Error('Chromium not found. Please ensure it is installed via Nix.');
+      }
+      
       // Launch stealth browser (JavaScript equivalent of Python cloudscraper)
       const browser = await puppeteer.launch({
         headless: true,
+        executablePath: chromiumPath,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
