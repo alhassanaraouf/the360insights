@@ -40,14 +40,18 @@ export default function Sidebar() {
   const { hasAccess } = useAccessControl();
 
   // Handle mouse move for resizing
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    
-    const newWidth = e.clientX;
-    if (newWidth >= 200 && newWidth <= 400) { // Min 200px, Max 400px
-      setSidebarWidth(newWidth);
-    }
-  }, [isResizing]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 400) {
+        // Min 200px, Max 400px
+        setSidebarWidth(newWidth);
+      }
+    },
+    [isResizing],
+  );
 
   // Handle mouse up to stop resizing
   const handleMouseUp = useCallback(() => {
@@ -57,19 +61,19 @@ export default function Sidebar() {
   // Add event listeners for resize
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none'; // Prevent text selection during resize
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none"; // Prevent text selection during resize
     } else {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
@@ -97,7 +101,14 @@ export default function Sidebar() {
 
   // Helper function to add athlete ID to href if present
   const buildHref = (basePath: string) => {
-    if (selectedAthleteId && basePath !== "/" && basePath !== "/athletes" && basePath !== "/competitions" && basePath !== "/competition-draws" && basePath !== "/sponsorship-hub") {
+    if (
+      selectedAthleteId &&
+      basePath !== "/" &&
+      basePath !== "/athletes" &&
+      basePath !== "/competitions" &&
+      basePath !== "/competition-draws" &&
+      basePath !== "/sponsorship-hub"
+    ) {
       return `${basePath}?athlete=${selectedAthleteId}`;
     }
     return basePath;
@@ -161,8 +172,8 @@ export default function Sidebar() {
         transition-transform duration-300 ease-in-out 
         z-40 lg:z-auto safe-area-left safe-area-right
       `}
-        style={{ 
-          width: window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined
+        style={{
+          width: window.innerWidth >= 1024 ? `${sidebarWidth}px` : undefined,
         }}
       >
         <div className="mobile-padding border-b border-gray-200">
@@ -171,7 +182,7 @@ export default function Sidebar() {
               <img
                 src={logoImage}
                 alt="The360 Insights Symbol"
-                className="w-20 h-20 object-contain"
+                className="w-40 h-100can yo object-contain"
               />
             </div>
             <div className="min-w-0">
@@ -183,27 +194,30 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 mobile-padding space-y-2 overflow-y-auto">
-          {navigation.filter(item => hasAccess(item.href)).map((item) => {
-            const Icon = item.icon;
-            const isActive = location === item.href || location.startsWith(item.href + '?');
-            const href = buildHref(item.href);
+          {navigation
+            .filter((item) => hasAccess(item.href))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                location === item.href || location.startsWith(item.href + "?");
+              const href = buildHref(item.href);
 
-            return (
-              <Link key={item.name} href={href}>
-                <div
-                  className={`mobile-button touch-target justify-start transition-colors cursor-pointer ${
-                    isActive
-                      ? "bg-primary text-white"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">{item.name}</span>
-                </div>
-              </Link>
-            );
-          })}
+              return (
+                <Link key={item.name} href={href}>
+                  <div
+                    className={`mobile-button touch-target justify-start transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-primary text-white"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="mobile-padding border-t border-gray-200 space-y-3">

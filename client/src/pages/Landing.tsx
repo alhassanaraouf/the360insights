@@ -27,7 +27,7 @@ export default function Landing() {
               <img
                 src={logoImage}
                 alt="The360 Insights Logo"
-                className="h-32 w-auto object-contain"
+                className="h-50 w-auto object-contain"
               />
             </div>
           </div>
