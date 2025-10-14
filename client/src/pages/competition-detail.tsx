@@ -267,23 +267,6 @@ export default function CompetitionDetail() {
             </Card>
           )}
 
-          {/* Points Available */}
-          {competition.pointsAvailable && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  Ranking Points
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold text-primary">
-                  {parseFloat(competition.pointsAvailable).toLocaleString()} pts
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Registration Deadline */}
           {competition.registrationDeadline && (
             <Card>
