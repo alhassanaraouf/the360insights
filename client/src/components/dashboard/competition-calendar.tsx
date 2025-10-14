@@ -88,7 +88,7 @@ export default function CompetitionCalendar({ competitions, allCompetitions }: C
               {upcomingCompetitions.map((competition) => (
                 <div 
                   key={competition.id} 
-                  onClick={() => setLocation(`/competition-detail/${competition.id}`)}
+                  onClick={() => setLocation(`/competition/${competition.id}`)}
                   className="group relative overflow-hidden rounded-xl border bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50 p-5 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
                   data-testid={`competition-${competition.id}`}
                 >
@@ -175,7 +175,7 @@ export default function CompetitionCalendar({ competitions, allCompetitions }: C
               {recentCompetitions.map((competition) => (
                 <div 
                   key={competition.id} 
-                  onClick={() => setLocation(`/competition-detail/${competition.id}`)}
+                  onClick={() => setLocation(`/competition/${competition.id}`)}
                   className="group flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-white to-amber-50/30 dark:from-gray-800 dark:to-amber-900/10 hover:shadow-md transition-all duration-200 cursor-pointer"
                   data-testid={`recent-competition-${competition.id}`}
                 >
