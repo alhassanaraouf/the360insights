@@ -2069,6 +2069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (existingAthletes.length > 0) {
               athleteId = existingAthletes[0].id;
               matched++;
+              console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athleteId})`);
             } else {
               // Create new athlete with all available data (like JSON import process)
               const insertAthlete: any = {
@@ -2091,14 +2092,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               athleteId = newAthlete.id;
               created++;
-              console.log(`Created new athlete: ${fullName}`);
+              console.log(`✨ Created new athlete: ${fullName} (ID: ${athleteId}, Country: ${country}, Category: ${weightCategory})`);
 
               // Handle profile image upload if avatar is available
               if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
-                // Fire and forget - upload happens in background
+                console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
+                
+                // Upload image in background (don't await to avoid blocking)
                 (async () => {
                   try {
-                    const imageResult = await bucketStorage.uploadFromUrl(
+                    const { bucketStorage: storage } = await import("./bucket-storage");
+                    console.log(`📤 Uploading image for ${fullName}...`);
+                    
+                    const imageResult = await storage.uploadFromUrl(
                       athleteId,
                       avatar,
                     );
@@ -2109,15 +2115,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       .where(eq(schema.athletes.id, athleteId));
 
                     console.log(
-                      `✅ Successfully uploaded profile image for ${fullName}`,
+                      `✅ Successfully uploaded and saved profile image for ${fullName} (ID: ${athleteId})`,
                     );
                   } catch (imageError: any) {
-                    console.warn(
-                      `⚠️ Failed to upload profile image for ${fullName}:`,
+                    console.error(
+                      `❌ Failed to upload profile image for ${fullName} (ID: ${athleteId}):`,
                       imageError.message,
                     );
                   }
                 })();
+              } else {
+                console.log(`ℹ️ No avatar available for ${fullName}`);
               }
             }
 
@@ -2248,36 +2256,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .returning();
             athlete = newAthlete;
             created++;
-            console.log(`Created new athlete: ${fullName}`);
+            console.log(`✨ Created new athlete: ${fullName} (ID: ${athlete.id}, Country: ${country}, Category: ${weightCategory})`);
 
             // Handle profile image upload if avatar is available
             if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
-              // Fire and forget - upload happens in background
+              console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
+              
+              // Upload image in background (don't await to avoid blocking)
+              const athleteIdForUpload = athlete.id;
               (async () => {
                 try {
-                  const imageResult = await bucketStorage.uploadFromUrl(
-                    athlete.id,
+                  const { bucketStorage: storage } = await import("./bucket-storage");
+                  console.log(`📤 Uploading image for ${fullName}...`);
+                  
+                  const imageResult = await storage.uploadFromUrl(
+                    athleteIdForUpload,
                     avatar,
                   );
 
                   await db
                     .update(schema.athletes)
                     .set({ profileImage: imageResult.url })
-                    .where(eq(schema.athletes.id, athlete.id));
+                    .where(eq(schema.athletes.id, athleteIdForUpload));
 
                   console.log(
-                    `✅ Successfully uploaded profile image for ${fullName}`,
+                    `✅ Successfully uploaded and saved profile image for ${fullName} (ID: ${athleteIdForUpload})`,
                   );
                 } catch (imageError: any) {
-                  console.warn(
-                    `⚠️ Failed to upload profile image for ${fullName}:`,
+                  console.error(
+                    `❌ Failed to upload profile image for ${fullName} (ID: ${athleteIdForUpload}):`,
                     imageError.message,
                   );
                 }
               })();
+            } else {
+              console.log(`ℹ️ No avatar available for ${fullName}`);
             }
           } else {
             matched++;
+            console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athlete.id})`);
           }
 
           // Check if participant already exists in this competition
