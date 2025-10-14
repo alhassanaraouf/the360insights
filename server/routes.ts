@@ -1588,78 +1588,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let hasMorePages = true;
 
     while (hasMorePages) {
-      try {
-        let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=${pageNo}`;
-        if (nodeId) {
-          url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
-        }
+      let fetchSuccess = false;
+      let lastError: any = null;
 
-        console.log(`📡 Fetching participants from: ${url}`);
+      // Retry logic: try twice for each page
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=${pageNo}`;
+          if (nodeId) {
+            url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
+          }
 
-        // Use realistic browser headers to bypass basic Cloudflare protection
-        const headers = {
-          Accept: "application/json, text/plain, */*",
-          "Accept-Encoding": "gzip, deflate, br, zstd",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          Priority: "u=1, i",
-          Referer: "https://worldtkd.simplycompete.com/events",
-          "Sec-Ch-Ua":
-            '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-          "Sec-Ch-Ua-Mobile": "?0",
-          "Sec-Ch-Ua-Platform": '"Windows"',
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-origin",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        };
+          console.log(`📡 Fetching participants from: ${url} (attempt ${attempt}/2)`);
 
-        const response = await fetch(url, { headers });
+          // Use realistic browser headers to bypass basic Cloudflare protection
+          const headers = {
+            Accept: "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Priority: "u=1, i",
+            Referer: "https://worldtkd.simplycompete.com/events",
+            "Sec-Ch-Ua":
+              '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          };
 
-        if (!response.ok) {
-          console.error(
-            `Failed to fetch page ${pageNo}:`,
-            response.status,
-            response.statusText,
-          );
-          if (response.status === 403) {
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
             console.error(
-              "❌ Cloudflare blocked the request. This endpoint requires browser-based access.",
+              `Failed to fetch page ${pageNo} (attempt ${attempt}/2):`,
+              response.status,
+              response.statusText,
             );
-            throw new Error(
-              "Cloudflare protection detected. Cannot fetch participants via server-side requests.",
-            );
-          }
-          break;
-        }
-
-        const data = await response.json();
-
-        if (
-          data.data?.data?.participantList &&
-          Array.isArray(data.data.data.participantList)
-        ) {
-          const participants = data.data.data.participantList;
-
-          if (participants.length === 0) {
-            hasMorePages = false;
-          } else {
-            allParticipants.push(...participants);
-            pageNo++;
-
-            // Safety check to prevent infinite loops
-            if (pageNo > 100) {
-              console.warn("Reached maximum page limit (100)");
-              break;
+            if (response.status === 403) {
+              console.error(
+                "❌ Cloudflare blocked the request. This endpoint requires browser-based access.",
+              );
+              throw new Error(
+                "Cloudflare protection detected. Cannot fetch participants via server-side requests.",
+              );
             }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-        } else {
-          hasMorePages = false;
+
+          const data = await response.json();
+
+          if (
+            data.data?.data?.participantList &&
+            Array.isArray(data.data.data.participantList)
+          ) {
+            const participants = data.data.data.participantList;
+
+            if (participants.length === 0) {
+              hasMorePages = false;
+            } else {
+              allParticipants.push(...participants);
+              pageNo++;
+
+              // Safety check to prevent infinite loops
+              if (pageNo > 100) {
+                console.warn("Reached maximum page limit (100)");
+                break;
+              }
+            }
+          } else {
+            hasMorePages = false;
+          }
+
+          fetchSuccess = true;
+          break; // Success - exit retry loop
+        } catch (error) {
+          lastError = error;
+          console.error(`❌ Fetch attempt ${attempt} failed for page ${pageNo}:`, error);
+
+          if (attempt < 2) {
+            console.log(`⏳ Retrying in 1 second...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
-      } catch (error) {
-        console.error(`Error fetching page ${pageNo}:`, error);
+      }
+
+      // If both attempts failed, stop pagination
+      if (!fetchSuccess) {
+        console.error(`Failed to fetch page ${pageNo} after 2 attempts:`, lastError);
         hasMorePages = false;
       }
     }
@@ -1934,52 +1954,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       try {
-        // Fetch only page 0 (first 500 participants)
-        const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=0`;
+        // Fetch participants with retry logic
+        let textContent: string | null = null;
+        let fetchError: Error | null = null;
+        
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=0`;
 
-        console.log(`📡 Fetching participants with stealth browser: ${url}`);
+            console.log(`📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`);
 
-        const page = await browser.newPage();
+            const page = await browser.newPage();
 
-        // Set realistic viewport and user agent
-        await page.setViewport({ width: 1920, height: 1080 });
-        await page.setUserAgent(
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        );
+            // Set realistic viewport and user agent
+            await page.setViewport({ width: 1920, height: 1080 });
+            await page.setUserAgent(
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            );
 
-        // Navigate and wait for response
-        await page.goto(url, {
-          waitUntil: "networkidle0",
-          timeout: 30000,
-        });
+            // Navigate and wait for response
+            await page.goto(url, {
+              waitUntil: "networkidle0",
+              timeout: 30000,
+            });
 
-        // Extract JSON from page
-        const textContent = await page.evaluate(
-          () => document.body.textContent,
-        );
-        await page.close();
-        await browser.close();
+            // Extract JSON from page
+            textContent = await page.evaluate(
+              () => document.body.textContent,
+            );
+            await page.close();
 
-        if (!textContent) {
-          throw new Error("Empty response from SimplyCompete");
+            if (!textContent) {
+              throw new Error("Empty response from SimplyCompete");
+            }
+
+            // Log the raw response for debugging
+            console.log(
+              `📄 Raw response (first 500 chars): ${textContent.substring(0, 500)}`,
+            );
+
+            // Check if response looks like JSON
+            if (
+              !textContent.trim().startsWith("{") &&
+              !textContent.trim().startsWith("[")
+            ) {
+              console.error(
+                `❌ Response is not JSON. Got HTML or text instead. Full response: ${textContent.substring(0, 1000)}`,
+              );
+              throw new Error(
+                "Received non-JSON response from SimplyCompete - possibly a Cloudflare challenge page",
+              );
+            }
+
+            // Success - break out of retry loop
+            fetchError = null;
+            break;
+          } catch (error: any) {
+            fetchError = error;
+            console.error(`❌ Fetch attempt ${attempt} failed:`, error.message);
+            
+            if (attempt < 2) {
+              console.log(`⏳ Retrying fetch in 2 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
         }
 
-        // Log the raw response for debugging
-        console.log(
-          `📄 Raw response (first 500 chars): ${textContent.substring(0, 500)}`,
-        );
+        await browser.close();
 
-        // Check if response looks like JSON
-        if (
-          !textContent.trim().startsWith("{") &&
-          !textContent.trim().startsWith("[")
-        ) {
-          console.error(
-            `❌ Response is not JSON. Got HTML or text instead. Full response: ${textContent.substring(0, 1000)}`,
-          );
-          throw new Error(
-            "Received non-JSON response from SimplyCompete - possibly a Cloudflare challenge page",
-          );
+        // If both attempts failed, throw the error
+        if (fetchError || !textContent) {
+          throw fetchError || new Error("Failed to fetch participants after 2 attempts");
         }
 
         const data = JSON.parse(textContent);
@@ -2008,6 +2053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
             const country = participant.country || "";
             const weightCategory = participant.divisionName || "";
+            const avatar = participant.avatar || "";
 
             if (!fullName) continue;
 
@@ -2024,19 +2070,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
               athleteId = existingAthletes[0].id;
               matched++;
             } else {
-              // Create new athlete
+              // Create new athlete with all available data (like JSON import process)
+              const insertAthlete: any = {
+                name: fullName,
+                sport: "Taekwondo",
+                nationality: country || "Unknown",
+                worldCategory: weightCategory || null,
+                gender: weightCategory?.startsWith("M-")
+                  ? "Male"
+                  : weightCategory?.startsWith("F-")
+                    ? "Female"
+                    : null,
+                profileImage: null, // Never store external URLs directly - will be set after upload
+              };
+
               const [newAthlete] = await db
                 .insert(schema.athletes)
-                .values({
-                  name: fullName,
-                  sport: "Taekwondo",
-                  nationality: country || "Unknown",
-                  worldCategory: weightCategory || "Unknown",
-                })
+                .values(insertAthlete)
                 .returning();
 
               athleteId = newAthlete.id;
               created++;
+              console.log(`Created new athlete: ${fullName}`);
+
+              // Handle profile image upload if avatar is available
+              if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
+                // Fire and forget - upload happens in background
+                (async () => {
+                  try {
+                    const imageResult = await bucketStorage.uploadFromUrl(
+                      athleteId,
+                      avatar,
+                    );
+
+                    await db
+                      .update(schema.athletes)
+                      .set({ profileImage: imageResult.url })
+                      .where(eq(schema.athletes.id, athleteId));
+
+                    console.log(
+                      `✅ Successfully uploaded profile image for ${fullName}`,
+                    );
+                  } catch (imageError: any) {
+                    console.warn(
+                      `⚠️ Failed to upload profile image for ${fullName}:`,
+                      imageError.message,
+                    );
+                  }
+                })();
+              }
             }
 
             // Check if already linked to competition
@@ -2132,6 +2214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
           const country = participant.country || "";
           const weightCategory = participant.divisionName || "";
+          const avatar = participant.avatar || "";
 
           if (!fullName) continue;
 
@@ -2145,24 +2228,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let athlete = existingAthletes[0];
 
           if (!athlete) {
-            // Create new athlete
+            // Create new athlete with all available data (like JSON import process)
+            const insertAthlete: any = {
+              name: fullName,
+              nationality: country || "Unknown",
+              sport: "Taekwondo",
+              worldCategory: weightCategory || null,
+              gender: weightCategory?.startsWith("M-")
+                ? "Male"
+                : weightCategory?.startsWith("F-")
+                  ? "Female"
+                  : null,
+              profileImage: null, // Never store external URLs directly - will be set after upload
+            };
+
             const [newAthlete] = await db
               .insert(schema.athletes)
-              .values({
-                name: fullName,
-                nationality: country,
-                sport: "Taekwondo",
-                gender: participant.divisionName?.startsWith("M-")
-                  ? "Male"
-                  : participant.divisionName?.startsWith("F-")
-                    ? "Female"
-                    : undefined,
-                worldCategory: weightCategory,
-              })
+              .values(insertAthlete)
               .returning();
             athlete = newAthlete;
             created++;
             console.log(`Created new athlete: ${fullName}`);
+
+            // Handle profile image upload if avatar is available
+            if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
+              // Fire and forget - upload happens in background
+              (async () => {
+                try {
+                  const imageResult = await bucketStorage.uploadFromUrl(
+                    athlete.id,
+                    avatar,
+                  );
+
+                  await db
+                    .update(schema.athletes)
+                    .set({ profileImage: imageResult.url })
+                    .where(eq(schema.athletes.id, athlete.id));
+
+                  console.log(
+                    `✅ Successfully uploaded profile image for ${fullName}`,
+                  );
+                } catch (imageError: any) {
+                  console.warn(
+                    `⚠️ Failed to upload profile image for ${fullName}:`,
+                    imageError.message,
+                  );
+                }
+              })();
+            }
           } else {
             matched++;
           }
