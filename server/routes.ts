@@ -2041,121 +2041,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `✅ Successfully fetched ${participants.length} participants using stealth browser`,
         );
 
-        // Process participants and sync to database
+        // Process participants and sync to database in parallel batches
         let synced = 0;
         let matched = 0;
         let created = 0;
         const errors: string[] = [];
 
-        for (const participant of participants) {
-          try {
-            const fullName =
-              `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
-            const country = participant.country || "";
-            const weightCategory = participant.divisionName || "";
-            const avatar = participant.avatar || "";
+        // Process in batches of 20 for optimal performance
+        const BATCH_SIZE = 20;
+        console.log(`🔄 Processing ${participants.length} participants in batches of ${BATCH_SIZE}...`);
 
-            if (!fullName) continue;
+        for (let i = 0; i < participants.length; i += BATCH_SIZE) {
+          const batch = participants.slice(i, i + BATCH_SIZE);
+          console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(participants.length / BATCH_SIZE)} (${batch.length} participants)...`);
 
-            // Try to find athlete by name
-            const existingAthletes = await db
-              .select()
-              .from(schema.athletes)
-              .where(eq(schema.athletes.name, fullName))
-              .limit(1);
+          await Promise.all(
+            batch.map(async (participant: any) => {
+              try {
+                const fullName =
+                  `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
+                const country = participant.country || "";
+                const weightCategory = participant.divisionName || "";
+                const avatar = participant.avatar || "";
 
-            let athleteId: number;
+                if (!fullName) return;
 
-            if (existingAthletes.length > 0) {
-              athleteId = existingAthletes[0].id;
-              matched++;
-              console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athleteId})`);
-            } else {
-              // Create new athlete with all available data (like JSON import process)
-              const insertAthlete: any = {
-                name: fullName,
-                sport: "Taekwondo",
-                nationality: country || "Unknown",
-                worldCategory: weightCategory || null,
-                gender: weightCategory?.startsWith("M-")
-                  ? "Male"
-                  : weightCategory?.startsWith("F-")
-                    ? "Female"
-                    : null,
-                profileImage: null, // Never store external URLs directly - will be set after upload
-              };
+                // Try to find athlete by name
+                const existingAthletes = await db
+                  .select()
+                  .from(schema.athletes)
+                  .where(eq(schema.athletes.name, fullName))
+                  .limit(1);
 
-              const [newAthlete] = await db
-                .insert(schema.athletes)
-                .values(insertAthlete)
-                .returning();
+                let athleteId: number;
 
-              athleteId = newAthlete.id;
-              created++;
-              console.log(`✨ Created new athlete: ${fullName} (ID: ${athleteId}, Country: ${country}, Category: ${weightCategory})`);
+                if (existingAthletes.length > 0) {
+                  athleteId = existingAthletes[0].id;
+                  matched++;
+                  console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athleteId})`);
+                } else {
+                  // Create new athlete with all available data (like JSON import process)
+                  const insertAthlete: any = {
+                    name: fullName,
+                    sport: "Taekwondo",
+                    nationality: country || "Unknown",
+                    worldCategory: weightCategory || null,
+                    gender: weightCategory?.startsWith("M-")
+                      ? "Male"
+                      : weightCategory?.startsWith("F-")
+                        ? "Female"
+                        : null,
+                    profileImage: null, // Never store external URLs directly - will be set after upload
+                  };
 
-              // Handle profile image upload if avatar is available
-              if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
-                console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
-                
-                // Upload image in background (don't await to avoid blocking)
-                (async () => {
-                  try {
-                    const { bucketStorage: storage } = await import("./bucket-storage");
-                    console.log(`📤 Uploading image for ${fullName}...`);
+                  const [newAthlete] = await db
+                    .insert(schema.athletes)
+                    .values(insertAthlete)
+                    .returning();
+
+                  athleteId = newAthlete.id;
+                  created++;
+                  console.log(`✨ Created new athlete: ${fullName} (ID: ${athleteId}, Country: ${country}, Category: ${weightCategory})`);
+
+                  // Handle profile image upload if avatar is available
+                  if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
+                    console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
                     
-                    const imageResult = await storage.uploadFromUrl(
-                      athleteId,
-                      avatar,
-                    );
+                    // Upload image in background (don't await to avoid blocking)
+                    (async () => {
+                      try {
+                        const { bucketStorage: storage } = await import("./bucket-storage");
+                        console.log(`📤 Uploading image for ${fullName}...`);
+                        
+                        const imageResult = await storage.uploadFromUrl(
+                          athleteId,
+                          avatar,
+                        );
 
-                    await db
-                      .update(schema.athletes)
-                      .set({ profileImage: imageResult.url })
-                      .where(eq(schema.athletes.id, athleteId));
+                        await db
+                          .update(schema.athletes)
+                          .set({ profileImage: imageResult.url })
+                          .where(eq(schema.athletes.id, athleteId));
 
-                    console.log(
-                      `✅ Successfully uploaded and saved profile image for ${fullName} (ID: ${athleteId})`,
-                    );
-                  } catch (imageError: any) {
-                    console.error(
-                      `❌ Failed to upload profile image for ${fullName} (ID: ${athleteId}):`,
-                      imageError.message,
-                    );
+                        console.log(
+                          `✅ Successfully uploaded and saved profile image for ${fullName} (ID: ${athleteId})`,
+                        );
+                      } catch (imageError: any) {
+                        console.error(
+                          `❌ Failed to upload profile image for ${fullName} (ID: ${athleteId}):`,
+                          imageError.message,
+                        );
+                      }
+                    })();
+                  } else {
+                    console.log(`ℹ️ No avatar available for ${fullName}`);
                   }
-                })();
-              } else {
-                console.log(`ℹ️ No avatar available for ${fullName}`);
-              }
-            }
+                }
 
-            // Check if already linked to competition
-            const existing = await db
-              .select()
-              .from(schema.competitionParticipants)
-              .where(
-                and(
-                  eq(
-                    schema.competitionParticipants.competitionId,
+                // Check if already linked to competition
+                const existing = await db
+                  .select()
+                  .from(schema.competitionParticipants)
+                  .where(
+                    and(
+                      eq(
+                        schema.competitionParticipants.competitionId,
+                        competitionId,
+                      ),
+                      eq(schema.competitionParticipants.athleteId, athleteId),
+                    ),
+                  )
+                  .limit(1);
+
+                if (existing.length === 0) {
+                  await db.insert(schema.competitionParticipants).values({
                     competitionId,
-                  ),
-                  eq(schema.competitionParticipants.athleteId, athleteId),
-                ),
-              )
-              .limit(1);
-
-            if (existing.length === 0) {
-              await db.insert(schema.competitionParticipants).values({
-                competitionId,
-                athleteId,
-              });
-              synced++;
-            }
-          } catch (error: any) {
-            errors.push(
-              `Failed to process ${participant.preferredFirstName} ${participant.preferredLastName}: ${error.message}`,
-            );
-          }
+                    athleteId,
+                  });
+                  synced++;
+                }
+              } catch (error: any) {
+                errors.push(
+                  `Failed to process ${participant.preferredFirstName} ${participant.preferredLastName}: ${error.message}`,
+                );
+              }
+            })
+          );
         }
 
         console.log(

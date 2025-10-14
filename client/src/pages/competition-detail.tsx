@@ -5,6 +5,7 @@ import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -18,6 +19,7 @@ import {
   RefreshCw,
   ExternalLink,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -53,6 +55,7 @@ export default function CompetitionDetail() {
   const competitionId = params?.id ? parseInt(params.id) : null;
   const { toast } = useToast();
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch competition details
   const { data: competition, isLoading } = useQuery<Competition>({
@@ -380,32 +383,57 @@ export default function CompetitionDetail() {
                   </Button>
                 )}
 
+                {/* Search Input */}
+                {participants && participants.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search participants..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-participants"
+                    />
+                  </div>
+                )}
+
                 {/* Participants List */}
                 {participantsLoading ? (
                   <div className="text-center py-4 text-gray-500">Loading participants...</div>
                 ) : participants && participants.length > 0 ? (
                   <div className="max-h-96 overflow-y-auto space-y-2">
-                    {participants.map((participant: any) => (
-                      <div 
-                        key={participant.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        data-testid={`participant-${participant.id}`}
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-semibold text-primary">
-                              {participant.athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium truncate">{participant.athlete.name}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {participant.athlete.nationality} • {participant.athlete.worldCategory}
+                    {participants
+                      .filter((participant: any) => {
+                        if (!searchQuery) return true;
+                        const query = searchQuery.toLowerCase();
+                        return (
+                          participant.athlete.name.toLowerCase().includes(query) ||
+                          participant.athlete.nationality?.toLowerCase().includes(query) ||
+                          participant.athlete.worldCategory?.toLowerCase().includes(query)
+                        );
+                      })
+                      .map((participant: any) => (
+                        <div 
+                          key={participant.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                          data-testid={`participant-${participant.id}`}
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-semibold text-primary">
+                                {participant.athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium truncate">{participant.athlete.name}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {participant.athlete.nationality} • {participant.athlete.worldCategory}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
