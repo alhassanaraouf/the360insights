@@ -12,6 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Target, 
   Brain, 
@@ -59,6 +60,7 @@ export default function OpponentAnalysis() {
   const [opponentSelectorOpen, setOpponentSelectorOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [customNotes, setCustomNotes] = useState<string>("");
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
@@ -130,7 +132,9 @@ export default function OpponentAnalysis() {
 
   const opponentAnalysisMutation = useMutation({
     mutationFn: async (opponentId: string) => {
-      const response = await apiRequest("POST", `/api/ai/opponent-analysis/${selectedAthleteId}/${opponentId}`, {});
+      const response = await apiRequest("POST", `/api/ai/opponent-analysis/${selectedAthleteId}/${opponentId}`, {
+        customNotes: customNotes || null,
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -139,11 +143,13 @@ export default function OpponentAnalysis() {
   });
 
   const { data: analysis, isLoading: analysisLoading } = useQuery<OpponentAnalysis>({
-    queryKey: ["/api/ai/opponent-analysis", selectedAthleteId, selectedOpponent],
+    queryKey: ["/api/ai/opponent-analysis", selectedAthleteId, selectedOpponent, customNotes],
     enabled: !!selectedOpponent && !!selectedAthleteId,
     queryFn: async () => {
       if (!selectedOpponent || !selectedAthleteId) return null;
-      const response = await apiRequest("POST", `/api/ai/opponent-analysis/${selectedAthleteId}/${selectedOpponent}`, {});
+      const response = await apiRequest("POST", `/api/ai/opponent-analysis/${selectedAthleteId}/${selectedOpponent}`, {
+        customNotes: customNotes || null,
+      });
       return response.json();
     }
   });
@@ -261,6 +267,21 @@ export default function OpponentAnalysis() {
                 <Filter className="h-4 w-4 inline mr-1" />
                 Show all athletes in weight class
               </Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
+              <Textarea
+                id="customNotes"
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+                placeholder="Add specific tactics, concerns, or analysis points for the AI to consider..."
+                className="min-h-[80px]"
+                data-testid="textarea-custom-notes"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Additional context to help AI generate better tactical analysis
+              </p>
             </div>
             
             <Popover open={opponentSelectorOpen} onOpenChange={setOpponentSelectorOpen}>

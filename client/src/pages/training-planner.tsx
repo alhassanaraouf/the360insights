@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -134,7 +135,8 @@ export default function TrainingPlanner() {
     includeRecovery: true,
     competitionDate: '',
     targetWeight: '',
-    currentWeight: ''
+    currentWeight: '',
+    customNotes: ''
   });
 
   const [generatedPlan, setGeneratedPlan] = useState<TrainingPlan | null>(null);
@@ -530,6 +532,22 @@ export default function TrainingPlanner() {
                       </Button>
                     ))}
                   </div>
+                </div>
+
+                {/* Custom Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
+                  <Textarea
+                    id="customNotes"
+                    value={planParameters.customNotes}
+                    onChange={(e) => setPlanParameters(prev => ({...prev, customNotes: e.target.value}))}
+                    placeholder="Add specific training goals, injury considerations, or preferences for the AI to consider..."
+                    className="min-h-[80px]"
+                    data-testid="textarea-custom-notes"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Additional context to help AI create a personalized training plan
+                  </p>
                 </div>
 
                 {/* Include Recovery */}

@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -341,6 +342,7 @@ export default function RankUp() {
   const [rankingType, setRankingType] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [targetDate, setTargetDate] = useState<string>("");
+  const [customNotes, setCustomNotes] = useState<string>("");
   const [rankUpResult, setRankUpResult] = useState<RankUpResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [userChangedRankingType, setUserChangedRankingType] = useState(false);
@@ -602,6 +604,7 @@ export default function RankUp() {
           rankingType,
           category,
           targetDate: targetDate || null,
+          customNotes: customNotes || null,
           force: true, // Always force fresh calculation
         }),
         headers: {
@@ -846,6 +849,21 @@ export default function RankUp() {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     When do you want to reach your target rank?
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
+                  <Textarea
+                    id="customNotes"
+                    value={customNotes}
+                    onChange={(e) => setCustomNotes(e.target.value)}
+                    placeholder="Add any specific requirements, constraints, or preferences for the AI to consider..."
+                    className="min-h-[80px]"
+                    data-testid="textarea-custom-notes"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Additional context to help AI generate better recommendations
                   </p>
                 </div>
               </div>
