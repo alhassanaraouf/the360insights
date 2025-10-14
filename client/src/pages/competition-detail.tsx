@@ -439,7 +439,7 @@ export default function CompetitionDetail() {
                         return (
                           <Link 
                             key={participant.id}
-                            href={`/athlete/${athlete.id}`}
+                            href={`/athlete360?athlete=${athlete.id}`}
                             data-testid={`participant-${participant.id}`}
                           >
                             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
