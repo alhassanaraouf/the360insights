@@ -1281,7 +1281,7 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getCompetitionParticipants(competitionId: number): Promise<(CompetitionParticipant & { athlete: Athlete })[]> {
+  async getCompetitionParticipants(competitionId: number): Promise<(CompetitionParticipant & { athlete: Athlete & { ranks?: AthleteRank[] } })[]> {
     const results = await db
       .select({
         id: competitionParticipants.id,
@@ -1299,7 +1299,34 @@ export class DatabaseStorage implements IStorage {
       .where(eq(competitionParticipants.competitionId, competitionId))
       .orderBy(competitionParticipants.seedNumber, athletes.name);
 
-    return results;
+    // Fetch ranks for all athletes
+    const athleteIds = results.map(r => r.athleteId);
+    let ranksByAthlete: Record<number, AthleteRank[]> = {};
+    
+    if (athleteIds.length > 0) {
+      const ranks = await db
+        .select()
+        .from(athleteRanks)
+        .where(sql`${athleteRanks.athleteId} IN (${sql.join(athleteIds.map(id => sql`${id}`), sql`, `)})`);
+
+      // Group ranks by athlete ID
+      ranksByAthlete = ranks.reduce((acc: Record<number, AthleteRank[]>, rank) => {
+        if (!acc[rank.athleteId]) {
+          acc[rank.athleteId] = [];
+        }
+        acc[rank.athleteId].push(rank);
+        return acc;
+      }, {});
+    }
+
+    // Attach ranks to athletes
+    return results.map(result => ({
+      ...result,
+      athlete: {
+        ...result.athlete,
+        ranks: result.athleteId ? (ranksByAthlete[result.athleteId] || []) : []
+      }
+    }));
   }
 
   async addCompetitionParticipant(participant: InsertCompetitionParticipant): Promise<CompetitionParticipant> {

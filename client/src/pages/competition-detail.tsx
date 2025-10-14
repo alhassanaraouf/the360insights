@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getCountryFlagWithFallback } from "@/lib/country-flags";
 import { 
   MapPin, 
   Calendar, 
@@ -20,6 +21,7 @@ import {
   ExternalLink,
   ArrowLeft,
   Search,
+  Medal,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -425,27 +427,66 @@ export default function CompetitionDetail() {
                           participant.athlete.worldCategory?.toLowerCase().includes(query)
                         );
                       })
-                      .map((participant: any) => (
-                        <div 
-                          key={participant.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                          data-testid={`participant-${participant.id}`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-sm font-semibold text-primary">
-                                {participant.athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium truncate">{participant.athlete.name}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {participant.athlete.nationality} • {participant.athlete.worldCategory}
+                      .map((participant: any) => {
+                        const athlete = participant.athlete;
+                        const flag = getCountryFlagWithFallback(athlete.nationality || '');
+                        const highestRank = athlete.ranks && athlete.ranks.length > 0 
+                          ? athlete.ranks.reduce((prev: any, current: any) => 
+                              (current.ranking < prev.ranking) ? current : prev
+                            )
+                          : null;
+                        
+                        return (
+                          <Link 
+                            key={participant.id}
+                            href={`/athlete/${athlete.id}`}
+                            data-testid={`participant-${participant.id}`}
+                          >
+                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                {/* Profile Picture */}
+                                {athlete.profileImage ? (
+                                  <img 
+                                    src={athlete.profileImage} 
+                                    alt={athlete.name}
+                                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-sm font-semibold text-primary">
+                                      {athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Athlete Info */}
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium truncate">{athlete.name}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                    <span className="text-base">{flag}</span>
+                                    <span>{athlete.nationality}</span>
+                                    {athlete.worldCategory && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{athlete.worldCategory}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Highest Rank Badge */}
+                                {highestRank && (
+                                  <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full text-xs font-medium flex-shrink-0">
+                                    <Medal className="w-3 h-3" />
+                                    <span>#{highestRank.ranking}</span>
+                                    <span className="text-[10px] opacity-70">{highestRank.rankingType}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      ))}
+                          </Link>
+                        );
+                      })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
