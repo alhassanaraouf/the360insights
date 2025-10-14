@@ -24,8 +24,6 @@ import {
   Medal,
 } from "lucide-react";
 import { format } from "date-fns";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Competition {
   id: number;
@@ -56,7 +54,6 @@ export default function CompetitionDetail() {
   const [, params] = useRoute("/competition/:id");
   const competitionId = params?.id ? parseInt(params.id) : null;
   const { toast } = useToast();
-  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch competition details
@@ -363,25 +360,14 @@ export default function CompetitionDetail() {
 
         {/* Participants Section */}
         <Card>
-          <Collapsible open={isParticipantsOpen} onOpenChange={setIsParticipantsOpen}>
-            <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors" data-testid="participants-section-trigger">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    Participants {participants && participants.length > 0 ? `(${participants.length})` : ''}
-                  </CardTitle>
-                  {isParticipantsOpen ? (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  )}
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-
-            <CollapsibleContent>
-              <CardContent className="space-y-4">
+          <CardHeader data-testid="participants-section-trigger">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Participants {participants && participants.length > 0 ? `(${participants.length})` : ''}
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
                 {/* Sync Button */}
                 {competition.simplyCompeteEventId && (
                   <Button
@@ -497,9 +483,7 @@ export default function CompetitionDetail() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
+          </CardContent>
         </Card>
 
         {/* Action Buttons */}
