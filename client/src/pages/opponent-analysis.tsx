@@ -268,21 +268,6 @@ export default function OpponentAnalysis() {
                 Show all athletes in weight class
               </Label>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
-              <Textarea
-                id="customNotes"
-                value={customNotes}
-                onChange={(e) => setCustomNotes(e.target.value)}
-                placeholder="Add specific tactics, concerns, or analysis points for the AI to consider..."
-                className="min-h-[80px]"
-                data-testid="textarea-custom-notes"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Additional context to help AI generate better tactical analysis
-              </p>
-            </div>
             
             <Popover open={opponentSelectorOpen} onOpenChange={setOpponentSelectorOpen}>
               <PopoverTrigger asChild>
@@ -384,6 +369,21 @@ export default function OpponentAnalysis() {
                 </Command>
               </PopoverContent>
             </Popover>
+
+            <div className="space-y-2">
+              <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
+              <Textarea
+                id="customNotes"
+                value={customNotes}
+                onChange={(e) => setCustomNotes(e.target.value)}
+                placeholder="Add specific tactics, concerns, or analysis points for the AI to consider..."
+                className="min-h-[80px]"
+                data-testid="textarea-custom-notes"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Additional context to help AI generate better tactical analysis
+              </p>
+            </div>
           </CardContent>
         </Card>
 
