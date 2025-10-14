@@ -76,15 +76,27 @@ export default function CompetitionDetail() {
       return result as any;
     },
     onSuccess: (data: any) => {
+      console.log('Sync response:', data);
+      
+      // Handle response structure
+      const stats = data?.stats || data;
+      const synced = stats?.synced ?? 0;
+      const matched = stats?.matched ?? 0;
+      const created = stats?.created ?? 0;
+      const total = stats?.total ?? 0;
+
       toast({
-        title: "Participants Synced",
-        description: `Successfully synced ${data.stats.synced} participants (${data.stats.matched} matched, ${data.stats.created} created)`,
+        title: "Participants Synced Successfully! 🎉",
+        description: `Total: ${total} participants | ${synced} linked | ${matched} matched existing | ${created} newly created`,
       });
+      
+      // Invalidate participants query to refresh the list
       queryClient.invalidateQueries({ 
         queryKey: [`/api/competitions/${competitionId}/participants`] 
       });
     },
     onError: (error: any) => {
+      console.error('Sync error:', error);
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to sync participants",
