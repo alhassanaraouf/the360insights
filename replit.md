@@ -28,7 +28,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
 -   **Competitions Directory**: Full-featured competition browser with search, filters (status, location), sorting, competition cards with logos, and comprehensive detailed popup modals showing all competition information (location, dates, category, grade level, competition type, ranking points, registration deadline, organizer, sync metadata) - following the same pattern as Athletes directory.
--   **Competition Sync**: Backend-only participant syncing using Puppeteer with stealth mode (JavaScript equivalent of Python's cloudscraper) to bypass Cloudflare protection; Fetches and processes participants server-side (page 0 only, 500 max participants) with automatic athlete matching and creation.
+-   **Competition Sync**: Backend-only participant syncing using Puppeteer with stealth mode (JavaScript equivalent of Python's cloudscraper) to bypass Cloudflare protection; Fetches and processes participants server-side (page 0 only, 500 max participants) with intelligent athlete matching: primary match by SimplyCompete userId, fallback to name+nationality matching, automatic userId backfilling for existing athletes.
 -   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback:
     - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights
     - Clip Analysis: Custom coaching advice for specific techniques
@@ -57,7 +57,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Competition Access**: All competitions are always enabled for all users (removed user_competition_preferences system - October 2025).
 
 ### Database Schema
--   `athletes`: Athlete profiles, performance metrics (indexed on: worldCategory, nationality, name)
+-   `athletes`: Athlete profiles, performance metrics, includes `simplyCompeteUserId` for accurate athlete matching (indexed on: worldCategory, nationality, name, simplyCompeteUserId)
 -   `kpi_metrics`: Key performance indicators (indexed on: athleteId)
 -   `strengths/weaknesses`: Athlete skill assessments (indexed on: athleteId)
 -   `opponents`: Opponent data

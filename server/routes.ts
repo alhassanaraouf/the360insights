@@ -2063,15 +2063,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const country = participant.country || "";
                 const weightCategory = participant.divisionName || "";
                 const avatar = participant.avatar || "";
+                const userId = participant.userId || "";
 
                 if (!fullName) return;
 
-                // Try to find athlete by name
-                const existingAthletes = await db
-                  .select()
-                  .from(schema.athletes)
-                  .where(eq(schema.athletes.name, fullName))
-                  .limit(1);
+                // Try to find athlete by SimplyCompete userId first (most accurate)
+                let existingAthletes: any[] = [];
+                
+                if (userId) {
+                  existingAthletes = await db
+                    .select()
+                    .from(schema.athletes)
+                    .where(eq(schema.athletes.simplyCompeteUserId, userId))
+                    .limit(1);
+                  
+                  if (existingAthletes.length > 0) {
+                    console.log(`✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`);
+                  }
+                }
+
+                // If no match by userId, try to find athlete by name and nationality
+                if (existingAthletes.length === 0) {
+                  existingAthletes = await db
+                    .select()
+                    .from(schema.athletes)
+                    .where(
+                      and(
+                        eq(schema.athletes.name, fullName),
+                        eq(schema.athletes.nationality, country)
+                      )
+                    )
+                    .limit(1);
+                  
+                  if (existingAthletes.length > 0) {
+                    console.log(`✓ Matched athlete by name and nationality: ${fullName} (${country})`);
+                    
+                    // Update the athlete with the SimplyCompete userId for future matching
+                    if (userId) {
+                      await db
+                        .update(schema.athletes)
+                        .set({ simplyCompeteUserId: userId })
+                        .where(eq(schema.athletes.id, existingAthletes[0].id));
+                      console.log(`  ↳ Updated athlete with SimplyCompete userId: ${userId}`);
+                    }
+                  }
+                }
 
                 let athleteId: number;
 
@@ -2092,6 +2128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         ? "Female"
                         : null,
                     profileImage: null, // Never store external URLs directly - will be set after upload
+                    simplyCompeteUserId: userId || null, // Store SimplyCompete user ID for matching
                   };
 
                   const [newAthlete] = await db
@@ -2234,15 +2271,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const country = participant.country || "";
           const weightCategory = participant.divisionName || "";
           const avatar = participant.avatar || "";
+          const userId = participant.userId || "";
 
           if (!fullName) continue;
 
-          // Try to find athlete by name
-          const existingAthletes = await db
-            .select()
-            .from(schema.athletes)
-            .where(eq(schema.athletes.name, fullName))
-            .limit(1);
+          // Try to find athlete by SimplyCompete userId first (most accurate)
+          let existingAthletes: any[] = [];
+          
+          if (userId) {
+            existingAthletes = await db
+              .select()
+              .from(schema.athletes)
+              .where(eq(schema.athletes.simplyCompeteUserId, userId))
+              .limit(1);
+            
+            if (existingAthletes.length > 0) {
+              console.log(`✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`);
+            }
+          }
+
+          // If no match by userId, try to find athlete by name and nationality
+          if (existingAthletes.length === 0) {
+            existingAthletes = await db
+              .select()
+              .from(schema.athletes)
+              .where(
+                and(
+                  eq(schema.athletes.name, fullName),
+                  eq(schema.athletes.nationality, country)
+                )
+              )
+              .limit(1);
+            
+            if (existingAthletes.length > 0) {
+              console.log(`✓ Matched athlete by name and nationality: ${fullName} (${country})`);
+              
+              // Update the athlete with the SimplyCompete userId for future matching
+              if (userId) {
+                await db
+                  .update(schema.athletes)
+                  .set({ simplyCompeteUserId: userId })
+                  .where(eq(schema.athletes.id, existingAthletes[0].id));
+                console.log(`  ↳ Updated athlete with SimplyCompete userId: ${userId}`);
+              }
+            }
+          }
 
           let athlete = existingAthletes[0];
 
@@ -2259,6 +2332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   ? "Female"
                   : null,
               profileImage: null, // Never store external URLs directly - will be set after upload
+              simplyCompeteUserId: userId || null, // Store SimplyCompete user ID for matching
             };
 
             const [newAthlete] = await db

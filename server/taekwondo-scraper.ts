@@ -1053,6 +1053,11 @@ export async function importJsonAthletes(
           profileImage: existingAthlete.profileImage, // Keep existing image, don't overwrite with external URL
         };
 
+        // Only update simplyCompeteUserId if we have a valid userId to prevent erasing existing mappings
+        if (userId) {
+          updateData.simplyCompeteUserId = userId;
+        }
+
         // Add points based on ranking type
         if (rankingType === "world") {
           updateData.worldPoints = primaryEntry.points || null;
@@ -1112,6 +1117,7 @@ export async function importJsonAthletes(
           worldCategory: primaryEntry.weight_division || null,
           gender: primaryEntry.gender || null,
           profileImage: null, // Never store external URLs directly - will be set after upload
+          simplyCompeteUserId: userId || null, // Store SimplyCompete user ID for matching
         };
 
         // Add points based on ranking type

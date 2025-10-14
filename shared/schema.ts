@@ -45,6 +45,7 @@ export const athletes = pgTable("athletes", {
   nationality: text("nationality").notNull(),
   gender: varchar("gender", { length: 10 }),
   profileImage: text("profile_image"),
+  simplyCompeteUserId: varchar("simply_compete_user_id", { length: 255 }), // SimplyCompete user ID for matching
   worldCategory: text("world_category"), // Weight division like "M-54 kg"
   worldPoints: decimal("world_points", { precision: 10, scale: 2 }), // World ranking points
   olympicPoints: decimal("olympic_points", { precision: 10, scale: 2 }), // Olympic ranking points
@@ -54,7 +55,8 @@ export const athletes = pgTable("athletes", {
 }, (table) => ({
   worldCategoryIdx: index("athletes_world_category_idx").on(table.worldCategory),
   nationalityIdx: index("athletes_nationality_idx").on(table.nationality),
-  nameIdx: index("athletes_name_idx").on(table.name)
+  nameIdx: index("athletes_name_idx").on(table.name),
+  simplyCompeteUserIdIdx: index("athletes_simply_compete_user_id_idx").on(table.simplyCompeteUserId)
 }));
 
 export const kpiMetrics = pgTable("kpi_metrics", {
