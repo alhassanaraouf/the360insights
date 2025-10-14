@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Trophy, Clock, Users, Sparkles, Star, Globe } from "lucide-react";
 import { format, isFuture, isPast } from "date-fns";
+import { useLocation } from "wouter";
 
 interface Competition {
   id: number;
@@ -26,6 +27,8 @@ interface CompetitionCalendarProps {
 }
 
 export default function CompetitionCalendar({ competitions, allCompetitions }: CompetitionCalendarProps) {
+  const [, setLocation] = useLocation();
+  
   // If competitions are already provided (pre-filtered), use them directly without re-filtering
   // The dashboard has already filtered for upcoming competitions
   const upcomingCompetitions = competitions
@@ -83,7 +86,12 @@ export default function CompetitionCalendar({ competitions, allCompetitions }: C
           {upcomingCompetitions.length > 0 ? (
             <div className="space-y-4">
               {upcomingCompetitions.map((competition) => (
-                <div key={competition.id} className="group relative overflow-hidden rounded-xl border bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50 p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                <div 
+                  key={competition.id} 
+                  onClick={() => setLocation(`/competition-detail/${competition.id}`)}
+                  className="group relative overflow-hidden rounded-xl border bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50 p-5 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                  data-testid={`competition-${competition.id}`}
+                >
                   <div className="flex items-start space-x-4">
                     <div className={`p-3 rounded-full flex-shrink-0 ${
                       competition.competitionLevel === 'olympic' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
@@ -165,7 +173,12 @@ export default function CompetitionCalendar({ competitions, allCompetitions }: C
           {recentCompetitions.length > 0 ? (
             <div className="space-y-3">
               {recentCompetitions.map((competition) => (
-                <div key={competition.id} className="group flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-white to-amber-50/30 dark:from-gray-800 dark:to-amber-900/10 hover:shadow-md transition-all duration-200">
+                <div 
+                  key={competition.id} 
+                  onClick={() => setLocation(`/competition-detail/${competition.id}`)}
+                  className="group flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-white to-amber-50/30 dark:from-gray-800 dark:to-amber-900/10 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  data-testid={`recent-competition-${competition.id}`}
+                >
                   <div className="flex items-center space-x-4">
                     <div className={`p-2 rounded-full ${
                       competition.competitionLevel === 'olympic' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
