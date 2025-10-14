@@ -86,6 +86,7 @@ Respond with ONLY the playing style label, nothing else.`;
   async analyzeOpponent(
     athleteId: number,
     opponentId: number,
+    customNotes?: string,
   ): Promise<OpponentAnalysis> {
     const openai = getOpenAIClient();
     if (!openai) {
@@ -172,6 +173,13 @@ OPPONENT PROFILE:
 - Playing Style: ${opponent.playingStyle || "Unknown"}
 - Strengths: ${opponentStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${opponentWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
+${customNotes ? `
+
+CUSTOM TACTICAL CONSIDERATIONS:
+${customNotes}
+
+Please incorporate these specific requirements and preferences into your analysis.
+` : ''}
 
 Provide a comprehensive tactical analysis in JSON format:
 {

@@ -210,7 +210,7 @@ export interface IStorage {
 
   // Rank Up functionality
   getCompetitionsByCategory(category?: string, competitionType?: string): Promise<Competition[]>;
-  calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string): Promise<{
+  calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string, force?: boolean, customNotes?: string): Promise<{
     currentRank: number;
     currentPoints: number;
     targetPoints: number;
@@ -1346,7 +1346,7 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
-  async calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string, force?: boolean): Promise<{
+  async calculateRankUpRequirements(athleteId: number, targetRank: number, rankingType: string, category: string, targetDate?: string, force?: boolean, customNotes?: string): Promise<{
     currentRank: number;
     currentPoints: number;
     targetPoints: number;
@@ -1545,7 +1545,8 @@ export class DatabaseStorage implements IStorage {
         targetRank,
         category,
         rankingType,
-        targetDate
+        targetDate,
+        customNotes
       );
 
       // Convert AI recommendations to suggestedCompetitions format

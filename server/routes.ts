@@ -1103,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
 
             const verifyResponse = await fetch(
-              `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&pageNo=0`,
+              `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&pageNo=0`,
               {
                 headers: verifyHeaders,
               },
@@ -1594,12 +1594,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Retry logic: try twice for each page
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=${pageNo}`;
+          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&itemsPerPage=4000&pageNo=${pageNo}`;
           if (nodeId) {
             url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
           }
 
-          console.log(`📡 Fetching participants from: ${url} (attempt ${attempt}/2)`);
+          console.log(
+            `📡 Fetching participants from: ${url} (attempt ${attempt}/2)`,
+          );
 
           // Use realistic browser headers to bypass basic Cloudflare protection
           const headers = {
@@ -1668,18 +1670,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break; // Success - exit retry loop
         } catch (error) {
           lastError = error;
-          console.error(`❌ Fetch attempt ${attempt} failed for page ${pageNo}:`, error);
+          console.error(
+            `❌ Fetch attempt ${attempt} failed for page ${pageNo}:`,
+            error,
+          );
 
           if (attempt < 2) {
             console.log(`⏳ Retrying in 1 second...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
       }
 
       // If both attempts failed, stop pagination
       if (!fetchSuccess) {
-        console.error(`Failed to fetch page ${pageNo} after 2 attempts:`, lastError);
+        console.error(
+          `Failed to fetch page ${pageNo} after 2 attempts:`,
+          lastError,
+        );
         hasMorePages = false;
       }
     }
@@ -1957,12 +1965,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fetch participants with retry logic
         let textContent: string | null = null;
         let fetchError: Error | null = null;
-        
+
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&itemsPerPage=4000&pageNo=0`;
+            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&itemsPerPage=4000&pageNo=0`;
 
-            console.log(`📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`);
+            console.log(
+              `📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`,
+            );
 
             const page = await browser.newPage();
 
@@ -1979,9 +1989,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             // Extract JSON from page
-            textContent = await page.evaluate(
-              () => document.body.textContent,
-            );
+            textContent = await page.evaluate(() => document.body.textContent);
             await page.close();
 
             if (!textContent) {
@@ -2012,10 +2020,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (error: any) {
             fetchError = error;
             console.error(`❌ Fetch attempt ${attempt} failed:`, error.message);
-            
+
             if (attempt < 2) {
               console.log(`⏳ Retrying fetch in 2 seconds...`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise((resolve) => setTimeout(resolve, 2000));
             }
           }
         }
@@ -2024,7 +2032,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // If both attempts failed, throw the error
         if (fetchError || !textContent) {
-          throw fetchError || new Error("Failed to fetch participants after 2 attempts");
+          throw (
+            fetchError ||
+            new Error("Failed to fetch participants after 2 attempts")
+          );
         }
 
         const data = JSON.parse(textContent);
@@ -2049,11 +2060,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Process in batches of 20 for optimal performance
         const BATCH_SIZE = 20;
-        console.log(`🔄 Processing ${participants.length} participants in batches of ${BATCH_SIZE}...`);
+        console.log(
+          `🔄 Processing ${participants.length} participants in batches of ${BATCH_SIZE}...`,
+        );
 
         for (let i = 0; i < participants.length; i += BATCH_SIZE) {
           const batch = participants.slice(i, i + BATCH_SIZE);
-          console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(participants.length / BATCH_SIZE)} (${batch.length} participants)...`);
+          console.log(
+            `📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(participants.length / BATCH_SIZE)} (${batch.length} participants)...`,
+          );
 
           await Promise.all(
             batch.map(async (participant: any) => {
@@ -2069,16 +2084,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 // Try to find athlete by SimplyCompete userId first (most accurate)
                 let existingAthletes: any[] = [];
-                
+
                 if (userId) {
                   existingAthletes = await db
                     .select()
                     .from(schema.athletes)
                     .where(eq(schema.athletes.simplyCompeteUserId, userId))
                     .limit(1);
-                  
+
                   if (existingAthletes.length > 0) {
-                    console.log(`✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`);
+                    console.log(
+                      `✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`,
+                    );
                   }
                 }
 
@@ -2090,21 +2107,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     .where(
                       and(
                         eq(schema.athletes.name, fullName),
-                        eq(schema.athletes.nationality, country)
-                      )
+                        eq(schema.athletes.nationality, country),
+                      ),
                     )
                     .limit(1);
-                  
+
                   if (existingAthletes.length > 0) {
-                    console.log(`✓ Matched athlete by name and nationality: ${fullName} (${country})`);
-                    
+                    console.log(
+                      `✓ Matched athlete by name and nationality: ${fullName} (${country})`,
+                    );
+
                     // Update the athlete with the SimplyCompete userId for future matching
                     if (userId) {
                       await db
                         .update(schema.athletes)
                         .set({ simplyCompeteUserId: userId })
                         .where(eq(schema.athletes.id, existingAthletes[0].id));
-                      console.log(`  ↳ Updated athlete with SimplyCompete userId: ${userId}`);
+                      console.log(
+                        `  ↳ Updated athlete with SimplyCompete userId: ${userId}`,
+                      );
                     }
                   }
                 }
@@ -2114,7 +2135,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (existingAthletes.length > 0) {
                   athleteId = existingAthletes[0].id;
                   matched++;
-                  console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athleteId})`);
+                  console.log(
+                    `✓ Matched existing athlete: ${fullName} (ID: ${athleteId})`,
+                  );
                 } else {
                   // Create new athlete with all available data (like JSON import process)
                   const insertAthlete: any = {
@@ -2138,18 +2161,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                   athleteId = newAthlete.id;
                   created++;
-                  console.log(`✨ Created new athlete: ${fullName} (ID: ${athleteId}, Country: ${country}, Category: ${weightCategory})`);
+                  console.log(
+                    `✨ Created new athlete: ${fullName} (ID: ${athleteId}, Country: ${country}, Category: ${weightCategory})`,
+                  );
 
                   // Handle profile image upload if avatar is available
                   if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
-                    console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
-                    
+                    console.log(
+                      `📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`,
+                    );
+
                     // Upload image in background (don't await to avoid blocking)
                     (async () => {
                       try {
-                        const { bucketStorage: storage } = await import("./bucket-storage");
+                        const { bucketStorage: storage } = await import(
+                          "./bucket-storage"
+                        );
                         console.log(`📤 Uploading image for ${fullName}...`);
-                        
+
                         const imageResult = await storage.uploadFromUrl(
                           athleteId,
                           avatar,
@@ -2202,7 +2231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   `Failed to process ${participant.preferredFirstName} ${participant.preferredLastName}: ${error.message}`,
                 );
               }
-            })
+            }),
           );
         }
 
@@ -2277,16 +2306,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Try to find athlete by SimplyCompete userId first (most accurate)
           let existingAthletes: any[] = [];
-          
+
           if (userId) {
             existingAthletes = await db
               .select()
               .from(schema.athletes)
               .where(eq(schema.athletes.simplyCompeteUserId, userId))
               .limit(1);
-            
+
             if (existingAthletes.length > 0) {
-              console.log(`✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`);
+              console.log(
+                `✓ Matched athlete by SimplyCompete userId: ${fullName} (userId: ${userId})`,
+              );
             }
           }
 
@@ -2298,21 +2329,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .where(
                 and(
                   eq(schema.athletes.name, fullName),
-                  eq(schema.athletes.nationality, country)
-                )
+                  eq(schema.athletes.nationality, country),
+                ),
               )
               .limit(1);
-            
+
             if (existingAthletes.length > 0) {
-              console.log(`✓ Matched athlete by name and nationality: ${fullName} (${country})`);
-              
+              console.log(
+                `✓ Matched athlete by name and nationality: ${fullName} (${country})`,
+              );
+
               // Update the athlete with the SimplyCompete userId for future matching
               if (userId) {
                 await db
                   .update(schema.athletes)
                   .set({ simplyCompeteUserId: userId })
                   .where(eq(schema.athletes.id, existingAthletes[0].id));
-                console.log(`  ↳ Updated athlete with SimplyCompete userId: ${userId}`);
+                console.log(
+                  `  ↳ Updated athlete with SimplyCompete userId: ${userId}`,
+                );
               }
             }
           }
@@ -2341,19 +2376,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .returning();
             athlete = newAthlete;
             created++;
-            console.log(`✨ Created new athlete: ${fullName} (ID: ${athlete.id}, Country: ${country}, Category: ${weightCategory})`);
+            console.log(
+              `✨ Created new athlete: ${fullName} (ID: ${athlete.id}, Country: ${country}, Category: ${weightCategory})`,
+            );
 
             // Handle profile image upload if avatar is available
             if (avatar && avatar !== "N/A" && avatar.trim() !== "") {
-              console.log(`📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`);
-              
+              console.log(
+                `📸 Queuing image upload for ${fullName} from: ${avatar.substring(0, 50)}...`,
+              );
+
               // Upload image in background (don't await to avoid blocking)
               const athleteIdForUpload = athlete.id;
               (async () => {
                 try {
-                  const { bucketStorage: storage } = await import("./bucket-storage");
+                  const { bucketStorage: storage } = await import(
+                    "./bucket-storage"
+                  );
                   console.log(`📤 Uploading image for ${fullName}...`);
-                  
+
                   const imageResult = await storage.uploadFromUrl(
                     athleteIdForUpload,
                     avatar,
@@ -2379,7 +2420,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } else {
             matched++;
-            console.log(`✓ Matched existing athlete: ${fullName} (ID: ${athlete.id})`);
+            console.log(
+              `✓ Matched existing athlete: ${fullName} (ID: ${athlete.id})`,
+            );
           }
 
           // Check if participant already exists in this competition
@@ -2437,6 +2480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category,
         targetDate,
         force,
+        customNotes,
       } = req.body;
 
       if (!athleteId || !targetRank || !rankingType || !category) {
@@ -2453,6 +2497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category,
         targetDate,
         force,
+        customNotes,
       );
 
       res.json(requirements);
@@ -2646,30 +2691,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const athleteId = parseInt(req.params.athleteId);
         const opponentId = parseInt(req.params.opponentId);
+        const { customNotes } = req.body;
 
-        // Check cache first
-        const cachedAnalysis = await storage.getOpponentAnalysisCache(
-          athleteId,
-          opponentId,
-        );
-        if (cachedAnalysis) {
-          console.log(
-            `[OpponentAnalysis] Using cached analysis for athlete ${athleteId} vs opponent ${opponentId}`,
+        // Check cache first (skip cache if custom notes provided)
+        if (!customNotes) {
+          const cachedAnalysis = await storage.getOpponentAnalysisCache(
+            athleteId,
+            opponentId,
           );
-          return res.json({
-            weaknessExploitation: cachedAnalysis.weaknessExploitation,
-            tacticalRecommendations: cachedAnalysis.tacticalRecommendations,
-            winProbability: cachedAnalysis.winProbability,
-            keyStrategyPoints: cachedAnalysis.keyStrategyPoints,
-            mentalPreparation: cachedAnalysis.mentalPreparation,
-            technicalFocus: cachedAnalysis.technicalFocus,
-          });
+          if (cachedAnalysis) {
+            console.log(
+              `[OpponentAnalysis] Using cached analysis for athlete ${athleteId} vs opponent ${opponentId}`,
+            );
+            return res.json({
+              weaknessExploitation: cachedAnalysis.weaknessExploitation,
+              tacticalRecommendations: cachedAnalysis.tacticalRecommendations,
+              winProbability: cachedAnalysis.winProbability,
+              keyStrategyPoints: cachedAnalysis.keyStrategyPoints,
+              mentalPreparation: cachedAnalysis.mentalPreparation,
+              technicalFocus: cachedAnalysis.technicalFocus,
+            });
+          }
         }
 
         console.log(
-          `[OpponentAnalysis] Generating new analysis for athlete ${athleteId} vs opponent ${opponentId}`,
+          `[OpponentAnalysis] Generating new analysis for athlete ${athleteId} vs opponent ${opponentId}${customNotes ? ' with custom notes' : ''}`,
         );
-        const analysis = await aiEngine.analyzeOpponent(athleteId, opponentId);
+        const analysis = await aiEngine.analyzeOpponent(athleteId, opponentId, customNotes);
 
         // Calculate expiration date (1st of next month)
         const expiresAt = new Date();
@@ -3933,6 +3981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         targetCompetition,
         targetWeight,
         currentWeight,
+        customNotes,
       } = req.body;
 
       if (!athleteId || !planType || !duration) {
@@ -3946,6 +3995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planType,
         duration,
         targetCompetition,
+        customNotes,
       );
 
       // Save the training plan to database

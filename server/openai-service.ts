@@ -28,6 +28,7 @@ export async function getCompetitionRecommendations(
   category: string,
   rankingType: string,
   targetDate?: string,
+  customNotes?: string,
 ): Promise<CompetitionRecommendation> {
   const openai = getOpenAIClient();
   if (!openai) {
@@ -132,6 +133,12 @@ ${
 7. Recovery time between competitions (minimum 1-2 weeks for optimal performance)
 8. Peak performance timing - schedule most important competitions when athlete will be in best form`
 }
+${customNotes ? `
+CUSTOM REQUIREMENTS:
+${customNotes}
+
+Please incorporate these specific requirements and preferences into your recommendations.
+` : ''}
 
 Provide your response in JSON format with the following structure:
 {

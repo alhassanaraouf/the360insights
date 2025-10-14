@@ -67,7 +67,8 @@ export class TrainingPlanGenerator {
     athleteId: number,
     planType: string,
     duration: number,
-    targetCompetition?: string
+    targetCompetition?: string,
+    customNotes?: string
   ): Promise<TrainingPlan> {
     const openai = getOpenAIClient();
     if (!openai) {
@@ -115,6 +116,13 @@ PLAN REQUIREMENTS:
 - Plan Type: ${planType}
 - Target Competition: ${targetCompetition || 'General performance improvement'}
 - Sport: Taekwondo (focus on Olympic-style competition)
+${customNotes ? `
+
+CUSTOM TRAINING CONSIDERATIONS:
+${customNotes}
+
+Please incorporate these specific requirements and preferences into the training plan.
+` : ''}
 
 Generate a detailed training plan with micro-cycle periodization in JSON format:
 {
