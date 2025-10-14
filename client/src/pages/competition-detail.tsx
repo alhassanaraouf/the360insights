@@ -365,7 +365,7 @@ export default function CompetitionDetail() {
         <Card>
           <Collapsible open={isParticipantsOpen} onOpenChange={setIsParticipantsOpen}>
             <CollapsibleTrigger asChild>
-              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors" data-testid="participants-section-trigger">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary" />
