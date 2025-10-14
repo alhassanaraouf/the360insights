@@ -851,21 +851,22 @@ export default function RankUp() {
                     When do you want to reach your target rank?
                   </p>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
-                  <Textarea
-                    id="customNotes"
-                    value={customNotes}
-                    onChange={(e) => setCustomNotes(e.target.value)}
-                    placeholder="Add any specific requirements, constraints, or preferences for the AI to consider..."
-                    className="min-h-[80px]"
-                    data-testid="textarea-custom-notes"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Additional context to help AI generate better recommendations
-                  </p>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="customNotes">Custom Notes (Optional)</Label>
+                <Textarea
+                  id="customNotes"
+                  value={customNotes}
+                  onChange={(e) => setCustomNotes(e.target.value)}
+                  placeholder="Add any specific requirements, constraints, or preferences for the AI to consider..."
+                  rows={1}
+                  className="resize-y"
+                  data-testid="textarea-custom-notes"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Additional context to help AI generate better recommendations
+                </p>
               </div>
 
               <div className="pt-4 flex gap-4">
