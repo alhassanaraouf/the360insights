@@ -47,6 +47,7 @@ export default function Competitions() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterStatus, setFilterStatus] = useState("upcoming");
   const [filterLocation, setFilterLocation] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +64,7 @@ export default function Competitions() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterLocation, sortBy]);
+  }, [searchTerm, filterStatus, filterLocation, sortBy, sortOrder]);
 
   // Fetch all competitions
   const { data: allCompetitions, isLoading } = useQuery<Competition[]>({
@@ -95,22 +96,28 @@ export default function Competitions() {
 
     // Sort competitions
     filtered.sort((a, b) => {
+      let comparison = 0;
       switch (sortBy) {
         case "date":
-          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+          comparison = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+          break;
         case "name":
-          return a.name.localeCompare(b.name);
+          comparison = a.name.localeCompare(b.name);
+          break;
         case "location":
-          return (a.location || "").localeCompare(b.location || "");
+          comparison = (a.location || "").localeCompare(b.location || "");
+          break;
         case "status":
-          return a.status.localeCompare(b.status);
+          comparison = a.status.localeCompare(b.status);
+          break;
         default:
-          return 0;
+          comparison = 0;
       }
+      return sortOrder === "asc" ? comparison : -comparison;
     });
 
     return filtered;
-  }, [allCompetitions, searchTerm, filterStatus, filterLocation, sortBy]);
+  }, [allCompetitions, searchTerm, filterStatus, filterLocation, sortBy, sortOrder]);
 
   // Paginate
   const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage);
@@ -177,10 +184,10 @@ export default function Competitions() {
         {/* Search and Filter Controls */}
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
               {/* Active Filters Indicator */}
               {(filterStatus !== "all" || filterLocation !== "all") && (
-                <div className="md:col-span-2 lg:col-span-4 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <div className="md:col-span-2 lg:col-span-5 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Active filters:</span>
                   {filterStatus !== "all" && (
                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs capitalize">
@@ -226,9 +233,20 @@ export default function Competitions() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="date">Date</SelectItem>
-                  <SelectItem value="name">Name (A-Z)</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="location">Location</SelectItem>
                   <SelectItem value="status">Status</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort Order */}
+              <Select value={sortOrder} onValueChange={(value: "asc" | "desc") => setSortOrder(value)}>
+                <SelectTrigger data-testid="select-sort-order">
+                  <SelectValue placeholder="Sort order" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">Ascending (A-Z, 0-9)</SelectItem>
+                  <SelectItem value="desc">Descending (Z-A, 9-0)</SelectItem>
                 </SelectContent>
               </Select>
 
