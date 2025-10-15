@@ -2127,6 +2127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (userId) updateData.simplyCompeteUserId = userId;
                     if (clubName) updateData.clubName = clubName;
                     if (teamOrganizationName) updateData.teamOrganizationName = teamOrganizationName;
+                    if (teamName) updateData.teamName = teamName;
                     
                     if (Object.keys(updateData).length > 0) {
                       await db
@@ -2164,6 +2165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     simplyCompeteUserId: userId || null, // Store SimplyCompete user ID for matching
                     clubName,
                     teamOrganizationName,
+                    teamName,
                   };
 
                   const [newAthlete] = await db
@@ -2237,7 +2239,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     athleteId,
                     weightCategory,
                     subeventName,
-                    teamName,
                   });
                   synced++;
                 } else {
@@ -2247,7 +2248,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     .set({
                       weightCategory,
                       subeventName,
-                      teamName,
                     })
                     .where(
                       and(
