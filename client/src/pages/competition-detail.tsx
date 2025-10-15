@@ -65,11 +65,20 @@ export default function CompetitionDetail() {
   const [, params] = useRoute("/competition/:id");
   const competitionId = params?.id ? parseInt(params.id) : null;
   const { toast } = useToast();
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("");
   const [weightCategoryFilter, setWeightCategoryFilter] = useState<string>("");
   const [rankedOnly, setRankedOnly] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Fetch competition details
   const { data: competition, isLoading } = useQuery<Competition>({
@@ -81,6 +90,7 @@ export default function CompetitionDetail() {
   const {
     data: participantsData,
     isLoading: participantsLoading,
+    isFetching: participantsFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -437,8 +447,8 @@ export default function CompetitionDetail() {
                       <Input
                         type="text"
                         placeholder="Search participants..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                         className="pl-10"
                         data-testid="input-search-participants"
                       />
@@ -491,13 +501,14 @@ export default function CompetitionDetail() {
                       </div>
 
                       {/* Clear Filters */}
-                      {(countryFilter || weightCategoryFilter || searchQuery || rankedOnly) && (
+                      {(countryFilter || weightCategoryFilter || searchInput || rankedOnly) && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
                             setCountryFilter("");
                             setWeightCategoryFilter("");
+                            setSearchInput("");
                             setSearchQuery("");
                             setRankedOnly(false);
                           }}
@@ -515,7 +526,14 @@ export default function CompetitionDetail() {
                 {participantsLoading ? (
                   <div className="text-center py-4 text-gray-500">Loading participants...</div>
                 ) : participants && participants.length > 0 ? (
-                  <div className="max-h-[600px] overflow-y-auto space-y-2">
+                  <div className="max-h-[600px] overflow-y-auto space-y-2 relative">
+                    {/* Loading Overlay */}
+                    {participantsFetching && !isFetchingNextPage && (
+                      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="text-sm text-gray-500">Updating...</div>
+                      </div>
+                    )}
+                    
                     {participants.map((participant: any) => {
                       const athlete = participant.athlete;
                       const flag = getCountryFlagWithFallback(athlete.nationality || '');
@@ -587,7 +605,7 @@ export default function CompetitionDetail() {
                       )}
                     </div>
                   </div>
-                ) : totalParticipants === 0 && (countryFilter || weightCategoryFilter || searchQuery || rankedOnly) ? (
+                ) : totalParticipants === 0 && (countryFilter || weightCategoryFilter || searchInput || rankedOnly) ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
                     <p>No participants match your filters</p>
@@ -597,6 +615,7 @@ export default function CompetitionDetail() {
                       onClick={() => {
                         setCountryFilter("");
                         setWeightCategoryFilter("");
+                        setSearchInput("");
                         setSearchQuery("");
                         setRankedOnly(false);
                       }}
