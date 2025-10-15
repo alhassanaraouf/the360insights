@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/layout/header";
@@ -8,12 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { User } from "@shared/schema";
 import { 
   Search,
   Calendar,
   MapPin,
   Trophy,
   Award,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -44,6 +49,8 @@ interface Competition {
 export default function Competitions() {
   const { t } = useLanguage();
   const [, navigate] = useLocation();
+  const { user } = useAuth() as { user: User | null };
+  const { toast } = useToast();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
@@ -52,6 +59,7 @@ export default function Competitions() {
   const [filterLocation, setFilterLocation] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
+  const [syncingCompetitionId, setSyncingCompetitionId] = useState<number | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -69,6 +77,55 @@ export default function Competitions() {
   // Fetch all competitions
   const { data: allCompetitions, isLoading } = useQuery<Competition[]>({
     queryKey: ['/api/competitions'],
+  });
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+
+  // Sync participants mutation
+  const syncParticipantsMutation = useMutation({
+    mutationFn: async (competitionId: number) => {
+      setSyncingCompetitionId(competitionId);
+      const result = await apiRequest('POST', `/api/competitions/${competitionId}/sync-participants`, {});
+      return result as any;
+    },
+    onSuccess: (data: any) => {
+      console.log('Sync response:', data);
+      
+      // Handle response structure
+      const stats = data?.stats || data;
+      const synced = stats?.synced ?? 0;
+      const updated = stats?.updated ?? 0;
+      const created = stats?.created ?? 0;
+      const total = stats?.total ?? 0;
+      const errors = stats?.errors ?? 0;
+
+      // Build a clear message about what happened
+      const changes = [];
+      if (synced > 0) changes.push(`${synced} new participant${synced !== 1 ? 's' : ''}`);
+      if (updated > 0) changes.push(`${updated} updated`);
+      if (created > 0) changes.push(`${created} new athlete${created !== 1 ? 's' : ''} created`);
+      
+      const changeText = changes.length > 0 ? changes.join(', ') : 'No changes';
+
+      toast({
+        title: "Participants Synced Successfully! 🎉",
+        description: `Synced ${total} participant${total !== 1 ? 's' : ''} from SimplyCompete • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync participants",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      // Reset syncing state and refresh competitions list to show updated data
+      setSyncingCompetitionId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/competitions'] });
+    },
   });
 
 
@@ -377,6 +434,24 @@ export default function Competitions() {
                       <Award className="w-4 h-4 mr-2 text-gray-400" />
                       <span className="truncate">{competition.category}</span>
                     </div>
+                  )}
+
+                  {/* Admin Sync Button */}
+                  {isAdmin && competition.simplyCompeteEventId && (
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        syncParticipantsMutation.mutate(competition.id);
+                      }}
+                      disabled={syncingCompetitionId === competition.id}
+                      data-testid={`button-sync-${competition.id}`}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${syncingCompetitionId === competition.id ? 'animate-spin' : ''}`} />
+                      {syncingCompetitionId === competition.id ? 'Syncing...' : 'Sync Participants'}
+                    </Button>
                   )}
 
                   <Button 
