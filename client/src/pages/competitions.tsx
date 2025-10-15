@@ -54,7 +54,6 @@ export default function Competitions() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterStatus, setFilterStatus] = useState("upcoming");
   const [filterLocation, setFilterLocation] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,7 +71,7 @@ export default function Competitions() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterLocation, sortBy, sortOrder]);
+  }, [searchTerm, filterStatus, filterLocation, sortBy]);
 
   // Fetch all competitions
   const { data: allCompetitions, isLoading } = useQuery<Competition[]>({
@@ -150,7 +149,10 @@ export default function Competitions() {
       return matchesSearch && matchesStatus && matchesLocation;
     });
 
-    // Sort competitions
+    // Sort competitions with context-aware ordering
+    // Upcoming: ascending (earliest first), Completed: descending (most recent first)
+    const sortOrder = filterStatus === "completed" ? "desc" : "asc";
+    
     filtered.sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
@@ -173,7 +175,7 @@ export default function Competitions() {
     });
 
     return filtered;
-  }, [allCompetitions, searchTerm, filterStatus, filterLocation, sortBy, sortOrder]);
+  }, [allCompetitions, searchTerm, filterStatus, filterLocation, sortBy]);
 
   // Paginate
   const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage);
@@ -240,10 +242,10 @@ export default function Competitions() {
         {/* Search and Filter Controls */}
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
               {/* Active Filters Indicator */}
               {(filterStatus !== "all" || filterLocation !== "all") && (
-                <div className="md:col-span-2 lg:col-span-5 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <div className="md:col-span-2 lg:col-span-4 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Active filters:</span>
                   {filterStatus !== "all" && (
                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs capitalize">
@@ -292,17 +294,6 @@ export default function Competitions() {
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="location">Location</SelectItem>
                   <SelectItem value="status">Status</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sort Order */}
-              <Select value={sortOrder} onValueChange={(value: "asc" | "desc") => setSortOrder(value)}>
-                <SelectTrigger data-testid="select-sort-order">
-                  <SelectValue placeholder="Sort order" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asc">Ascending (A-Z, 0-9)</SelectItem>
-                  <SelectItem value="desc">Descending (Z-A, 9-0)</SelectItem>
                 </SelectContent>
               </Select>
 
