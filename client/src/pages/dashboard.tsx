@@ -95,12 +95,9 @@ export default function Dashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Start of today
     
-    // Filter for future competitions and sort by start date
+    // Filter for upcoming status competitions (matching competitions page filter)
     return [...globalCompetitions]
-      .filter(comp => {
-        const startDate = new Date(comp.startDate || 0);
-        return startDate >= today;
-      })
+      .filter(comp => comp.status === 'upcoming')
       .sort((a, b) => 
         new Date(a.startDate || 0).getTime() - new Date(b.startDate || 0).getTime()
       );
@@ -131,7 +128,7 @@ export default function Dashboard() {
   const worldRankedAthletes = athleteStats?.worldRankedAthletes || 0;
   const olympicQualified = athleteStats?.olympicQualified || 0;
   
-  // Count all upcoming competitions
+  // Count upcoming competitions (matching competitions page filter by status)
   const selectedCompetitions = upcomingCompetitions.length;
 
   return (
