@@ -80,9 +80,9 @@ export default function Dashboard() {
   });
 
   const { data: globalCompetitions, isLoading: competitionsLoading } = useQuery({
-    queryKey: ["/api/competitions", selectedSport],
+    queryKey: ["/api/competitions"],
     queryFn: async () => {
-      const response = await fetch(`/api/competitions?sport=${selectedSport}`);
+      const response = await fetch(`/api/competitions`);
       if (!response.ok) throw new Error('Failed to fetch competitions');
       return response.json();
     }
