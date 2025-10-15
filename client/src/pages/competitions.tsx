@@ -360,7 +360,11 @@ export default function Competitions() {
               <div className="text-sm text-gray-600 dark:text-gray-300">Completed</div>
             </CardContent>
           </Card>
-          <Card data-testid="card-filter-total">
+          <Card 
+            className={`cursor-pointer hover:shadow-lg transition-all ${filterStatus === "all" ? 'ring-2 ring-primary bg-primary/5 dark:bg-primary/10' : ''}`}
+            onClick={() => setFilterStatus("all")}
+            data-testid="card-filter-total"
+          >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{statusCounts.all}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">Total</div>
