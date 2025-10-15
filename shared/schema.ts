@@ -50,6 +50,8 @@ export const athletes = pgTable("athletes", {
   worldPoints: decimal("world_points", { precision: 10, scale: 2 }), // World ranking points
   olympicPoints: decimal("olympic_points", { precision: 10, scale: 2 }), // Olympic ranking points
   playingStyle: text("playing_style"), // AI-generated playing style description
+  clubName: text("club_name"), // Club/Team name
+  teamOrganizationName: text("team_organization_name"), // Team organization
   coachId: integer("coach_id").references(() => coaches.id),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
@@ -139,8 +141,6 @@ export const competitionParticipants = pgTable("competition_participants", {
   seedNumber: integer("seed_number"), // Tournament seeding position
   weightCategory: varchar("weight_category", { length: 50 }), // e.g., "-68kg", "-57kg"
   wtfLicenseId: varchar("wtf_license_id", { length: 100 }), // WTF License ID
-  clubName: text("club_name"), // Club/Team name
-  teamOrganizationName: text("team_organization_name"), // Team organization
   subeventName: varchar("subevent_name", { length: 100 }), // Subevent/Division (e.g., "Senior Division")
   teamName: text("team_name"), // Team name
   registrationDate: timestamp("registration_date").defaultNow(),

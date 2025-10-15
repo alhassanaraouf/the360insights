@@ -2123,14 +2123,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       `✓ Matched athlete by name and nationality: ${fullName} (${country})`,
                     );
 
-                    // Update the athlete with the SimplyCompete userId for future matching
-                    if (userId) {
+                    // Update the athlete with the SimplyCompete userId and other fields for future matching
+                    const updateData: any = {};
+                    if (userId) updateData.simplyCompeteUserId = userId;
+                    if (clubName) updateData.clubName = clubName;
+                    if (teamOrganizationName) updateData.teamOrganizationName = teamOrganizationName;
+                    
+                    if (Object.keys(updateData).length > 0) {
                       await db
                         .update(schema.athletes)
-                        .set({ simplyCompeteUserId: userId })
+                        .set(updateData)
                         .where(eq(schema.athletes.id, existingAthletes[0].id));
                       console.log(
-                        `  ↳ Updated athlete with SimplyCompete userId: ${userId}`,
+                        `  ↳ Updated athlete with: ${Object.keys(updateData).join(', ')}`,
                       );
                     }
                   }
@@ -2158,6 +2163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         : null,
                     profileImage: null, // Never store external URLs directly - will be set after upload
                     simplyCompeteUserId: userId || null, // Store SimplyCompete user ID for matching
+                    clubName,
+                    teamOrganizationName,
                   };
 
                   const [newAthlete] = await db
@@ -2231,8 +2238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     athleteId,
                     weightCategory,
                     wtfLicenseId,
-                    clubName,
-                    teamOrganizationName,
                     subeventName,
                     teamName,
                   });
@@ -2244,8 +2249,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     .set({
                       weightCategory,
                       wtfLicenseId,
-                      clubName,
-                      teamOrganizationName,
                       subeventName,
                       teamName,
                     })
