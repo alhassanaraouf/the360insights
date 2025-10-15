@@ -86,10 +86,17 @@ export default function Competitions() {
     queryKey: ['/api/competitions'],
   });
 
-  // Fetch athletes for filter
-  const { data: athletes } = useQuery<any[]>({
-    queryKey: ['/api/athletes'],
+  // Fetch athletes for filter (get all without pagination)
+  const { data: athletesData, isLoading: isLoadingAthletes } = useQuery<{ athletes: any[], total: number }>({
+    queryKey: ['/api/athletes-all'],
+    queryFn: async () => {
+      const response = await fetch('/api/athletes?limit=10000');
+      if (!response.ok) throw new Error('Failed to fetch athletes');
+      return response.json();
+    },
   });
+
+  const athletes = athletesData?.athletes || [];
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -385,7 +392,9 @@ export default function Competitions() {
                   <Command>
                     <CommandInput placeholder="Search athletes..." />
                     <CommandList>
-                      <CommandEmpty>No athlete found.</CommandEmpty>
+                      <CommandEmpty>
+                        {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}
+                      </CommandEmpty>
                       <CommandGroup>
                         <CommandItem
                           value="all"
@@ -401,7 +410,7 @@ export default function Competitions() {
                           />
                           All Athletes
                         </CommandItem>
-                        {athletes?.map((athlete) => (
+                        {athletes.map((athlete) => (
                           <CommandItem
                             key={athlete.id}
                             value={`${athlete.name} ${athlete.nationality || ''}`}
