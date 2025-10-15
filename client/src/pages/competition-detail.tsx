@@ -1,5 +1,5 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRoute, Link } from "wouter";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +22,17 @@ import {
   ArrowLeft,
   Search,
   Medal,
+  Filter,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Competition {
   id: number;
@@ -55,6 +64,9 @@ export default function CompetitionDetail() {
   const competitionId = params?.id ? parseInt(params.id) : null;
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string>("");
+  const [weightCategoryFilter, setWeightCategoryFilter] = useState<string>("");
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Fetch competition details
   const { data: competition, isLoading } = useQuery<Competition>({
@@ -62,11 +74,57 @@ export default function CompetitionDetail() {
     enabled: !!competitionId,
   });
 
-  // Fetch participants
-  const { data: participants, isLoading: participantsLoading } = useQuery<any[]>({
-    queryKey: [`/api/competitions/${competitionId}/participants`],
+  // Fetch participants with infinite scroll
+  const {
+    data: participantsData,
+    isLoading: participantsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [`/api/competitions/${competitionId}/participants`, searchQuery, countryFilter, weightCategoryFilter],
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams({
+        page: pageParam.toString(),
+        limit: '20',
+        ...(searchQuery && { search: searchQuery }),
+        ...(countryFilter && { country: countryFilter }),
+        ...(weightCategoryFilter && { weightCategory: weightCategoryFilter }),
+      });
+      
+      const response = await fetch(`/api/competitions/${competitionId}/participants?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch participants');
+      return response.json();
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined;
+    },
+    initialPageParam: 1,
     enabled: !!competitionId,
   });
+
+  // Flatten all pages of participants
+  const participants = participantsData?.pages.flatMap(page => page.participants) ?? [];
+  const totalParticipants = participantsData?.pages[0]?.pagination.total ?? 0;
+  const filterOptions = participantsData?.pages[0]?.filters ?? { countries: [], weightCategories: [] };
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Sync participants mutation
   const syncParticipantsMutation = useMutation({
@@ -346,7 +404,7 @@ export default function CompetitionDetail() {
           <CardHeader data-testid="participants-section-trigger">
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              Participants {participants && participants.length > 0 ? `(${participants.length})` : ''}
+              Participants {totalParticipants > 0 ? `(${totalParticipants})` : ''}
             </CardTitle>
           </CardHeader>
           
@@ -366,18 +424,73 @@ export default function CompetitionDetail() {
                   </Button>
                 )}
 
-                {/* Search Input */}
-                {participants && participants.length > 0 && (
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      type="text"
-                      placeholder="Search participants..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-search-participants"
-                    />
+                {/* Search and Filters */}
+                {totalParticipants > 0 && (
+                  <div className="space-y-3">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search participants..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                        data-testid="input-search-participants"
+                      />
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <Filter className="w-4 h-4 text-gray-500" />
+                      
+                      {/* Country Filter */}
+                      <Select value={countryFilter} onValueChange={setCountryFilter}>
+                        <SelectTrigger className="w-[180px]" data-testid="select-country-filter">
+                          <SelectValue placeholder="All Countries" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Countries</SelectItem>
+                          {filterOptions.countries.map((country: string) => (
+                            <SelectItem key={country} value={country}>
+                              {getCountryFlagWithFallback(country)} {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Weight Category Filter */}
+                      <Select value={weightCategoryFilter} onValueChange={setWeightCategoryFilter}>
+                        <SelectTrigger className="w-[180px]" data-testid="select-weight-filter">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Categories</SelectItem>
+                          {filterOptions.weightCategories.map((category: string) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Clear Filters */}
+                      {(countryFilter || weightCategoryFilter || searchQuery) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setCountryFilter("");
+                            setWeightCategoryFilter("");
+                            setSearchQuery("");
+                          }}
+                          data-testid="button-clear-filters"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -385,77 +498,94 @@ export default function CompetitionDetail() {
                 {participantsLoading ? (
                   <div className="text-center py-4 text-gray-500">Loading participants...</div>
                 ) : participants && participants.length > 0 ? (
-                  <div className="max-h-96 overflow-y-auto space-y-2">
-                    {participants
-                      .filter((participant: any) => {
-                        if (!searchQuery) return true;
-                        const query = searchQuery.toLowerCase();
-                        return (
-                          participant.athlete.name.toLowerCase().includes(query) ||
-                          participant.athlete.nationality?.toLowerCase().includes(query) ||
-                          participant.athlete.worldCategory?.toLowerCase().includes(query)
-                        );
-                      })
-                      .map((participant: any) => {
-                        const athlete = participant.athlete;
-                        const flag = getCountryFlagWithFallback(athlete.nationality || '');
-                        const highestRank = athlete.ranks && athlete.ranks.length > 0 
-                          ? athlete.ranks.reduce((prev: any, current: any) => 
-                              (current.ranking < prev.ranking) ? current : prev
-                            )
-                          : null;
-                        
-                        return (
-                          <Link 
-                            key={participant.id}
-                            href={`/athlete360?athlete=${athlete.id}`}
-                            data-testid={`participant-${participant.id}`}
-                          >
-                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                {/* Profile Picture */}
-                                {athlete.profileImage ? (
-                                  <img 
-                                    src={athlete.profileImage} 
-                                    alt={athlete.name}
-                                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-sm font-semibold text-primary">
-                                      {athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                                    </span>
-                                  </div>
-                                )}
-                                
-                                {/* Athlete Info */}
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-medium truncate">{athlete.name}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                    <span className="text-base">{flag}</span>
-                                    <span>{athlete.nationality}</span>
-                                    {athlete.worldCategory && (
-                                      <>
-                                        <span>•</span>
-                                        <span>{athlete.worldCategory}</span>
-                                      </>
-                                    )}
-                                  </div>
+                  <div className="max-h-[600px] overflow-y-auto space-y-2">
+                    {participants.map((participant: any) => {
+                      const athlete = participant.athlete;
+                      const flag = getCountryFlagWithFallback(athlete.nationality || '');
+                      const highestRank = athlete.ranks && athlete.ranks.length > 0 
+                        ? athlete.ranks.reduce((prev: any, current: any) => 
+                            (current.ranking < prev.ranking) ? current : prev
+                          )
+                        : null;
+                      
+                      return (
+                        <Link 
+                          key={participant.id}
+                          href={`/athlete360?athlete=${athlete.id}`}
+                          data-testid={`participant-${participant.id}`}
+                        >
+                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {/* Profile Picture */}
+                              {athlete.profileImage ? (
+                                <img 
+                                  src={athlete.profileImage} 
+                                  alt={athlete.name}
+                                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-semibold text-primary">
+                                    {athlete.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                  </span>
                                 </div>
-
-                                {/* Highest Rank Badge */}
-                                {highestRank && (
-                                  <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full text-xs font-medium flex-shrink-0">
-                                    <Medal className="w-3 h-3" />
-                                    <span>#{highestRank.ranking}</span>
-                                    <span className="text-[10px] opacity-70">{highestRank.rankingType}</span>
-                                  </div>
-                                )}
+                              )}
+                              
+                              {/* Athlete Info */}
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium truncate">{athlete.name}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <span className="text-base">{flag}</span>
+                                  <span>{athlete.nationality}</span>
+                                  {participant.weightCategory && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{participant.weightCategory}</span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
+
+                              {/* Highest Rank Badge */}
+                              {highestRank && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-full text-xs font-medium flex-shrink-0">
+                                  <Medal className="w-3 h-3" />
+                                  <span>#{highestRank.ranking}</span>
+                                  <span className="text-[10px] opacity-70">{highestRank.rankingType}</span>
+                                </div>
+                              )}
                             </div>
-                          </Link>
-                        );
-                      })}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                    
+                    {/* Loading Indicator for Infinite Scroll */}
+                    <div ref={loadMoreRef} className="py-4 text-center">
+                      {isFetchingNextPage && (
+                        <div className="text-sm text-gray-500">Loading more...</div>
+                      )}
+                      {!hasNextPage && participants.length > 0 && (
+                        <div className="text-sm text-gray-400">All participants loaded</div>
+                      )}
+                    </div>
+                  </div>
+                ) : totalParticipants === 0 && (countryFilter || weightCategoryFilter || searchQuery) ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>No participants match your filters</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCountryFilter("");
+                        setWeightCategoryFilter("");
+                        setSearchQuery("");
+                      }}
+                      className="mt-2"
+                    >
+                      Clear filters
+                    </Button>
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">

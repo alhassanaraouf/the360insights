@@ -1853,9 +1853,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid competition ID" });
       }
 
-      const participants =
-        await storage.getCompetitionParticipants(competitionId);
-      res.json(participants);
+      // Extract pagination and filter params
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      const country = req.query.country as string || '';
+      const weightCategory = req.query.weightCategory as string || '';
+      const search = req.query.search as string || '';
+
+      // Get filtered participants with pagination
+      const allParticipants = await storage.getCompetitionParticipants(competitionId);
+      
+      // Apply filters
+      let filteredParticipants = allParticipants;
+      
+      if (country) {
+        filteredParticipants = filteredParticipants.filter(p => 
+          p.athlete.nationality?.toLowerCase() === country.toLowerCase()
+        );
+      }
+      
+      if (weightCategory) {
+        filteredParticipants = filteredParticipants.filter(p => 
+          p.weightCategory?.toLowerCase() === weightCategory.toLowerCase()
+        );
+      }
+      
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredParticipants = filteredParticipants.filter(p => 
+          p.athlete.name?.toLowerCase().includes(searchLower) ||
+          p.athlete.nationality?.toLowerCase().includes(searchLower) ||
+          p.weightCategory?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Get unique countries and weight categories for filter options
+      const countries = Array.from(new Set(allParticipants.map(p => p.athlete.nationality).filter(Boolean))).sort();
+      const weightCategories = Array.from(new Set(allParticipants.map(p => p.weightCategory).filter(Boolean))).sort();
+
+      // Paginate
+      const paginatedParticipants = filteredParticipants.slice(offset, offset + limit);
+      
+      res.json({
+        participants: paginatedParticipants,
+        pagination: {
+          page,
+          limit,
+          total: filteredParticipants.length,
+          hasMore: offset + limit < filteredParticipants.length
+        },
+        filters: {
+          countries,
+          weightCategories
+        }
+      });
     } catch (error) {
       console.error("Error fetching competition participants:", error);
       res.status(500).json({ error: "Failed to fetch participants" });
