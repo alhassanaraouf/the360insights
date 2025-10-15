@@ -2054,6 +2054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Process participants and sync to database in parallel batches
         let synced = 0;
+        let updated = 0;
         let matched = 0;
         let created = 0;
         const errors: string[] = [];
@@ -2226,6 +2227,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     weightCategory,
                   });
                   synced++;
+                } else {
+                  // Update existing participant record with latest data
+                  await db
+                    .update(schema.competitionParticipants)
+                    .set({ weightCategory })
+                    .where(
+                      and(
+                        eq(schema.competitionParticipants.competitionId, competitionId),
+                        eq(schema.competitionParticipants.athleteId, athleteId),
+                      ),
+                    );
+                  updated++;
                 }
               } catch (error: any) {
                 errors.push(
@@ -2237,7 +2250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log(
-          `✅ Sync complete: ${synced} synced, ${matched} matched, ${created} created`,
+          `✅ Sync complete: ${synced} new, ${updated} updated, ${matched} matched, ${created} created`,
         );
 
         res.json({
@@ -2245,6 +2258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stats: {
             total: participants.length,
             synced,
+            updated,
             matched,
             created,
             errors: errors.length,
