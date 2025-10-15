@@ -54,7 +54,7 @@ export default function Competitions() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
-  const [filterStatus, setFilterStatus] = useState("upcoming");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
@@ -150,8 +150,8 @@ export default function Competitions() {
     });
 
     // Sort competitions with context-aware ordering
-    // Upcoming: ascending (earliest first), Completed: descending (most recent first)
-    const sortOrder = filterStatus === "completed" ? "desc" : "asc";
+    // Upcoming/Ongoing: ascending (earliest first), All/Completed: descending (most recent first)
+    const sortOrder = (filterStatus === "completed" || filterStatus === "all") ? "desc" : "asc";
     
     filtered.sort((a, b) => {
       let comparison = 0;
