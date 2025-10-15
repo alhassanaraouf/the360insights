@@ -56,6 +56,7 @@ export default function Competitions() {
   const [sortBy, setSortBy] = useState("date");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
+  const [filterAthlete, setFilterAthlete] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [syncingCompetitionId, setSyncingCompetitionId] = useState<number | null>(null);
@@ -71,11 +72,16 @@ export default function Competitions() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterLocation, sortBy]);
+  }, [searchTerm, filterStatus, filterLocation, filterAthlete, sortBy]);
 
   // Fetch all competitions
   const { data: allCompetitions, isLoading } = useQuery<Competition[]>({
     queryKey: ['/api/competitions'],
+  });
+
+  // Fetch athletes for filter
+  const { data: athletes } = useQuery<any[]>({
+    queryKey: ['/api/athletes'],
   });
 
   // Check if user is admin
@@ -134,6 +140,12 @@ export default function Competitions() {
     return uniqueLocations.sort();
   }, [allCompetitions]);
 
+  // Fetch athlete's competitions when athlete filter is selected
+  const { data: athleteCompetitions } = useQuery<number[]>({
+    queryKey: [`/api/athletes/${filterAthlete}/competitions`],
+    enabled: filterAthlete !== "all",
+  });
+
   // Filter and sort competitions
   const filteredCompetitions = useMemo(() => {
     if (!allCompetitions) return [];
@@ -145,8 +157,10 @@ export default function Competitions() {
       
       const matchesStatus = filterStatus === "all" || comp.status === filterStatus;
       const matchesLocation = filterLocation === "all" || comp.location === filterLocation;
+      const matchesAthlete = filterAthlete === "all" || 
+        (athleteCompetitions && athleteCompetitions.includes(comp.id));
 
-      return matchesSearch && matchesStatus && matchesLocation;
+      return matchesSearch && matchesStatus && matchesLocation && matchesAthlete;
     });
 
     // Sort competitions with context-aware ordering
@@ -175,7 +189,7 @@ export default function Competitions() {
     });
 
     return filtered;
-  }, [allCompetitions, searchTerm, filterStatus, filterLocation, sortBy]);
+  }, [allCompetitions, searchTerm, filterStatus, filterLocation, filterAthlete, athleteCompetitions, sortBy]);
 
   // Paginate
   const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage);
@@ -242,10 +256,10 @@ export default function Competitions() {
         {/* Search and Filter Controls */}
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
               {/* Active Filters Indicator */}
-              {(filterStatus !== "all" || filterLocation !== "all") && (
-                <div className="md:col-span-2 lg:col-span-4 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              {(filterStatus !== "all" || filterLocation !== "all" || filterAthlete !== "all") && (
+                <div className="md:col-span-2 lg:col-span-5 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Active filters:</span>
                   {filterStatus !== "all" && (
                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs capitalize">
@@ -257,12 +271,18 @@ export default function Competitions() {
                       {filterLocation}
                     </span>
                   )}
+                  {filterAthlete !== "all" && (
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                      {athletes?.find(a => a.id === parseInt(filterAthlete))?.name || 'Athlete'}
+                    </span>
+                  )}
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => {
                       setFilterStatus("all");
                       setFilterLocation("all");
+                      setFilterAthlete("all");
                     }}
                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                     data-testid="button-clear-all-filters"
@@ -320,6 +340,21 @@ export default function Competitions() {
                   {locations.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filter by Athlete */}
+              <Select value={filterAthlete} onValueChange={setFilterAthlete}>
+                <SelectTrigger data-testid="select-filter-athlete">
+                  <SelectValue placeholder="All athletes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Athletes</SelectItem>
+                  {athletes?.map((athlete) => (
+                    <SelectItem key={athlete.id} value={athlete.id.toString()}>
+                      {athlete.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

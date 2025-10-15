@@ -2702,6 +2702,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get competitions for a specific athlete
+  app.get("/api/athletes/:id/competitions", async (req, res) => {
+    try {
+      const athleteId = parseInt(req.params.id);
+      
+      if (!athleteId) {
+        return res.status(400).json({ error: "Invalid athlete ID" });
+      }
+
+      // Get all competition IDs this athlete is participating in
+      const participations = await db
+        .select({ competitionId: schema.competitionParticipants.competitionId })
+        .from(schema.competitionParticipants)
+        .where(eq(schema.competitionParticipants.athleteId, athleteId));
+
+      const competitionIds = participations.map(p => p.competitionId);
+      res.json(competitionIds);
+    } catch (error) {
+      console.error("Error fetching athlete competitions:", error);
+      res.status(500).json({ error: "Failed to fetch athlete competitions" });
+    }
+  });
+
   // AI Queries
   app.get("/api/athletes/:id/queries", async (req, res) => {
     try {
