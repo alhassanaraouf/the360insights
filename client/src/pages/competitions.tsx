@@ -101,7 +101,6 @@ export default function Competitions() {
       const errors = stats?.errors ?? 0;
 
       // Build a clear message about what happened
-      const totalParticipantsInCompetition = synced + updated;
       const changes = [];
       if (synced > 0) changes.push(`${synced} new`);
       if (updated > 0) changes.push(`${updated} updated`);
@@ -110,7 +109,7 @@ export default function Competitions() {
 
       toast({
         title: "Participants Synced Successfully! 🎉",
-        description: `Competition now has ${totalParticipantsInCompetition} participant${totalParticipantsInCompetition !== 1 ? 's' : ''} • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
+        description: `Competition now has ${total} participant${total !== 1 ? 's' : ''} • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
       });
     },
     onError: (error: any) => {

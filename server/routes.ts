@@ -1103,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
 
             const verifyResponse = await fetch(
-              `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&pageNo=0`,
+              `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&pageNo=0`,
               {
                 headers: verifyHeaders,
               },
@@ -1594,7 +1594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Retry logic: try twice for each page
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&itemsPerPage=4000&pageNo=${pageNo}`;
+          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&itemsPerPage=4000&pageNo=${pageNo}`;
           if (nodeId) {
             url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
           }
@@ -1857,66 +1857,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = (page - 1) * limit;
-      const country = req.query.country as string || '';
-      const weightCategory = req.query.weightCategory as string || '';
-      const search = req.query.search as string || '';
-      const rankedOnly = req.query.rankedOnly === 'true';
+      const country = (req.query.country as string) || "";
+      const weightCategory = (req.query.weightCategory as string) || "";
+      const search = (req.query.search as string) || "";
+      const rankedOnly = req.query.rankedOnly === "true";
 
       // Get filtered participants with pagination
-      const allParticipants = await storage.getCompetitionParticipants(competitionId);
-      
+      const allParticipants =
+        await storage.getCompetitionParticipants(competitionId);
+
       // Apply filters
       let filteredParticipants = allParticipants;
-      
+
       if (country) {
-        filteredParticipants = filteredParticipants.filter(p => 
-          p.athlete.nationality?.toLowerCase() === country.toLowerCase()
+        filteredParticipants = filteredParticipants.filter(
+          (p) => p.athlete.nationality?.toLowerCase() === country.toLowerCase(),
         );
       }
-      
+
       if (weightCategory) {
-        filteredParticipants = filteredParticipants.filter(p => 
-          p.weightCategory?.toLowerCase() === weightCategory.toLowerCase()
+        filteredParticipants = filteredParticipants.filter(
+          (p) =>
+            p.weightCategory?.toLowerCase() === weightCategory.toLowerCase(),
         );
       }
-      
+
       if (search) {
         const searchLower = search.toLowerCase();
-        filteredParticipants = filteredParticipants.filter(p => 
-          p.athlete.name?.toLowerCase().includes(searchLower) ||
-          p.athlete.nationality?.toLowerCase().includes(searchLower) ||
-          p.weightCategory?.toLowerCase().includes(searchLower)
+        filteredParticipants = filteredParticipants.filter(
+          (p) =>
+            p.athlete.name?.toLowerCase().includes(searchLower) ||
+            p.athlete.nationality?.toLowerCase().includes(searchLower) ||
+            p.weightCategory?.toLowerCase().includes(searchLower),
         );
       }
 
       if (rankedOnly) {
-        filteredParticipants = filteredParticipants.filter(p => 
-          p.athlete.ranks && p.athlete.ranks.length > 0 && 
-          p.athlete.ranks.some((rank: any) => 
-            rank.rankingType === 'world' || rank.rankingType === 'olympic'
-          )
+        filteredParticipants = filteredParticipants.filter(
+          (p) =>
+            p.athlete.ranks &&
+            p.athlete.ranks.length > 0 &&
+            p.athlete.ranks.some(
+              (rank: any) =>
+                rank.rankingType === "world" || rank.rankingType === "olympic",
+            ),
         );
       }
 
       // Get unique countries and weight categories for filter options
-      const countries = Array.from(new Set(allParticipants.map(p => p.athlete.nationality).filter(Boolean))).sort();
-      const weightCategories = Array.from(new Set(allParticipants.map(p => p.weightCategory).filter(Boolean))).sort();
+      const countries = Array.from(
+        new Set(
+          allParticipants.map((p) => p.athlete.nationality).filter(Boolean),
+        ),
+      ).sort();
+      const weightCategories = Array.from(
+        new Set(allParticipants.map((p) => p.weightCategory).filter(Boolean)),
+      ).sort();
 
       // Paginate
-      const paginatedParticipants = filteredParticipants.slice(offset, offset + limit);
-      
+      const paginatedParticipants = filteredParticipants.slice(
+        offset,
+        offset + limit,
+      );
+
       res.json({
         participants: paginatedParticipants,
         pagination: {
           page,
           limit,
           total: filteredParticipants.length,
-          hasMore: offset + limit < filteredParticipants.length
+          hasMore: offset + limit < filteredParticipants.length,
         },
         filters: {
           countries,
-          weightCategories
-        }
+          weightCategories,
+        },
       });
     } catch (error) {
       console.error("Error fetching competition participants:", error);
@@ -2030,7 +2045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeId=11f04375-db22-c9eb-81a0-0225d1e4088f&nodeLevel=EventRole&itemsPerPage=4000&pageNo=0`;
+            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&itemsPerPage=4000&pageNo=0`;
 
             console.log(
               `📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`,
@@ -2140,8 +2155,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
                 const country = participant.country || "";
                 const weightCategory = participant.divisionName || null;
-                const clubName = participant.clubName || participant.customClubName || null;
-                const teamOrganizationName = participant.teamOrganizationName || null;
+                const clubName =
+                  participant.clubName || participant.customClubName || null;
+                const teamOrganizationName =
+                  participant.teamOrganizationName || null;
                 const subeventName = participant.subeventName || null;
                 const teamName = participant.teamName || null;
                 const avatar = participant.avatar || "";
@@ -2188,16 +2205,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const updateData: any = {};
                     if (userId) updateData.simplyCompeteUserId = userId;
                     if (clubName) updateData.clubName = clubName;
-                    if (teamOrganizationName) updateData.teamOrganizationName = teamOrganizationName;
+                    if (teamOrganizationName)
+                      updateData.teamOrganizationName = teamOrganizationName;
                     if (teamName) updateData.teamName = teamName;
-                    
+
                     if (Object.keys(updateData).length > 0) {
                       await db
                         .update(schema.athletes)
                         .set(updateData)
                         .where(eq(schema.athletes.id, existingAthletes[0].id));
                       console.log(
-                        `  ↳ Updated athlete with: ${Object.keys(updateData).join(', ')}`,
+                        `  ↳ Updated athlete with: ${Object.keys(updateData).join(", ")}`,
                       );
                     }
                   }
@@ -2313,7 +2331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     })
                     .where(
                       and(
-                        eq(schema.competitionParticipants.competitionId, competitionId),
+                        eq(
+                          schema.competitionParticipants.competitionId,
+                          competitionId,
+                        ),
                         eq(schema.competitionParticipants.athleteId, athleteId),
                       ),
                     );
@@ -2809,9 +2830,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log(
-          `[OpponentAnalysis] Generating new analysis for athlete ${athleteId} vs opponent ${opponentId}${customNotes ? ' with custom notes' : ''}`,
+          `[OpponentAnalysis] Generating new analysis for athlete ${athleteId} vs opponent ${opponentId}${customNotes ? " with custom notes" : ""}`,
         );
-        const analysis = await aiEngine.analyzeOpponent(athleteId, opponentId, customNotes);
+        const analysis = await aiEngine.analyzeOpponent(
+          athleteId,
+          opponentId,
+          customNotes,
+        );
 
         // Calculate expiration date (1st of next month)
         const expiresAt = new Date();
