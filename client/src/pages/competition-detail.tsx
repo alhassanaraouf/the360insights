@@ -155,13 +155,22 @@ export default function CompetitionDetail() {
       // Handle response structure
       const stats = data?.stats || data;
       const synced = stats?.synced ?? 0;
-      const matched = stats?.matched ?? 0;
+      const updated = stats?.updated ?? 0;
       const created = stats?.created ?? 0;
       const total = stats?.total ?? 0;
+      const errors = stats?.errors ?? 0;
+
+      // Build a clear message about what happened
+      const changes = [];
+      if (synced > 0) changes.push(`${synced} new participant${synced !== 1 ? 's' : ''}`);
+      if (updated > 0) changes.push(`${updated} updated`);
+      if (created > 0) changes.push(`${created} new athlete${created !== 1 ? 's' : ''} created`);
+      
+      const changeText = changes.length > 0 ? changes.join(', ') : 'No changes';
 
       toast({
         title: "Participants Synced Successfully! 🎉",
-        description: `Total: ${total} participants | ${synced} linked | ${matched} matched existing | ${created} newly created`,
+        description: `Synced ${total} participant${total !== 1 ? 's' : ''} from SimplyCompete • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
       });
       
       // Invalidate participants query to refresh the list
