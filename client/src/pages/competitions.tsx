@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +22,9 @@ import {
   Trophy,
   Award,
   RefreshCw,
+  Check,
+  ChevronsUpDown,
+  User as UserIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -57,6 +63,7 @@ export default function Competitions() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterAthlete, setFilterAthlete] = useState("all");
+  const [athleteSearchOpen, setAthleteSearchOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [syncingCompetitionId, setSyncingCompetitionId] = useState<number | null>(null);
@@ -346,19 +353,90 @@ export default function Competitions() {
               </Select>
 
               {/* Filter by Athlete */}
-              <Select value={filterAthlete} onValueChange={setFilterAthlete}>
-                <SelectTrigger data-testid="select-filter-athlete">
-                  <SelectValue placeholder="All athletes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Athletes</SelectItem>
-                  {athletes?.map((athlete) => (
-                    <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                      {athlete.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={athleteSearchOpen} onOpenChange={setAthleteSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={athleteSearchOpen}
+                    className="w-full justify-between"
+                    data-testid="select-filter-athlete"
+                  >
+                    {filterAthlete === "all" ? (
+                      <span className="text-muted-foreground">All athletes</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage 
+                            src={`/api/athletes/${filterAthlete}/image`} 
+                            alt={athletes?.find(a => a.id === parseInt(filterAthlete))?.name}
+                          />
+                          <AvatarFallback className="text-xs">
+                            <UserIcon className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{athletes?.find(a => a.id === parseInt(filterAthlete))?.name}</span>
+                      </div>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search athletes..." />
+                    <CommandList>
+                      <CommandEmpty>No athlete found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setFilterAthlete("all");
+                            setAthleteSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filterAthlete === "all" ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          All Athletes
+                        </CommandItem>
+                        {athletes?.map((athlete) => (
+                          <CommandItem
+                            key={athlete.id}
+                            value={`${athlete.name} ${athlete.nationality || ''}`}
+                            onSelect={() => {
+                              setFilterAthlete(athlete.id.toString());
+                              setAthleteSearchOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${
+                                filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage 
+                                src={`/api/athletes/${athlete.id}/image`} 
+                                alt={athlete.name}
+                              />
+                              <AvatarFallback className="text-xs">
+                                <UserIcon className="h-3 w-3" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{athlete.name}</span>
+                              {athlete.nationality && (
+                                <span className="text-xs text-muted-foreground">{athlete.nationality}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
