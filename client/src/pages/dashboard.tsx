@@ -218,13 +218,13 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-1">
-                    Tracked Events
+                    Upcoming Events
                   </p>
                   <p className="text-2xl sm:text-3xl font-bold text-purple-900 dark:text-purple-100">
                     {selectedCompetitions}
                   </p>
                   <p className="text-xs text-purple-600/80 dark:text-purple-400/80 mt-1">
-                    Selected competitions
+                    Future competitions
                   </p>
                 </div>
                 <div className="p-2 sm:p-3 bg-purple-500/20 rounded-full flex-shrink-0">
