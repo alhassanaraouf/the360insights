@@ -121,6 +121,9 @@ export default function CompetitionDetail() {
   const participants = participantsData?.pages.flatMap(page => page.participants) ?? [];
   const totalParticipants = participantsData?.pages[0]?.pagination.total ?? 0;
   const filterOptions = participantsData?.pages[0]?.filters ?? { countries: [], weightCategories: [] };
+  
+  // Check if we should show filters (either has participants or filters are active)
+  const hasParticipantsOrFilters = totalParticipants > 0 || searchInput || countryFilter || weightCategoryFilter || rankedOnly;
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -439,7 +442,7 @@ export default function CompetitionDetail() {
                 )}
 
                 {/* Search and Filters */}
-                {totalParticipants > 0 && (
+                {hasParticipantsOrFilters && (
                   <div className="space-y-3">
                     {/* Search Bar */}
                     <div className="relative">
@@ -527,10 +530,15 @@ export default function CompetitionDetail() {
                   <div className="text-center py-4 text-gray-500">Loading participants...</div>
                 ) : participants && participants.length > 0 ? (
                   <div className="max-h-[600px] overflow-y-auto space-y-2 relative">
-                    {/* Loading Overlay */}
-                    {participantsFetching && !isFetchingNextPage && (
-                      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-                        <div className="text-sm text-gray-500">Updating...</div>
+                    {/* Loading Overlay - only show when refetching, not on initial load or next page */}
+                    {participantsFetching && !participantsLoading && !isFetchingNextPage && (
+                      <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] flex items-center justify-center z-10 rounded-lg">
+                        <div className="bg-background px-4 py-2 rounded-md shadow-lg border">
+                          <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            Updating...
+                          </div>
+                        </div>
                       </div>
                     )}
                     
