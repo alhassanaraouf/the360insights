@@ -445,12 +445,12 @@ export default function CompetitionDetail() {
                       <Filter className="w-4 h-4 text-gray-500" />
                       
                       {/* Country Filter */}
-                      <Select value={countryFilter} onValueChange={setCountryFilter}>
+                      <Select value={countryFilter || "all"} onValueChange={(value) => setCountryFilter(value === "all" ? "" : value)}>
                         <SelectTrigger className="w-[180px]" data-testid="select-country-filter">
                           <SelectValue placeholder="All Countries" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Countries</SelectItem>
+                          <SelectItem value="all">All Countries</SelectItem>
                           {filterOptions.countries.map((country: string) => (
                             <SelectItem key={country} value={country}>
                               {getCountryFlagWithFallback(country)} {country}
@@ -460,12 +460,12 @@ export default function CompetitionDetail() {
                       </Select>
 
                       {/* Weight Category Filter */}
-                      <Select value={weightCategoryFilter} onValueChange={setWeightCategoryFilter}>
+                      <Select value={weightCategoryFilter || "all"} onValueChange={(value) => setWeightCategoryFilter(value === "all" ? "" : value)}>
                         <SelectTrigger className="w-[180px]" data-testid="select-weight-filter">
                           <SelectValue placeholder="All Categories" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all">All Categories</SelectItem>
                           {filterOptions.weightCategories.map((category: string) => (
                             <SelectItem key={category} value={category}>
                               {category}
