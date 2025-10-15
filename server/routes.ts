@@ -1860,6 +1860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const country = req.query.country as string || '';
       const weightCategory = req.query.weightCategory as string || '';
       const search = req.query.search as string || '';
+      const rankedOnly = req.query.rankedOnly === 'true';
 
       // Get filtered participants with pagination
       const allParticipants = await storage.getCompetitionParticipants(competitionId);
@@ -1885,6 +1886,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           p.athlete.name?.toLowerCase().includes(searchLower) ||
           p.athlete.nationality?.toLowerCase().includes(searchLower) ||
           p.weightCategory?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      if (rankedOnly) {
+        filteredParticipants = filteredParticipants.filter(p => 
+          p.athlete.ranks && p.athlete.ranks.length > 0 && 
+          p.athlete.ranks.some((rank: any) => 
+            rank.rankingType === 'world' || rank.rankingType === 'olympic'
+          )
         );
       }
 

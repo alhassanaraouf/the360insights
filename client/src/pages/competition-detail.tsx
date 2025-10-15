@@ -33,6 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface Competition {
   id: number;
@@ -66,6 +68,7 @@ export default function CompetitionDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("");
   const [weightCategoryFilter, setWeightCategoryFilter] = useState<string>("");
+  const [rankedOnly, setRankedOnly] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Fetch competition details
@@ -82,7 +85,7 @@ export default function CompetitionDetail() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: [`/api/competitions/${competitionId}/participants`, searchQuery, countryFilter, weightCategoryFilter],
+    queryKey: [`/api/competitions/${competitionId}/participants`, searchQuery, countryFilter, weightCategoryFilter, rankedOnly],
     queryFn: async ({ pageParam = 1 }) => {
       const params = new URLSearchParams({
         page: pageParam.toString(),
@@ -90,6 +93,7 @@ export default function CompetitionDetail() {
         ...(searchQuery && { search: searchQuery }),
         ...(countryFilter && { country: countryFilter }),
         ...(weightCategoryFilter && { weightCategory: weightCategoryFilter }),
+        ...(rankedOnly && { rankedOnly: 'true' }),
       });
       
       const response = await fetch(`/api/competitions/${competitionId}/participants?${params}`);
@@ -474,8 +478,20 @@ export default function CompetitionDetail() {
                         </SelectContent>
                       </Select>
 
+                      {/* Ranked Only Checkbox */}
+                      <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-background" data-testid="checkbox-ranked-only">
+                        <Checkbox 
+                          id="ranked-only" 
+                          checked={rankedOnly}
+                          onCheckedChange={(checked) => setRankedOnly(checked as boolean)}
+                        />
+                        <Label htmlFor="ranked-only" className="text-sm font-medium cursor-pointer">
+                          Ranked Only
+                        </Label>
+                      </div>
+
                       {/* Clear Filters */}
-                      {(countryFilter || weightCategoryFilter || searchQuery) && (
+                      {(countryFilter || weightCategoryFilter || searchQuery || rankedOnly) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -483,6 +499,7 @@ export default function CompetitionDetail() {
                             setCountryFilter("");
                             setWeightCategoryFilter("");
                             setSearchQuery("");
+                            setRankedOnly(false);
                           }}
                           data-testid="button-clear-filters"
                         >
@@ -570,7 +587,7 @@ export default function CompetitionDetail() {
                       )}
                     </div>
                   </div>
-                ) : totalParticipants === 0 && (countryFilter || weightCategoryFilter || searchQuery) ? (
+                ) : totalParticipants === 0 && (countryFilter || weightCategoryFilter || searchQuery || rankedOnly) ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-12 h-12 mx-auto mb-2 opacity-20" />
                     <p>No participants match your filters</p>
@@ -581,6 +598,7 @@ export default function CompetitionDetail() {
                         setCountryFilter("");
                         setWeightCategoryFilter("");
                         setSearchQuery("");
+                        setRankedOnly(false);
                       }}
                       className="mt-2"
                     >
