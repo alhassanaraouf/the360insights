@@ -2077,7 +2077,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const fullName =
                   `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
                 const country = participant.country || "";
-                const weightCategory = participant.divisionName || "";
+                const weightCategory = participant.divisionName || null;
+                const wtfLicenseId = participant.wtfLicenseId || null;
+                const clubName = participant.clubName || participant.customClubName || null;
+                const teamOrganizationName = participant.teamOrganizationName || null;
+                const subeventName = participant.subeventName || null;
+                const teamName = participant.teamName || null;
                 const avatar = participant.avatar || "";
                 const userId = participant.userId || "";
 
@@ -2225,13 +2230,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     competitionId,
                     athleteId,
                     weightCategory,
+                    wtfLicenseId,
+                    clubName,
+                    teamOrganizationName,
+                    subeventName,
+                    teamName,
                   });
                   synced++;
                 } else {
                   // Update existing participant record with latest data
                   await db
                     .update(schema.competitionParticipants)
-                    .set({ weightCategory })
+                    .set({
+                      weightCategory,
+                      wtfLicenseId,
+                      clubName,
+                      teamOrganizationName,
+                      subeventName,
+                      teamName,
+                    })
                     .where(
                       and(
                         eq(schema.competitionParticipants.competitionId, competitionId),

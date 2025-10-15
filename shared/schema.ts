@@ -138,6 +138,11 @@ export const competitionParticipants = pgTable("competition_participants", {
   athleteId: integer("athlete_id").references(() => athletes.id),
   seedNumber: integer("seed_number"), // Tournament seeding position
   weightCategory: varchar("weight_category", { length: 50 }), // e.g., "-68kg", "-57kg"
+  wtfLicenseId: varchar("wtf_license_id", { length: 100 }), // WTF License ID
+  clubName: text("club_name"), // Club/Team name
+  teamOrganizationName: text("team_organization_name"), // Team organization
+  subeventName: varchar("subevent_name", { length: 100 }), // Subevent/Division (e.g., "Senior Division")
+  teamName: text("team_name"), // Team name
   registrationDate: timestamp("registration_date").defaultNow(),
   status: varchar("status", { length: 20 }).default("registered"), // 'registered', 'confirmed', 'withdrawn'
   createdAt: timestamp("created_at").defaultNow(),
