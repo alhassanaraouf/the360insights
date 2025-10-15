@@ -2078,7 +2078,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   `${participant.preferredFirstName || ""} ${participant.preferredLastName || ""}`.trim();
                 const country = participant.country || "";
                 const weightCategory = participant.divisionName || null;
-                const wtfLicenseId = participant.wtfLicenseId || null;
                 const clubName = participant.clubName || participant.customClubName || null;
                 const teamOrganizationName = participant.teamOrganizationName || null;
                 const subeventName = participant.subeventName || null;
@@ -2237,7 +2236,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     competitionId,
                     athleteId,
                     weightCategory,
-                    wtfLicenseId,
                     subeventName,
                     teamName,
                   });
@@ -2248,7 +2246,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     .update(schema.competitionParticipants)
                     .set({
                       weightCategory,
-                      wtfLicenseId,
                       subeventName,
                       teamName,
                     })
