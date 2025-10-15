@@ -2223,6 +2223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await db.insert(schema.competitionParticipants).values({
                     competitionId,
                     athleteId,
+                    weightCategory,
                   });
                   synced++;
                 }
