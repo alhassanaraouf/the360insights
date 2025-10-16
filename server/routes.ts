@@ -1709,12 +1709,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
 
       // Find the athlete role node in the hierarchy
-      // The structure is data.data.data which contains an array of event roles
-      if (data?.data?.data && Array.isArray(data.data.data)) {
-        const athleteRole = data.data.data.find(
+      // The structure is data.children which contains an array of event roles
+      if (data?.data?.children && Array.isArray(data.data.children)) {
+        const athleteRole = data.data.children.find(
           (role: any) =>
-            role.eventRoleName?.toLowerCase() === "athlete" ||
-            role.eventRoleName?.toLowerCase() === "athletes",
+            role.nameOfNode?.toLowerCase() === "athlete" ||
+            role.nameOfNode?.toLowerCase() === "athletes",
         );
 
         if (athleteRole && athleteRole.nodeId) {
@@ -2232,18 +2232,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Parse the hierarchy response
             const hierarchyData = JSON.parse(hierarchyContent);
             
-            // Find athlete role node_id
-            if (hierarchyData?.data?.data && Array.isArray(hierarchyData.data.data)) {
-              const athleteRole = hierarchyData.data.data.find((role: any) => 
-                role.eventRoleName?.toLowerCase() === 'athlete' || 
-                role.eventRoleName?.toLowerCase() === 'athletes'
+            console.log(`📋 Hierarchy data structure: ${JSON.stringify(hierarchyData).substring(0, 300)}`);
+            
+            // Find athlete role node_id in data.children array
+            if (hierarchyData?.data?.children && Array.isArray(hierarchyData.data.children)) {
+              const athleteRole = hierarchyData.data.children.find((role: any) => 
+                role.nameOfNode?.toLowerCase() === 'athlete' || 
+                role.nameOfNode?.toLowerCase() === 'athletes'
               );
 
               if (athleteRole && athleteRole.nodeId) {
                 athleteNodeId = athleteRole.nodeId;
-                console.log(`✅ Found athlete role node_id: ${athleteNodeId}`);
+                console.log(`✅ Found athlete role node_id: ${athleteNodeId} (participantCount: ${athleteRole.participantCount})`);
                 hierarchyError = null;
                 break;
+              } else {
+                console.log(`⚠️ Available roles: ${hierarchyData.data.children.map((r: any) => r.nameOfNode).join(', ')}`);
               }
             }
 
