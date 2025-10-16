@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useEgyptFilter } from "@/lib/egypt-filter-context";
 import type { User } from "@shared/schema";
 import { 
   Search,
@@ -59,6 +60,7 @@ export default function Competitions() {
   const [, navigate] = useLocation();
   const { user } = useAuth() as { user: User | null };
   const { toast } = useToast();
+  const { showEgyptianOnly } = useEgyptFilter();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
@@ -69,6 +71,8 @@ export default function Competitions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [syncingCompetitionId, setSyncingCompetitionId] = useState<number | null>(null);
+  const [displayedAthleteCount, setDisplayedAthleteCount] = useState(20);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -89,10 +93,36 @@ export default function Competitions() {
   });
 
   // Fetch athletes for filter (lightweight - no rankings)
-  const { data: athletes, isLoading: isLoadingAthletes } = useQuery<any[]>({
+  const { data: allAthletes, isLoading: isLoadingAthletes } = useQuery<any[]>({
     queryKey: ['/api/athletes/simple'],
     enabled: athleteSearchOpen, // Only fetch when dropdown is opened
   });
+
+  // Filter athletes based on Egypt/Global toggle
+  const athletes = useMemo(() => {
+    if (!allAthletes) return [];
+    if (showEgyptianOnly) {
+      return allAthletes.filter(athlete => athlete.nationality === 'Egypt');
+    }
+    return allAthletes;
+  }, [allAthletes, showEgyptianOnly]);
+
+  // Reset displayed count when dropdown opens
+  useEffect(() => {
+    if (athleteSearchOpen) {
+      setDisplayedAthleteCount(20);
+    }
+  }, [athleteSearchOpen]);
+
+  // Handle scroll for infinite loading
+  const handleScroll = useCallback((e: any) => {
+    const target = e.currentTarget;
+    const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
+    
+    if (scrolledToBottom && athletes && displayedAthleteCount < athletes.length) {
+      setDisplayedAthleteCount(prev => Math.min(prev + 20, athletes.length));
+    }
+  }, [athletes, displayedAthleteCount]);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -345,7 +375,7 @@ export default function Competitions() {
               <PopoverContent className="w-full p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Search by name, nationality..." />
-                  <CommandList>
+                  <CommandList onScroll={handleScroll}>
                     <CommandEmpty>
                       {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}
                     </CommandEmpty>
@@ -364,7 +394,7 @@ export default function Competitions() {
                         />
                         All Athletes
                       </CommandItem>
-                      {athleteSearchOpen && athletes && athletes.map((athlete) => (
+                      {athleteSearchOpen && athletes && athletes.slice(0, displayedAthleteCount).map((athlete) => (
                         <CommandItem
                           key={athlete.id}
                           value={`${athlete.name} ${athlete.nationality || ''}`}
@@ -378,6 +408,15 @@ export default function Competitions() {
                               filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
                             }`}
                           />
+                          <Avatar className="h-6 w-6 mr-2">
+                            <AvatarImage 
+                              src={`/api/athletes/${athlete.id}/image`} 
+                              alt={athlete.name}
+                            />
+                            <AvatarFallback className="text-xs">
+                              <UserIcon className="h-3 w-3" />
+                            </AvatarFallback>
+                          </Avatar>
                           <div className="flex flex-col flex-1">
                             <span className="font-medium">{athlete.name}</span>
                             {athlete.nationality && (
@@ -386,6 +425,11 @@ export default function Competitions() {
                           </div>
                         </CommandItem>
                       ))}
+                      {athletes && displayedAthleteCount < athletes.length && (
+                        <div className="text-center py-2 text-sm text-muted-foreground">
+                          Showing {displayedAthleteCount} of {athletes.length} athletes. Scroll for more...
+                        </div>
+                      )}
                     </CommandGroup>
                   </CommandList>
                 </Command>

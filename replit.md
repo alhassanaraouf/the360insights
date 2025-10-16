@@ -53,7 +53,11 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Real-time Features**: WebSocket integration for live analysis.
 -   **Session Management**: Replit Key Value Store for zero-configuration session persistence.
 -   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage.
--   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis. JSON imports use batch processing (20 items per batch) with parallel logo uploads for efficiency. Athlete filter uses lightweight `/api/athletes/simple` endpoint (returns only id, name, nationality) for sub-second load times instead of expensive ranking calculations. Athlete filter dropdown optimized with lazy loading (only fetches data when opened) and conditional rendering (only renders items when dropdown is open) to prevent browser freeze with 10,000+ athletes. Profile pictures removed from dropdown list to eliminate image flood requests.
+-   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis. JSON imports use batch processing (20 items per batch) with parallel logo uploads for efficiency. Athlete filter uses lightweight `/api/athletes/simple` endpoint (returns only id, name, nationality) for sub-second load times instead of expensive ranking calculations. Athlete filter dropdown optimized with:
+    - Lazy loading (only fetches data when opened)
+    - Infinite scroll rendering (initial 20 athletes, loads 20 more on scroll)
+    - Egypt/Global filter integration (filters athletes based on header toggle)
+    - Profile pictures displayed with controlled loading (20 at a time prevents browser freeze)
 -   **Competition Access**: All competitions are always enabled for all users (removed user_competition_preferences system - October 2025).
 
 ### Database Schema
