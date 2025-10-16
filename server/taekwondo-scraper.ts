@@ -1289,8 +1289,8 @@ export async function importJsonAthletes(
                 status: "completed",
                 competitionLevel: competition.g_rank || "international",
                 eventResult: null,
+                eventId: competition.event_id || null,
                 metadata: JSON.stringify({
-                  event_id: competition.event_id,
                   category: competition.category,
                   g_rank: competition.g_rank,
                   source: "athlete_import",
@@ -1324,10 +1324,10 @@ export async function importJsonAthletes(
                 eventResult:
                   competition.event_result?.toString() ||
                   competition.place?.toString(),
+                eventId: competition.event_id || null,
                 metadata: primaryEntry.metadata
                   ? JSON.stringify(primaryEntry.metadata)
                   : JSON.stringify({
-                      event_id: competition.event_id,
                       event_url: competition.event_url,
                       place: competition.place,
                       points: competition.points,
@@ -1367,10 +1367,10 @@ export async function importJsonAthletes(
                     eventResult:
                       competition.event_result?.toString() ||
                       competition.place?.toString(),
+                    eventId: competition.event_id || null,
                     metadata: primaryEntry.metadata
                       ? JSON.stringify(primaryEntry.metadata)
                       : JSON.stringify({
-                          event_id: competition.event_id,
                           event_url: competition.event_url,
                           place: competition.place,
                           points: competition.points,
