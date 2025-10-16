@@ -357,6 +357,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lightweight endpoint for athlete filter (no rankings, fast)
+  app.get("/api/athletes/simple", async (req, res) => {
+    try {
+      const result = await db
+        .select({
+          id: schema.athletes.id,
+          name: schema.athletes.name,
+          nationality: schema.athletes.nationality,
+        })
+        .from(schema.athletes)
+        .orderBy(schema.athletes.name);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching simple athletes:", error);
+      res.status(500).json({ error: "Failed to fetch athletes" });
+    }
+  });
+
   // Get unique nationalities for filter dropdown
   app.get("/api/athletes/nationalities", async (req, res) => {
     try {
