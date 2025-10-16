@@ -58,6 +58,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
     - Infinite scroll rendering (initial 20 athletes, loads 20 more on scroll)
     - Egypt/Global filter integration (filters athletes based on header toggle)
     - Profile pictures displayed with controlled loading (20 at a time prevents browser freeze)
+    - Real-time server-side search: Searches entire database via API (case-insensitive LIKE query) instead of filtering client-side loaded results; debounced 300ms for performance
 -   **Competition Access**: All competitions are always enabled for all users (removed user_competition_preferences system - October 2025).
 
 ### Database Schema
