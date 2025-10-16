@@ -20,7 +20,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Session Management**: Replit Key Value Store for persistent authentication sessions.
 -   **Real-time Features**: WebSocket integration for live match analysis.
 -   **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
--   **Authentication**: Multi-provider authentication (Google, Microsoft, email/password) with Replit auth fallback.
+-   **Authentication**: Local email/password authentication with Passport.js and bcrypt password hashing.
 -   **Object Storage**: Replit Object Storage for athlete profile pictures, competition logos, and other assets; Local file system storage for uploaded video files.
 
 ### Feature Specifications
