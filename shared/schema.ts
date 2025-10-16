@@ -173,10 +173,12 @@ export const careerEvents = pgTable("career_events", {
   status: text("status"), // 'upcoming', 'completed', 'cancelled'
   competitionLevel: text("competition_level"), // 'national', 'international', 'olympic', 'world_championship'
   eventResult: text("event_result"), // Competition finishing place/result
+  eventId: varchar("event_id", { length: 255 }), // External event ID from source
   metadata: jsonb("metadata"),
 }, (table) => ({
   athleteIdIdx: index("career_events_athlete_id_idx").on(table.athleteId),
   dateIdx: index("career_events_date_idx").on(table.date),
+  eventIdIdx: index("career_events_event_id_idx").on(table.eventId),
 }));
 
 export const aiQueries = pgTable("ai_queries", {
