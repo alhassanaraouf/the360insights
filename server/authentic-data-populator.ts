@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { athletes, kpiMetrics, strengths, weaknesses, athleteRanks, careerEvents } from "@shared/schema";
-import type { InsertKpiMetric, InsertStrength, InsertWeakness, InsertAthleteRank, InsertCareerEvent } from "@shared/schema";
+import { athletes, kpiMetrics, strengths, weaknesses, athleteRanks } from "@shared/schema";
+import type { InsertKpiMetric, InsertStrength, InsertWeakness, InsertAthleteRank } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { getOpenAIClient } from "./openai-client";
 
@@ -176,8 +176,7 @@ Respond with valid JSON only.`;
         db.delete(kpiMetrics).where(eq(kpiMetrics.athleteId, profile.athleteId)),
         db.delete(strengths).where(eq(strengths.athleteId, profile.athleteId)),
         db.delete(weaknesses).where(eq(weaknesses.athleteId, profile.athleteId)),
-        db.delete(performanceData).where(eq(performanceData.athleteId, profile.athleteId)),
-        db.delete(careerEvents).where(eq(careerEvents.athleteId, profile.athleteId))
+        db.delete(athleteRanks).where(eq(athleteRanks.athleteId, profile.athleteId))
       ]);
 
       // Insert KPI metrics - match schema: value as string, trend as string
@@ -214,28 +213,7 @@ Respond with valid JSON only.`;
         await db.insert(weaknesses).values(weaknessData);
       }
 
-      // Insert performance data - match schema: month, performanceScore, ranking
-      if (profile.performanceHistory.length > 0) {
-        const performanceDataInserts: InsertPerformanceData[] = profile.performanceHistory.map(perf => ({
-          athleteId: profile.athleteId,
-          month: perf.date,
-          performanceScore: perf.score.toString(),
-          ranking: perf.rank
-        }));
-        await db.insert(performanceData).values(performanceDataInserts);
-      }
-
-      // Insert career events - match schema: eventType, title, description, date
-      if (profile.careerMilestones.length > 0) {
-        const careerEventData: InsertCareerEvent[] = profile.careerMilestones.map(milestone => ({
-          athleteId: profile.athleteId,
-          eventType: 'achievement',
-          title: milestone.achievement,
-          date: milestone.date,
-          description: milestone.significance
-        }));
-        await db.insert(careerEvents).values(careerEventData);
-      }
+      // Performance history and career milestones are now tracked via competition participants
 
     } catch (error) {
       console.error(`Error saving data for athlete ${profile.athleteId}:`, error);

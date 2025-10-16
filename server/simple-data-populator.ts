@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { kpiMetrics, strengths, weaknesses, performanceData, careerEvents } from "@shared/schema";
-import type { InsertKpiMetric, InsertStrength, InsertWeakness, InsertPerformanceData, InsertCareerEvent } from "@shared/schema";
+import { kpiMetrics, strengths, weaknesses } from "@shared/schema";
+import type { InsertKpiMetric, InsertStrength, InsertWeakness } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export class SimpleDataPopulator {
@@ -15,8 +15,6 @@ export class SimpleDataPopulator {
         db.delete(kpiMetrics).where(eq(kpiMetrics.athleteId, athleteId)),
         db.delete(strengths).where(eq(strengths.athleteId, athleteId)),
         db.delete(weaknesses).where(eq(weaknesses.athleteId, athleteId)),
-        db.delete(performanceData).where(eq(performanceData.athleteId, athleteId)),
-        db.delete(careerEvents).where(eq(careerEvents.athleteId, athleteId))
       ]);
 
       // Add authentic KPI metrics based on real performance
@@ -52,61 +50,6 @@ export class SimpleDataPopulator {
       ];
 
       await db.insert(weaknesses).values(weaknessData);
-
-      // Add authentic performance history
-      const performanceHistory: InsertPerformanceData[] = [
-        { athleteId, month: "2024-11", performanceScore: "78", ranking: 15 },
-        { athleteId, month: "2024-10", performanceScore: "75", ranking: 18 },
-        { athleteId, month: "2024-09", performanceScore: "82", ranking: 12 },
-        { athleteId, month: "2024-08", performanceScore: "79", ranking: 14 },
-        { athleteId, month: "2024-07", performanceScore: "76", ranking: 16 },
-        { athleteId, month: "2024-06", performanceScore: "80", ranking: 13 },
-        { athleteId, month: "2024-05", performanceScore: "77", ranking: 15 },
-        { athleteId, month: "2024-04", performanceScore: "74", ranking: 19 }
-      ];
-
-      await db.insert(performanceData).values(performanceHistory);
-
-      // Add career milestones
-      const careerMilestones: InsertCareerEvent[] = [
-        {
-          athleteId,
-          eventType: "achievement",
-          title: "African Games Bronze Medal",
-          date: "2024-03-15",
-          description: "Won bronze medal at African Games in men's -68kg category"
-        },
-        {
-          athleteId,
-          eventType: "achievement", 
-          title: "National Championship Gold",
-          date: "2024-02-20",
-          description: "Egyptian National Taekwondo Championship winner"
-        },
-        {
-          athleteId,
-          eventType: "achievement",
-          title: "World Ranking Achievement",
-          date: "2024-01-10",
-          description: "Achieved top 20 world ranking for the first time"
-        },
-        {
-          athleteId,
-          eventType: "match",
-          title: "International Open Victory",
-          date: "2023-12-05",
-          description: "Victory at Cairo International Taekwondo Open"
-        },
-        {
-          athleteId,
-          eventType: "achievement",
-          title: "Junior to Senior Transition",
-          date: "2023-09-01",
-          description: "Successfully transitioned from junior to senior competition level"
-        }
-      ];
-
-      await db.insert(careerEvents).values(careerMilestones);
 
       console.log("✅ Successfully populated authentic data for Seif Eissa");
       

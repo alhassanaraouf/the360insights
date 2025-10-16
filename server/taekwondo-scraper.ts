@@ -8,7 +8,6 @@ import {
 } from "@shared/schema";
 import * as schema from "@shared/schema";
 import { eq, and, sql, desc, isNull } from "drizzle-orm";
-import type { InsertCareerEvent } from "@shared/schema";
 import { bucketStorage } from "./bucket-storage";
 import { storage } from "./storage";
 

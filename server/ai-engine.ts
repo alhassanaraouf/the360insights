@@ -384,14 +384,12 @@ Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]
         kpis,
         strengths,
         weaknesses,
-        careerEvents,
         trainingRecommendations,
       ] = await Promise.all([
         storage.getAthlete(athleteId),
         storage.getKpiMetricsByAthleteId(athleteId),
         storage.getStrengthsByAthleteId(athleteId),
         storage.getWeaknessesByAthleteId(athleteId),
-        storage.getCareerEventsByAthleteId(athleteId),
         storage.getTrainingRecommendationsByAthleteId(athleteId),
       ]);
 
@@ -422,7 +420,7 @@ Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]
 
       if (isSimpleGreeting) {
         return {
-          response: `Hello! I'm your AI analyst for ${athlete.name}, a professional Taekwondo athlete from ${athlete.nationality}. I have comprehensive data on their performance metrics, ${strengths.length} key strengths, ${weaknesses.length} areas for improvement, ${careerEvents.length} career milestones, and ${trainingRecommendations.length} training recommendations. Ask me anything about performance trends, tactical analysis, training recommendations, or competition strategy!`,
+          response: `Hello! I'm your AI analyst for ${athlete.name}, a professional Taekwondo athlete from ${athlete.nationality}. I have comprehensive data on their performance metrics, ${strengths.length} key strengths, ${weaknesses.length} areas for improvement, and ${trainingRecommendations.length} training recommendations. Ask me anything about performance trends, tactical analysis, training recommendations, or competition strategy!`,
           confidence: 95,
         };
       }
@@ -473,19 +471,6 @@ ${
         )
         .join("\n")
     : "• No weaknesses data available"
-}
-
-CAREER HIGHLIGHTS:
-${
-  careerEvents.length > 0
-    ? careerEvents
-        .slice(-5)
-        .map(
-          (event) =>
-            `• ${event.date}: ${event.title} - ${event.description || event.eventType}`,
-        )
-        .join("\n")
-    : "• No career events recorded"
 }
 
 CURRENT TRAINING FOCUS:
@@ -564,8 +549,6 @@ Provide specific, actionable insights based on this data.`;
             kpis.length * 15 +
               strengths.length * 10 +
               weaknesses.length * 10 +
-              careerEvents.length * 5 +
-              careerEvents.length * 5 +
               trainingRecommendations.length * 5,
           );
           const confidence = Math.max(85, Math.min(98, dataScore));

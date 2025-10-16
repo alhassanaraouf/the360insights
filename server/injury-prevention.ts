@@ -114,23 +114,19 @@ export class InjuryPreventionEngine {
     }
 
     try {
-      const [athlete, kpis, performanceData, weaknesses, careerEvents] =
+      const [athlete, kpis, weaknesses] =
         await Promise.all([
           storage.getAthlete(athleteId),
           storage.getKpiMetricsByAthleteId(athleteId),
-          storage.getPerformanceDataByAthleteId(athleteId),
           storage.getWeaknessesByAthleteId(athleteId),
-          storage.getCareerEventsByAthleteId(athleteId),
         ]);
 
       if (!athlete) {
         throw new Error("Athlete not found");
       }
 
-      // Filter injury history from career events
-      const injuryHistory = careerEvents.filter(
-        (event) => event.eventType === "injury",
-      );
+      // Injury history would come from competition participation data if needed
+      const injuryHistory: any[] = [];
 
       const analysisPrompt = `
 Analyze injury risk for this elite Taekwondo athlete and provide comprehensive prevention insights:
@@ -149,9 +145,6 @@ ${weaknesses.map((w) => `${w.name}: ${w.score}/100 - ${w.description}`).join("\n
 
 INJURY HISTORY:
 ${injuryHistory.length > 0 ? injuryHistory.map((injury) => `${injury.date}: ${injury.title} - ${injury.description}`).join("\n") : "No previous injuries recorded"}
-
-PERFORMANCE TREND:
-${performanceData.map((p) => `${p.month}: Score ${p.performanceScore}%, Rank #${p.ranking}`).join("\n")}
 
 ${
   biomechanicalData

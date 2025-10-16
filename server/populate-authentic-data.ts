@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { kpiMetrics, strengths, weaknesses, athleteRanks, careerEvents } from "@shared/schema";
+import { kpiMetrics, strengths, weaknesses, athleteRanks } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { getOpenAIClient } from "./openai-client";
 

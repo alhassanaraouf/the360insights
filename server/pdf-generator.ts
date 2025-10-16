@@ -1,14 +1,13 @@
 import { storage } from './storage';
 import { bucketStorage } from './bucket-storage';
 import { jsPDF } from 'jspdf';
-import type { Athlete, KpiMetric, Strength, Weakness, CareerEvent } from '@shared/schema';
+import type { Athlete, KpiMetric, Strength, Weakness } from '@shared/schema';
 
 export interface AthleteReportData {
   athlete: Athlete & { worldRank?: number; olympicRank?: number; worldCategory?: string; olympicCategory?: string };
   kpis: KpiMetric[];
   strengths: Strength[];
   weaknesses: Weakness[];
-  careerEvents: CareerEvent[];
   competitors: (Athlete & { worldRank?: number; olympicRank?: number; worldCategory?: string; olympicCategory?: string })[];
   generatedAt: string;
 }
@@ -211,7 +210,8 @@ export class PDFGenerator {
     yPos += 25;
     doc.setTextColor(0, 0, 0); // Reset to black
 
-    if (reportData.careerEvents.length > 0) {
+    // Career events have been replaced with competition participants
+    if (false) {
       // Clean competition table header
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
@@ -880,7 +880,8 @@ export class PDFGenerator {
     yPos += 25;
     doc.setTextColor(0, 0, 0); // Reset to black
 
-    if (reportData.careerEvents.length > 0) {
+    // Career events have been replaced with competition participants
+    if (false) {
       // Clean competition table header
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
@@ -1074,12 +1075,11 @@ export class PDFGenerator {
   }
 
   private async gatherReportData(athleteId: number): Promise<AthleteReportData> {
-    const [athlete, kpis, strengths, weaknesses, careerEvents, rankings, competitors] = await Promise.all([
+    const [athlete, kpis, strengths, weaknesses, rankings, competitors] = await Promise.all([
       storage.getAthlete(athleteId),
       storage.getKpiMetricsByAthleteId(athleteId),
       storage.getStrengthsByAthleteId(athleteId),
       storage.getWeaknessesByAthleteId(athleteId),
-      storage.getCareerEventsByAthleteId(athleteId),
       storage.getAthleteRankings(athleteId),
       storage.getCompetitorsByRank(athleteId, 'world')
     ]);
@@ -1099,7 +1099,6 @@ export class PDFGenerator {
       kpis: kpis || [],
       strengths: strengths || [],
       weaknesses: weaknesses || [],
-      careerEvents: careerEvents || [],
       competitors: competitors || [],
       generatedAt: new Date().toISOString()
     };
