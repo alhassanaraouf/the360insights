@@ -1253,7 +1253,7 @@ export async function importJsonAthletes(
         console.log(`✓ Updated ${rankingsToUpdate.length} rankings for ${primaryEntry.name || primaryEntry.full_name}`);
       }
 
-      // Process competition/career events data if available
+      // Process competition participation data if available
       if (
         primaryEntry.competitions &&
         Array.isArray(primaryEntry.competitions)
@@ -1264,122 +1264,95 @@ export async function importJsonAthletes(
 
         for (const competition of primaryEntry.competitions) {
           try {
-            const isWorldDivision =
-              competition.category &&
-              competition.category.includes("World Senior Division");
+            // Map competition level
+            const getCompetitionLevel = (gRank: string) => {
+              if (gRank === "G-1") return "world_championship";
+              if (gRank === "G-2") return "international";
+              if (gRank === "G-4") return "international";
+              return "international";
+            };
 
-            // First, check if the global competition exists, if not create it
-            const globalCompetition = await db.query.careerEvents.findFirst({
-              where: and(
-                eq(schema.careerEvents.title, competition.event),
-                eq(schema.careerEvents.date, competition.date),
-                isNull(schema.careerEvents.athleteId), // Global competitions have null athleteId
-              ),
+            // First, check if the competition exists in the competitions table
+            let existingCompetition = await db.query.competitions.findFirst({
+              where: competition.event_id
+                ? eq(schema.competitions.simplyCompeteEventId, competition.event_id)
+                : and(
+                    eq(schema.competitions.name, competition.event),
+                    eq(schema.competitions.startDate, competition.date),
+                  ),
             });
 
-            if (!globalCompetition) {
-              // Create the global competition
-              await db.insert(schema.careerEvents).values({
-                athleteId: null, // Global competition
-                eventType: "competition",
-                title: competition.event,
-                description: `${competition.category || "International Competition"} - ${competition.location || "Location TBD"}`,
-                date: competition.date,
-                location: competition.location || "",
+            let competitionId: number;
+
+            if (!existingCompetition) {
+              // Create the competition in competitions table
+              const [newCompetition] = await db.insert(schema.competitions).values({
+                name: competition.event,
+                country: competition.location?.split(",")[0]?.trim() || "Unknown",
+                city: competition.location?.split(",")[1]?.trim() || null,
+                startDate: competition.date,
+                endDate: null,
+                category: competition.category || null,
+                gradeLevel: competition.g_rank || null,
+                pointsAvailable: competition.points || "0",
+                competitionType: getCompetitionLevel(competition.g_rank),
                 status: "completed",
-                competitionLevel: competition.g_rank || "international",
-                eventResult: null,
-                eventId: competition.event_id || null,
-                metadata: JSON.stringify({
-                  category: competition.category,
-                  g_rank: competition.g_rank,
-                  source: "athlete_import",
-                }),
-              });
+                simplyCompeteEventId: competition.event_id || null,
+              }).returning();
+              
+              competitionId = newCompetition.id;
               console.log(
-                `✓ Created global competition: ${competition.event} (${competition.date})`,
+                `✓ Created competition: ${competition.event} (${competition.date})`,
               );
+            } else {
+              competitionId = existingCompetition.id;
             }
 
-            // Check if this athlete's participation in the competition already exists
-            const existingEvent = await db.query.careerEvents.findFirst({
+            // Check if this athlete's participation already exists
+            const existingParticipation = await db.query.competitionParticipants.findFirst({
               where: and(
-                eq(schema.careerEvents.athleteId, athleteId),
-                eq(schema.careerEvents.title, competition.event),
-                eq(schema.careerEvents.date, competition.date),
+                eq(schema.competitionParticipants.competitionId, competitionId),
+                eq(schema.competitionParticipants.athleteId, athleteId),
               ),
             });
 
-            if (!existingEvent) {
-              // Insert new career event/competition
-              await db.insert(schema.careerEvents).values({
+            if (!existingParticipation) {
+              // Add athlete as competition participant
+              await db.insert(schema.competitionParticipants).values({
+                competitionId,
                 athleteId,
-                eventType: "competition",
-                title: competition.event,
-                description: `Place: ${competition.event_result || competition.place} | Points: ${competition.points} | Category: ${competition.category || "N/A"}`,
-                date: competition.date,
-                location: competition.location,
-                status: "completed",
-                competitionLevel: competition.g_rank || "international",
-                eventResult:
-                  competition.event_result?.toString() ||
-                  competition.place?.toString(),
-                eventId: competition.event_id || null,
-                metadata: primaryEntry.metadata
-                  ? JSON.stringify(primaryEntry.metadata)
-                  : JSON.stringify({
-                      event_url: competition.event_url,
-                      place: competition.place,
-                      points: competition.points,
-                      category: competition.category,
-                      g_rank: competition.g_rank,
-                      event_result: competition.event_result,
-                    }),
+                weightCategory: competition.category || primaryEntry.weight_division || null,
+                subeventName: competition.category || null,
+                points: competition.points || null,
+                eventResult: competition.event_result?.toString() || competition.place?.toString() || null,
+                status: "confirmed",
               });
 
               console.log(
-                `✓ Added competition: ${competition.event} (${competition.date}) - ${isWorldDivision ? "World" : "Olympic"} Division for ${primaryEntry.name || primaryEntry.full_name}`,
+                `✓ Added participant: ${primaryEntry.name || primaryEntry.full_name} to ${competition.event} - Place: ${competition.event_result || competition.place}, Points: ${competition.points}`,
               );
               competitionsImported++;
-            } else if (isWorldDivision) {
-              // If this is a World Division entry and we already have an entry,
-              // replace it since World Division has more accurate results
-              const existingCategory =
-                existingEvent.metadata &&
-                typeof existingEvent.metadata === "object"
-                  ? (existingEvent.metadata as any).category || ""
-                  : "";
-              const existingIsOlympic = existingCategory.includes(
-                "Olympic Senior Division",
-              );
+            } else {
+              // Update existing participation if we have better data
+              const updateData: any = {};
+              if (competition.points) updateData.points = competition.points;
+              if (competition.event_result || competition.place) {
+                updateData.eventResult = competition.event_result?.toString() || competition.place?.toString();
+              }
+              if (competition.category) {
+                updateData.weightCategory = competition.category;
+                updateData.subeventName = competition.category;
+              }
 
-              if (existingIsOlympic) {
-                console.log(
-                  `✓ Replacing Olympic Division entry with World Division for: ${competition.event} (${competition.date})`,
-                );
-
+              if (Object.keys(updateData).length > 0) {
                 await db
-                  .update(schema.careerEvents)
-                  .set({
-                    description: `Place: ${competition.event_result || competition.place} | Points: ${competition.points} | Category: ${competition.category || "N/A"}`,
-                    location: competition.location,
-                    competitionLevel: competition.g_rank || "international",
-                    eventResult:
-                      competition.event_result?.toString() ||
-                      competition.place?.toString(),
-                    eventId: competition.event_id || null,
-                    metadata: primaryEntry.metadata
-                      ? JSON.stringify(primaryEntry.metadata)
-                      : JSON.stringify({
-                          event_url: competition.event_url,
-                          place: competition.place,
-                          points: competition.points,
-                          category: competition.category,
-                          g_rank: competition.g_rank,
-                          event_result: competition.event_result,
-                        }),
-                  })
-                  .where(eq(schema.careerEvents.id, existingEvent.id));
+                  .update(schema.competitionParticipants)
+                  .set(updateData)
+                  .where(eq(schema.competitionParticipants.id, existingParticipation.id));
+                
+                console.log(
+                  `✓ Updated participant data for ${primaryEntry.name || primaryEntry.full_name} in ${competition.event}`,
+                );
               }
             }
           } catch (competitionError) {
