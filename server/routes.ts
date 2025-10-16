@@ -2194,18 +2194,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
 
             const hierarchyPage = await browser.newPage();
+            
+            // Set extra headers to appear more like a real browser
+            await hierarchyPage.setExtraHTTPHeaders({
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': 'application/json, text/plain, */*',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            });
+            
             await hierarchyPage.setViewport({ width: 1920, height: 1080 });
             await hierarchyPage.setUserAgent(
               "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             );
 
+            // Navigate and wait for network to be idle
             await hierarchyPage.goto(hierarchyUrl, {
               waitUntil: "networkidle0",
-              timeout: 30000,
+              timeout: 45000,
             });
+
+            // Wait a bit more for any dynamic content to load
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             const hierarchyContent = await hierarchyPage.evaluate(() => document.body.textContent);
             await hierarchyPage.close();
+            
+            // Check if we got a valid JSON response
+            if (!hierarchyContent || hierarchyContent.trim().startsWith('<') || hierarchyContent.includes('Please enable')) {
+              throw new Error("Received HTML/challenge page instead of JSON from Cloudflare");
+            }
 
             if (!hierarchyContent) {
               throw new Error("Empty response from eventHierarchy");
@@ -2262,6 +2280,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             const page = await browser.newPage();
 
+            // Set extra headers to appear more like a real browser
+            await page.setExtraHTTPHeaders({
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': 'application/json, text/plain, */*',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            });
+
             // Set realistic viewport and user agent
             await page.setViewport({ width: 1920, height: 1080 });
             await page.setUserAgent(
@@ -2271,8 +2297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Navigate and wait for response
             await page.goto(url, {
               waitUntil: "networkidle0",
-              timeout: 30000,
+              timeout: 45000,
             });
+
+            // Wait a bit more for any dynamic content to load
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Extract JSON from page
             textContent = await page.evaluate(() => document.body.textContent);
