@@ -52,7 +52,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Styling Strategy**: Tailwind CSS + shadcn/ui for consistent, customizable design.
 -   **Real-time Features**: WebSocket integration for live analysis.
 -   **Session Management**: Replit Key Value Store for zero-configuration session persistence.
--   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage.
+-   **Data Structure Refinement**: Consolidated ranking data into `athlete_ranks` and separated coaches into their own table. Removed external image URLs in favor of Replit Object Storage. Refactored competition participation model (October 2025): eliminated redundant `career_events` table in favor of using `competition_participants` as the single source of truth for athlete competition history, with enhanced fields for performance tracking (`points`, `eventResult`).
 -   **Performance Optimization**: Database indexes on all foreign key and frequently queried columns for optimal query performance. Rank-up calculations timeout set to 5 minutes to accommodate complex AI analysis. JSON imports use batch processing (20 items per batch) with parallel logo uploads for efficiency. Athlete filter uses lightweight `/api/athletes/simple` endpoint (returns only id, name, nationality) for sub-second load times instead of expensive ranking calculations. Athlete filter dropdown optimized with:
     - Lazy loading (only fetches data when opened)
     - Infinite scroll rendering (initial 20 athletes, loads 20 more on scroll)
@@ -65,15 +65,12 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   `athletes`: Athlete profiles, performance metrics, includes `simplyCompeteUserId` for accurate athlete matching (indexed on: worldCategory, nationality, name, simplyCompeteUserId)
 -   `kpi_metrics`: Key performance indicators (indexed on: athleteId)
 -   `strengths/weaknesses`: Athlete skill assessments (indexed on: athleteId)
--   `opponents`: Opponent data
--   `performance_data`: Historical performance
--   `career_events`: Achievements and milestones (indexed on: athleteId, date)
 -   `training_recommendations`: AI-generated training plans (indexed on: athleteId)
 -   `athlete_ranks`: Consolidated ranking system (world, Olympic, national, continental, regional) (indexed on: athleteId, rankingType, category, ranking)
 -   `coaches`: Coach information
 -   `users`: User profiles with authentication details and bio
 -   `competitions`: Competition events with SimplyCompete integration fields (`sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId`, `logo`) - logos stored in Replit Object Storage (indexed on: simplyCompeteEventId)
--   `competition_participants`: Links athletes to competitions (indexed on: competitionId, athleteId)
+-   `competition_participants`: Links athletes to competitions with performance data (`points`, `eventResult`, `weightCategory`, `seedNumber`, `subeventName`, `status`) - serves as the single source of truth for athlete competition history and career events (indexed on: competitionId, athleteId)
 -   `opponent_analysis_cache`: Stores AI-powered opponent analysis results with monthly expiration.
 -   `performance_analysis_cache`: Stores AI-powered performance analysis results with 30-day expiration.
 -   `ai_queries`: AI query history (indexed on: athleteId, timestamp)
