@@ -1271,7 +1271,12 @@ export async function importJsonAthletes(
         const extractSubeventName = (categoryString: string | null | undefined): string | null => {
           if (!categoryString) return null;
           const parts = categoryString.split("|").map(p => p.trim());
-          return parts[1] || null;
+          let subevent = parts[1] || null;
+          // Remove "World" prefix from subevent name (e.g., "World Senior Division" -> "Senior Division")
+          if (subevent && subevent.startsWith("World ")) {
+            subevent = subevent.substring(6); // Remove "World " (6 characters)
+          }
+          return subevent;
         };
 
         for (const competition of primaryEntry.competitions) {
