@@ -36,7 +36,6 @@ export default function DataScraper() {
   const [importType, setImportType] = useState<'athletes' | 'competitions'>('athletes');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [isBatchScraping, setIsBatchScraping] = useState(false);
-  const [playingStyleCountry, setPlayingStyleCountry] = useState<string>('all');
   const [strengthsWeaknessesCountry, setStrengthsWeaknessesCountry] = useState<string>('all');
   const { toast } = useToast();
 
@@ -179,41 +178,6 @@ export default function DataScraper() {
       toast({
         title: "Import Failed",
         description: error.message || "Failed to import competition data. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutation for generating playing styles for all athletes
-  const generatePlayingStylesMutation = useMutation({
-    mutationFn: async (country?: string) => {
-      const response = await fetch('/api/generate/playing-styles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ country: country || undefined }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Playing style generation failed');
-      }
-
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      setScrapeResults(data);
-      toast({
-        title: "Playing Styles Generated",
-        description: `Successfully generated playing styles for ${data.results?.total || 0} athletes.`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Playing Style Generation Failed",
-        description: error.message || "Failed to generate playing styles. Please try again.",
         variant: "destructive",
       });
     },
@@ -376,11 +340,6 @@ export default function DataScraper() {
     }
   };
 
-  const handleGenerateAllPlayingStyles = () => {
-    // Only send country if it's not "all"
-    generatePlayingStylesMutation.mutate(playingStyleCountry === 'all' ? undefined : playingStyleCountry);
-  };
-
   const handleGenerateStrengthsWeaknesses = () => {
     // Only send country if it's not "all"
     generateStrengthsWeaknessesMutation.mutate(strengthsWeaknessesCountry === 'all' ? undefined : strengthsWeaknessesCountry);
@@ -394,7 +353,7 @@ export default function DataScraper() {
     );
   };
 
-  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping || generatePlayingStylesMutation.isPending || generateStrengthsWeaknessesMutation.isPending;
+  const isLoading = scrapeCountryMutation.isPending || scrapeRankingsMutation.isPending || importJsonMutation.isPending || importCompetitionsMutation.isPending || isBatchScraping || generateStrengthsWeaknessesMutation.isPending;
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -670,81 +629,6 @@ export default function DataScraper() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Button to Generate All Playing Styles */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Brain className="h-5 w-5" />
-            <span>AI Playing Style Generation</span>
-          </CardTitle>
-          <CardDescription>
-            Generate playing styles for all athletes or filter by specific country using AI.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Filter by Country (Optional)</Label>
-            <Select value={playingStyleCountry} onValueChange={setPlayingStyleCountry}>
-              <SelectTrigger>
-                <SelectValue placeholder="All countries (no filter)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All countries</SelectItem>
-                {Object.entries(commonCountries).map(([code, name]) => {
-                  const countryName = name.replace(/ 🥇| 🥈| 🥉/g, '').trim();
-                  return (
-                    <SelectItem key={code} value={countryName}>
-                      {name}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              {playingStyleCountry === 'all'
-                ? 'Will generate playing styles for all athletes in the database'
-                : `Will generate playing styles only for athletes from ${playingStyleCountry}`}
-            </p>
-          </div>
-
-          <Button
-            onClick={handleGenerateAllPlayingStyles}
-            disabled={generatePlayingStylesMutation.isPending}
-            className="w-full"
-            data-testid="button-generate-playing-styles"
-          >
-            {generatePlayingStylesMutation.isPending ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Generating Playing Styles...
-              </>
-            ) : (
-              <>
-                <Brain className="h-4 w-4 mr-2" />
-                {playingStyleCountry === 'all'
-                  ? 'Generate All Playing Styles (AI)' 
-                  : `Generate for ${playingStyleCountry}`}
-              </>
-            )}
-          </Button>
-
-          {generatePlayingStylesMutation.data && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700">Results:</p>
-              <p className="text-sm text-gray-600">
-                ✅ Successful: {generatePlayingStylesMutation.data.results?.successful || 0}
-              </p>
-              <p className="text-sm text-gray-600">
-                ❌ Failed: {generatePlayingStylesMutation.data.results?.failed || 0}
-              </p>
-              <p className="text-sm text-gray-600">
-                📊 Total: {generatePlayingStylesMutation.data.results?.total || 0}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Button to Generate Strengths & Weaknesses */}
       <Card className="mb-8">

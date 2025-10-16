@@ -26,63 +26,6 @@ export interface AthleteStrengthsWeaknesses {
 }
 
 export class AIAnalysisEngine {
-  async generatePlayingStyle(athleteId: number): Promise<string> {
-    const openai = getOpenAIClient();
-    if (!openai) {
-      return "Unknown";
-    }
-
-    try {
-      const [athlete, strengths, weaknesses] = await Promise.all([
-        storage.getAthlete(athleteId),
-        storage.getStrengthsByAthleteId(athleteId),
-        storage.getWeaknessesByAthleteId(athleteId),
-      ]);
-
-      if (!athlete) {
-        return "Unknown";
-      }
-
-      const prompt = `Based on this Taekwondo athlete's profile, determine their playing style in 1-2 words (e.g., "Aggressive Counter-Puncher", "Defensive Technician", "Explosive Attacker", "Tactical Fighter"):
-
-Athlete: ${athlete.name}
-Nationality: ${athlete.nationality}
-Strengths: ${strengths.map((s: any) => s.name).join(", ") || "None identified"}
-Weaknesses: ${weaknesses.map((w: any) => w.name).join(", ") || "None identified"}
-
-Respond with ONLY the playing style label, nothing else.`;
-
-      console.log(`[PlayingStyle] Generating for ${athlete.name} (ID: ${athleteId})`);
-      console.log(`[PlayingStyle] Strengths: ${strengths.length}, Weaknesses: ${weaknesses.length}`);
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "system",
-            content: "You are a Taekwondo analyst. Provide concise playing style labels.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        max_completion_tokens: 5000,
-      });
-
-      const playingStyle = response.choices[0].message.content?.trim() || "Unknown";
-      console.log(`[PlayingStyle] OpenAI Response: "${playingStyle}"`);
-      
-      // Update athlete with playing style
-      await storage.updateAthlete(athleteId, { playingStyle });
-      
-      return playingStyle;
-    } catch (error) {
-      console.error("Error generating playing style:", error);
-      return "Unknown";
-    }
-  }
-
   async analyzeOpponent(
     athleteId: number,
     opponentId: number,
@@ -116,45 +59,6 @@ Respond with ONLY the playing style label, nothing else.`;
         throw new Error("Athlete or opponent data not found");
       }
 
-      // Auto-generate playing style for opponent if missing or empty (but not if already "Unknown")
-      // We skip if already "Unknown" to prevent infinite retry loops when AI can't generate
-      const opponentStyleNormalized = opponent.playingStyle?.trim().toLowerCase() || "";
-      const opponentNeedsGeneration = !opponent.playingStyle || opponentStyleNormalized === "";
-      
-      if (opponentNeedsGeneration) {
-        console.log(`Opponent ${opponent.name} has empty playing style. Generating...`);
-        try {
-          const generatedStyle = await this.generatePlayingStyle(opponentId);
-          // Always update the object with the generated value (even if "Unknown")
-          opponent.playingStyle = generatedStyle;
-          console.log(`✓ Generated and saved playing style for ${opponent.name}: ${generatedStyle}`);
-        } catch (error) {
-          console.error(`Failed to generate playing style for opponent:`, error);
-          opponent.playingStyle = "Unknown";
-        }
-      } else if (opponentStyleNormalized === "unknown") {
-        console.log(`Opponent ${opponent.name} has "Unknown" playing style (previous generation likely failed)`);
-      }
-
-      // Auto-generate playing style for athlete if missing or empty (but not if already "Unknown")
-      const athleteStyleNormalized = athlete.playingStyle?.trim().toLowerCase() || "";
-      const athleteNeedsGeneration = !athlete.playingStyle || athleteStyleNormalized === "";
-      
-      if (athleteNeedsGeneration) {
-        console.log(`Athlete ${athlete.name} has empty playing style. Generating...`);
-        try {
-          const generatedStyle = await this.generatePlayingStyle(athleteId);
-          // Always update the object with the generated value (even if "Unknown")
-          athlete.playingStyle = generatedStyle;
-          console.log(`✓ Generated and saved playing style for ${athlete.name}: ${generatedStyle}`);
-        } catch (error) {
-          console.error(`Failed to generate playing style for athlete:`, error);
-          athlete.playingStyle = "Unknown";
-        }
-      } else if (athleteStyleNormalized === "unknown") {
-        console.log(`Athlete ${athlete.name} has "Unknown" playing style (previous generation likely failed)`);
-      }
-
       const analysisPrompt = `
 Analyze this Taekwondo matchup and provide tactical recommendations:
 
@@ -162,7 +66,6 @@ ATHLETE PROFILE:
 - Name: ${athlete.name}
 - Nationality: ${athlete.nationality}
 - Gender: ${athlete.gender || "Unknown"}
-- Playing Style: ${athlete.playingStyle || "Unknown"}
 - Strengths: ${athleteStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${athleteWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
 
@@ -170,7 +73,6 @@ OPPONENT PROFILE:
 - Name: ${opponent.name}
 - Nationality: ${opponent.nationality}
 - Gender: ${opponent.gender || "Unknown"}
-- Playing Style: ${opponent.playingStyle || "Unknown"}
 - Strengths: ${opponentStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${opponentWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
 ${customNotes ? `

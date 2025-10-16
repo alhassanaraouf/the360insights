@@ -199,26 +199,6 @@ export default function OpponentAnalysis() {
     setSelectedOpponent(opponentId);
     setOpponentSelectorOpen(false);
     setRunAnalysis(false); // Reset analysis when changing opponent
-    
-    // Check if opponent has a playing style, if not generate one
-    const opponent = opponents?.find((o) => o.id.toString() === opponentId);
-    if (opponent) {
-      const playingStyleNormalized = opponent.playingStyle?.trim().toLowerCase() || "";
-      const needsGeneration = !opponent.playingStyle || playingStyleNormalized === "";
-      
-      if (needsGeneration) {
-        console.log(`Generating playing style for opponent: ${opponent.name}`);
-        try {
-          const response = await apiRequest("POST", `/api/generate/playing-style/${opponentId}`, {});
-          const data = await response.json();
-          console.log(`✓ Generated playing style: ${data.playingStyle}`);
-          // Invalidate queries to refresh the opponent data
-          queryClient.invalidateQueries({ queryKey: [`/api/athletes/${selectedAthleteId}/opponents`] });
-        } catch (error) {
-          console.error("Failed to generate playing style:", error);
-        }
-      }
-    }
   };
 
   const selectedOpponentData = opponents?.find((o) => o.id.toString() === selectedOpponent);
