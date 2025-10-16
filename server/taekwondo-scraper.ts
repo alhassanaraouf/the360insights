@@ -1261,11 +1261,17 @@ export async function importJsonAthletes(
           `Processing ${primaryEntry.competitions.length} competitions for ${primaryEntry.name || primaryEntry.full_name}`,
         );
 
-        // Helper to extract weight category from full category string
+        // Helper to extract weight category and subevent from full category string
         const extractWeightCategory = (categoryString: string | null | undefined): string | null => {
           if (!categoryString) return null;
           const parts = categoryString.split("|").map(p => p.trim());
           return parts[0] || null;
+        };
+        
+        const extractSubeventName = (categoryString: string | null | undefined): string | null => {
+          if (!categoryString) return null;
+          const parts = categoryString.split("|").map(p => p.trim());
+          return parts[1] || null;
         };
 
         for (const competition of primaryEntry.competitions) {
@@ -1328,7 +1334,7 @@ export async function importJsonAthletes(
                 competitionId,
                 athleteId,
                 weightCategory: extractWeightCategory(competition.category) || primaryEntry.weight_division || null,
-                subeventName: competition.category || null,
+                subeventName: extractSubeventName(competition.category) || null,
                 points: competition.points || null,
                 eventResult: competition.event_result?.toString() || competition.place?.toString() || null,
                 status: "confirmed",
@@ -1347,7 +1353,7 @@ export async function importJsonAthletes(
               }
               if (competition.category) {
                 updateData.weightCategory = extractWeightCategory(competition.category);
-                updateData.subeventName = competition.category;
+                updateData.subeventName = extractSubeventName(competition.category);
               }
 
               if (Object.keys(updateData).length > 0) {
