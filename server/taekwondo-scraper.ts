@@ -1415,6 +1415,7 @@ export async function importJsonAthletes(
     errors,
     competitionsImported,
     athletes: processedAthletes,
+    points: 0,
   };
 }
 
