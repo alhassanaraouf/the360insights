@@ -400,7 +400,7 @@ export default function TrainingPlanner() {
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="none" disabled>
                             {selectedGLevels.length === 0 ? "Please select competition levels first" : "No upcoming competitions available for selected levels"}
                           </SelectItem>
                         )}
