@@ -25,8 +25,10 @@ import {
   Check,
   ChevronsUpDown,
   User as UserIcon,
+  Globe,
 } from "lucide-react";
 import { format } from "date-fns";
+import { getCountryFlag } from "@/lib/country-flags";
 
 interface Competition {
   id: number;
@@ -366,50 +368,24 @@ export default function Competitions() {
                     variant="outline"
                     role="combobox"
                     aria-expanded={athleteSearchOpen}
-                    className="w-full justify-between"
+                    className="w-full justify-between bg-amber-400 hover:bg-amber-500 text-amber-900 border-amber-500 dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-amber-50"
                     data-testid="select-filter-athlete"
                   >
-                    {filterAthlete === "all" ? (
-                      <span className="text-muted-foreground">All athletes</span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage 
-                            src={`/api/athletes/${filterAthlete}/image`} 
-                            alt={athletes?.find(a => a.id === parseInt(filterAthlete))?.name}
-                          />
-                          <AvatarFallback className="text-xs">
-                            <UserIcon className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{athletes?.find(a => a.id === parseInt(filterAthlete))?.name}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      <span>Search athletes...</span>
+                    </div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
+                <PopoverContent className="w-[500px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search athletes..." />
-                    <CommandList>
+                    <CommandInput placeholder="Search by name, nationality..." className="h-12" />
+                    <CommandList className="max-h-[400px]">
                       <CommandEmpty>
                         {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}
                       </CommandEmpty>
                       <CommandGroup>
-                        <CommandItem
-                          value="all"
-                          onSelect={() => {
-                            setFilterAthlete("all");
-                            setAthleteSearchOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              filterAthlete === "all" ? "opacity-100" : "opacity-0"
-                            }`}
-                          />
-                          All Athletes
-                        </CommandItem>
                         {athletes.map((athlete) => (
                           <CommandItem
                             key={athlete.id}
@@ -418,25 +394,34 @@ export default function Competitions() {
                               setFilterAthlete(athlete.id.toString());
                               setAthleteSearchOpen(false);
                             }}
+                            className={`flex items-center gap-3 p-3 ${
+                              filterAthlete === athlete.id.toString() 
+                                ? 'bg-amber-400 dark:bg-amber-500 data-[selected=true]:bg-amber-400 dark:data-[selected=true]:bg-amber-500' 
+                                : 'data-[selected=true]:bg-amber-100 dark:data-[selected=true]:bg-amber-900/30'
+                            }`}
                           >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-                            <Avatar className="h-6 w-6 mr-2">
+                            <Avatar className="h-10 w-10">
                               <AvatarImage 
                                 src={`/api/athletes/${athlete.id}/image`} 
                                 alt={athlete.name}
                               />
-                              <AvatarFallback className="text-xs">
-                                <UserIcon className="h-3 w-3" />
+                              <AvatarFallback className="text-sm">
+                                <UserIcon className="h-5 w-5" />
                               </AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{athlete.name}</span>
-                              {athlete.nationality && (
-                                <span className="text-xs text-muted-foreground">{athlete.nationality}</span>
+                            <div className="flex-1 flex items-center gap-2">
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Globe className="h-4 w-4" />
+                                <span className="text-2xl leading-none">{getCountryFlag(athlete.nationality)}</span>
+                                <span className="text-sm">{athlete.nationality || 'Unknown'}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-base">{athlete.name}</span>
+                              {athlete.worldRank && (
+                                <span className="px-2 py-1 bg-background/80 dark:bg-background/60 rounded-md text-sm font-medium border">
+                                  #{athlete.worldRank}
+                                </span>
                               )}
                             </div>
                           </CommandItem>
