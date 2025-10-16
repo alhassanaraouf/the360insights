@@ -68,6 +68,8 @@ export default function Competitions() {
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterAthlete, setFilterAthlete] = useState("all");
   const [athleteSearchOpen, setAthleteSearchOpen] = useState(false);
+  const [athleteSearchInput, setAthleteSearchInput] = useState("");
+  const [athleteSearchTerm, setAthleteSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [syncingCompetitionId, setSyncingCompetitionId] = useState<number | null>(null);
@@ -82,6 +84,14 @@ export default function Competitions() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Debounce athlete search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAthleteSearchTerm(athleteSearchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [athleteSearchInput]);
+
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -94,7 +104,16 @@ export default function Competitions() {
 
   // Fetch athletes for filter (lightweight - no rankings)
   const { data: allAthletes, isLoading: isLoadingAthletes } = useQuery<any[]>({
-    queryKey: ['/api/athletes/simple'],
+    queryKey: ['/api/athletes/simple', athleteSearchTerm],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (athleteSearchTerm) {
+        params.append('search', athleteSearchTerm);
+      }
+      const response = await fetch(`/api/athletes/simple?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch athletes');
+      return response.json();
+    },
     enabled: athleteSearchOpen, // Only fetch when dropdown is opened
   });
 
@@ -107,12 +126,15 @@ export default function Competitions() {
     return allAthletes;
   }, [allAthletes, showEgyptianOnly]);
 
-  // Reset displayed count when dropdown opens
+  // Reset displayed count when dropdown opens or search changes
   useEffect(() => {
     if (athleteSearchOpen) {
       setDisplayedAthleteCount(20);
+    } else {
+      // Clear search when dropdown closes
+      setAthleteSearchInput("");
     }
-  }, [athleteSearchOpen]);
+  }, [athleteSearchOpen, athleteSearchTerm]);
 
   // Handle scroll for infinite loading
   const handleScroll = useCallback((e: any) => {
@@ -374,7 +396,11 @@ export default function Competitions() {
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Search by name, nationality..." />
+                  <CommandInput 
+                    placeholder="Search by name, nationality..." 
+                    value={athleteSearchInput}
+                    onValueChange={setAthleteSearchInput}
+                  />
                   <CommandList onScroll={handleScroll}>
                     <CommandEmpty>
                       {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}

@@ -360,14 +360,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lightweight endpoint for athlete filter (no rankings, fast)
   app.get("/api/athletes/simple", async (req, res) => {
     try {
-      const result = await db
-        .select({
-          id: schema.athletes.id,
-          name: schema.athletes.name,
-          nationality: schema.athletes.nationality,
-        })
-        .from(schema.athletes)
-        .orderBy(schema.athletes.name);
+      const searchTerm = req.query.search as string | undefined;
+      
+      // Build query with conditional search filter
+      const result = searchTerm && searchTerm.trim()
+        ? await db
+            .select({
+              id: schema.athletes.id,
+              name: schema.athletes.name,
+              nationality: schema.athletes.nationality,
+            })
+            .from(schema.athletes)
+            .where(
+              sql`LOWER(${schema.athletes.name}) LIKE LOWER(${`%${searchTerm}%`})`
+            )
+            .orderBy(schema.athletes.name)
+        : await db
+            .select({
+              id: schema.athletes.id,
+              name: schema.athletes.name,
+              nationality: schema.athletes.nationality,
+            })
+            .from(schema.athletes)
+            .orderBy(schema.athletes.name);
       
       res.json(result);
     } catch (error) {
