@@ -140,23 +140,48 @@ export default function CareerJourney() {
                     </h4>
                     <div className="space-y-4 pl-4">
                       {eventsByYear[year].map((event: any) => (
-                        <div key={event.id} className="flex items-start space-x-4">
+                        <div 
+                          key={event.id} 
+                          className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => window.location.href = `/competitions?id=${event.competitionId}`}
+                          data-testid={`competition-card-${event.competitionId}`}
+                        >
+                          {/* Competition Logo */}
                           <div className="flex-shrink-0 mt-1">
-                            {getEventIcon(event.eventType)}
+                            {event.logo ? (
+                              <img 
+                                src={event.logo} 
+                                alt={event.title}
+                                className="h-10 w-10 rounded-md object-cover"
+                                data-testid={`competition-logo-${event.competitionId}`}
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center">
+                                {getEventIcon(event.eventType)}
+                              </div>
+                            )}
                           </div>
+                          
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <h5 className="font-medium text-gray-900">{event.title}</h5>
                               <span className="text-sm text-gray-500">{event.date}</span>
                             </div>
-                            <p className="text-gray-600 mt-1">{event.description}</p>
+                            <p className="text-gray-600 mt-1">
+                              Place: {event.eventResult || 'N/A'} | Points: {event.points || '0'}
+                            </p>
 
-                            <div className="mt-2">
+                            <div className="mt-2 flex items-center gap-2">
+                              {event.gradeLevel && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800" data-testid={`grade-level-${event.competitionId}`}>
+                                  {event.gradeLevel}
+                                </span>
+                              )}
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 event.eventType === 'achievement' ? 'bg-yellow-100 text-yellow-800' :
                                 event.eventType === 'match' ? 'bg-blue-100 text-blue-800' :
                                 'bg-red-100 text-red-800'
-                              }`}>
+                              }`} data-testid={`event-type-${event.competitionId}`}>
                                 {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
                               </span>
                             </div>

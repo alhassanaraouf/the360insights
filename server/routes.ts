@@ -2762,6 +2762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = await db
         .select({
           id: schema.competitionParticipants.id,
+          competitionId: schema.competitions.id,
           athleteId: schema.competitionParticipants.athleteId,
           eventType: sql<string>`'competition'`.as('eventType'),
           title: schema.competitions.name,
@@ -2771,6 +2772,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: schema.competitions.status,
           competitionLevel: schema.competitions.competitionType,
           eventResult: schema.competitionParticipants.eventResult,
+          points: schema.competitionParticipants.points,
+          gradeLevel: schema.competitions.gradeLevel,
+          logo: schema.competitions.logo,
         })
         .from(schema.competitionParticipants)
         .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
