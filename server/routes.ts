@@ -795,8 +795,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/athletes/:id/performance", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      const performanceData =
-        await storage.getPerformanceDataByAthleteId(athleteId);
+      // Get competition participation history as performance data
+      const performanceData = await db
+        .select({
+          id: schema.competitionParticipants.id,
+          athleteId: schema.competitionParticipants.athleteId,
+          eventType: sql<string>`'competition'`.as('eventType'),
+          title: schema.competitions.name,
+          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          date: schema.competitions.startDate,
+          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          status: schema.competitions.status,
+          competitionLevel: schema.competitions.competitionType,
+          eventResult: schema.competitionParticipants.eventResult,
+          eventId: schema.competitions.simplyCompeteEventId,
+        })
+        .from(schema.competitionParticipants)
+        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(performanceData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch performance data" });
@@ -817,11 +833,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Career Events (for competition calendar)
+  // Career Events (for competition calendar) - now using competition participants
   app.get("/api/athletes/:id/career-events", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      const careerEvents = await storage.getCareerEventsByAthleteId(athleteId);
+      const careerEvents = await db
+        .select({
+          id: schema.competitionParticipants.id,
+          athleteId: schema.competitionParticipants.athleteId,
+          eventType: sql<string>`'competition'`.as('eventType'),
+          title: schema.competitions.name,
+          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          date: schema.competitions.startDate,
+          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          status: schema.competitions.status,
+          competitionLevel: schema.competitions.competitionType,
+          eventResult: schema.competitionParticipants.eventResult,
+        })
+        .from(schema.competitionParticipants)
+        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(careerEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch career events" });
@@ -2715,8 +2746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(schema.athletes),
         totalCompetitions: await db
           .select({ count: sql<number>`count(*)` })
-          .from(schema.careerEvents)
-          .where(eq(schema.careerEvents.eventType, "competition")),
+          .from(schema.competitions),
         performanceTrends: [], // Placeholder for now
       };
       res.json(stats);
@@ -2725,11 +2755,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Career Events
+  // Career Events - now using competition participants
   app.get("/api/athletes/:id/career", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      const events = await storage.getCareerEventsByAthleteId(athleteId);
+      const events = await db
+        .select({
+          id: schema.competitionParticipants.id,
+          athleteId: schema.competitionParticipants.athleteId,
+          eventType: sql<string>`'competition'`.as('eventType'),
+          title: schema.competitions.name,
+          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          date: schema.competitions.startDate,
+          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          status: schema.competitions.status,
+          competitionLevel: schema.competitions.competitionType,
+          eventResult: schema.competitionParticipants.eventResult,
+        })
+        .from(schema.competitionParticipants)
+        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(events);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch career events" });

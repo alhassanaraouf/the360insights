@@ -164,24 +164,6 @@ export const trainingRecommendations = pgTable("training_recommendations", {
   athleteIdIdx: index("training_recommendations_athlete_id_idx").on(table.athleteId),
 }));
 
-export const careerEvents = pgTable("career_events", {
-  id: serial("id").primaryKey(),
-  athleteId: integer("athlete_id").references(() => athletes.id),
-  eventType: text("event_type").notNull(), // 'match', 'injury', 'achievement', 'competition'
-  title: text("title").notNull(),
-  description: text("description"),
-  date: text("date").notNull(),
-  location: text("location"),
-  status: text("status"), // 'upcoming', 'completed', 'cancelled'
-  competitionLevel: text("competition_level"), // 'national', 'international', 'olympic', 'world_championship'
-  eventResult: text("event_result"), // Competition finishing place/result
-  eventId: varchar("event_id", { length: 255 }), // External event ID from source
-  metadata: jsonb("metadata"),
-}, (table) => ({
-  athleteIdIdx: index("career_events_athlete_id_idx").on(table.athleteId),
-  dateIdx: index("career_events_date_idx").on(table.date),
-  eventIdIdx: index("career_events_event_id_idx").on(table.eventId),
-}));
 
 export const aiQueries = pgTable("ai_queries", {
   id: serial("id").primaryKey(),
@@ -337,10 +319,6 @@ export const insertTrainingRecommendationSchema = createInsertSchema(trainingRec
   id: true,
 });
 
-export const insertCareerEventSchema = createInsertSchema(careerEvents).omit({
-  id: true,
-});
-
 export const insertAiQuerySchema = createInsertSchema(aiQueries).omit({
   id: true,
   timestamp: true,
@@ -452,8 +430,6 @@ export type AthleteRank = typeof athleteRanks.$inferSelect;
 export type InsertAthleteRank = z.infer<typeof insertAthleteRankSchema>;
 export type TrainingRecommendation = typeof trainingRecommendations.$inferSelect;
 export type InsertTrainingRecommendation = z.infer<typeof insertTrainingRecommendationSchema>;
-export type CareerEvent = typeof careerEvents.$inferSelect;
-export type InsertCareerEvent = z.infer<typeof insertCareerEventSchema>;
 export type AiQuery = typeof aiQueries.$inferSelect;
 export type InsertAiQuery = z.infer<typeof insertAiQuerySchema>;
 export type Competition = typeof competitions.$inferSelect;

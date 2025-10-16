@@ -7,7 +7,6 @@ import {
   weaknesses,
   athleteRanks,
   trainingRecommendations,
-  careerEvents,
   aiQueries,
   users,
   type Athlete,
@@ -24,8 +23,6 @@ import {
   type InsertAthleteRank,
   type TrainingRecommendation,
   type InsertTrainingRecommendation,
-  type CareerEvent,
-  type InsertCareerEvent,
   type AiQuery,
   type InsertAiQuery,
   type TrainingPlan,
@@ -189,17 +186,10 @@ export interface IStorage {
     recommendation: InsertTrainingRecommendation,
   ): Promise<TrainingRecommendation>;
 
-  // Career Events
-  getCareerEventsByAthleteId(athleteId: number): Promise<CareerEvent[]>;
-  createCareerEvent(event: InsertCareerEvent): Promise<CareerEvent>;
-
   // AI Queries
   getAiQueriesByAthleteId(athleteId: number): Promise<AiQuery[]>;
   createAiQuery(query: InsertAiQuery): Promise<AiQuery>;
   deleteAiQuery(id: number): Promise<boolean>;
-
-  // Performance Data (using career events as performance data)
-  getPerformanceDataByAthleteId(athleteId: number): Promise<CareerEvent[]>;
 
   // Competitions
   getAllCompetitions(): Promise<Competition[]>;
@@ -347,57 +337,6 @@ export class DatabaseStorage implements IStorage {
       .values(insertRec)
       .returning();
     return recommendation;
-  }
-
-  // Career Events
-  async getCareerEventsByAthleteId(athleteId: number): Promise<CareerEvent[]> {
-    const allEvents = await db
-      .select()
-      .from(careerEvents)
-      .where(eq(careerEvents.athleteId, athleteId));
-
-    // Filter to prioritize World Senior Division over Olympic Senior Division
-    const eventMap = new Map<string, CareerEvent>();
-
-    for (const event of allEvents) {
-      const metadata = event.metadata as any;
-      const category = metadata?.category || "";
-      const eventKey = `${event.title}_${event.date}_${event.location || ""}`;
-
-      const isWorldDivision = category.includes("World Senior Division");
-      const isOlympicDivision = category.includes("Olympic Senior Division");
-
-      const existing = eventMap.get(eventKey);
-
-      if (!existing) {
-        // No existing event, add this one
-        eventMap.set(eventKey, event);
-      } else {
-        const existingMetadata = existing.metadata as any;
-        const existingCategory = existingMetadata?.category || "";
-        const existingIsOlympic = existingCategory.includes(
-          "Olympic Senior Division",
-        );
-
-        // If current event is World Division and existing is Olympic Division, replace
-        if (isWorldDivision && existingIsOlympic) {
-          eventMap.set(eventKey, event);
-        }
-        // If both are the same type or existing is already World Division, keep existing
-      }
-    }
-
-    return Array.from(eventMap.values());
-  }
-
-  async createCareerEvent(
-    insertEvent: InsertCareerEvent,
-  ): Promise<CareerEvent> {
-    const [event] = await db
-      .insert(careerEvents)
-      .values(insertEvent)
-      .returning();
-    return event;
   }
 
   // AI Queries
@@ -715,7 +654,6 @@ export class DatabaseStorage implements IStorage {
       db.delete(strengths).where(eq(strengths.athleteId, id)),
       db.delete(weaknesses).where(eq(weaknesses.athleteId, id)),
       db.delete(athleteRanks).where(eq(athleteRanks.athleteId, id)),
-      db.delete(careerEvents).where(eq(careerEvents.athleteId, id)),
       db
         .delete(trainingRecommendations)
         .where(eq(trainingRecommendations.athleteId, id)),
@@ -1176,12 +1114,6 @@ export class DatabaseStorage implements IStorage {
     return newRank;
   }
 
-  // Performance Data implementation (using career events)
-  async getPerformanceDataByAthleteId(
-    athleteId: number,
-  ): Promise<CareerEvent[]> {
-    return await this.getCareerEventsByAthleteId(athleteId);
-  }
 
 
   // Competitions
