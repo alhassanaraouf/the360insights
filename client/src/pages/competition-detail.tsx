@@ -157,19 +157,12 @@ export default function CompetitionDetail() {
       const synced = stats?.synced ?? 0;
       const updated = stats?.updated ?? 0;
       const created = stats?.created ?? 0;
-      const total = stats?.total ?? 0;
+      const matched = stats?.matched ?? 0;
       const errors = stats?.errors ?? 0;
 
-      // Build a clear message about what happened
-      const changes = [];
-      if (synced > 0) changes.push(`${synced} new`);
-      if (updated > 0) changes.push(`${updated} updated`);
-      
-      const changeText = changes.length > 0 ? changes.join(', ') : 'No changes';
-
       toast({
-        title: "Participants Synced Successfully! 🎉",
-        description: `Competition now has ${total} participant${total !== 1 ? 's' : ''} • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
+        title: "✅ Sync complete",
+        description: `${synced} new, ${updated} updated, ${matched} matched, ${created} created${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
       });
       
       // Invalidate participants query to refresh the list
