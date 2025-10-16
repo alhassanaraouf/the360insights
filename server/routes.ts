@@ -2190,7 +2190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeId=${athleteNodeId}&nodeLevel=EventRole&pageNo=0`;
+            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeId=${athleteNodeId}&nodeLevel=EventRole&pageNo=0&itemsPerPage=4000`;
 
             console.log(
               `📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`,
