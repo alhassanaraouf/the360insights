@@ -361,29 +361,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/athletes/simple", async (req, res) => {
     try {
       const searchTerm = req.query.search as string | undefined;
-      
+
       // Build query with conditional search filter
-      const result = searchTerm && searchTerm.trim()
-        ? await db
-            .select({
-              id: schema.athletes.id,
-              name: schema.athletes.name,
-              nationality: schema.athletes.nationality,
-            })
-            .from(schema.athletes)
-            .where(
-              sql`LOWER(${schema.athletes.name}) LIKE LOWER(${`%${searchTerm}%`})`
-            )
-            .orderBy(schema.athletes.name)
-        : await db
-            .select({
-              id: schema.athletes.id,
-              name: schema.athletes.name,
-              nationality: schema.athletes.nationality,
-            })
-            .from(schema.athletes)
-            .orderBy(schema.athletes.name);
-      
+      const result =
+        searchTerm && searchTerm.trim()
+          ? await db
+              .select({
+                id: schema.athletes.id,
+                name: schema.athletes.name,
+                nationality: schema.athletes.nationality,
+              })
+              .from(schema.athletes)
+              .where(
+                sql`LOWER(${schema.athletes.name}) LIKE LOWER(${`%${searchTerm}%`})`,
+              )
+              .orderBy(schema.athletes.name)
+          : await db
+              .select({
+                id: schema.athletes.id,
+                name: schema.athletes.name,
+                nationality: schema.athletes.nationality,
+              })
+              .from(schema.athletes)
+              .orderBy(schema.athletes.name);
+
       res.json(result);
     } catch (error) {
       console.error("Error fetching simple athletes:", error);
@@ -800,18 +801,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: schema.competitionParticipants.id,
           athleteId: schema.competitionParticipants.athleteId,
-          eventType: sql<string>`'competition'`.as('eventType'),
+          eventType: sql<string>`'competition'`.as("eventType"),
           title: schema.competitions.name,
-          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          description:
+            sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as(
+              "description",
+            ),
           date: schema.competitions.startDate,
-          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          location:
+            sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as(
+              "location",
+            ),
           status: schema.competitions.status,
           competitionLevel: schema.competitions.competitionType,
           eventResult: schema.competitionParticipants.eventResult,
           eventId: schema.competitions.simplyCompeteEventId,
         })
         .from(schema.competitionParticipants)
-        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .leftJoin(
+          schema.competitions,
+          eq(
+            schema.competitionParticipants.competitionId,
+            schema.competitions.id,
+          ),
+        )
         .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(performanceData);
     } catch (error) {
@@ -841,17 +854,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: schema.competitionParticipants.id,
           athleteId: schema.competitionParticipants.athleteId,
-          eventType: sql<string>`'competition'`.as('eventType'),
+          eventType: sql<string>`'competition'`.as("eventType"),
           title: schema.competitions.name,
-          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          description:
+            sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as(
+              "description",
+            ),
           date: schema.competitions.startDate,
-          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          location:
+            sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as(
+              "location",
+            ),
           status: schema.competitions.status,
           competitionLevel: schema.competitions.competitionType,
           eventResult: schema.competitionParticipants.eventResult,
         })
         .from(schema.competitionParticipants)
-        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .leftJoin(
+          schema.competitions,
+          eq(
+            schema.competitionParticipants.competitionId,
+            schema.competitions.id,
+          ),
+        )
         .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(careerEvents);
     } catch (error) {
@@ -1647,7 +1672,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function getAthleteNodeId(eventId: string): Promise<string | null> {
     try {
       const url = `https://worldtkd.simplycompete.com/events/eventHierarchy?eventId=${eventId}`;
-      console.log(`🔍 Fetching event hierarchy to get athlete role node_id: ${url}`);
+      console.log(
+        `🔍 Fetching event hierarchy to get athlete role node_id: ${url}`,
+      );
 
       const headers = {
         Accept: "application/json, text/plain, */*",
@@ -1684,9 +1711,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find the athlete role node in the hierarchy
       // The structure is data.data.data which contains an array of event roles
       if (data?.data?.data && Array.isArray(data.data.data)) {
-        const athleteRole = data.data.data.find((role: any) => 
-          role.eventRoleName?.toLowerCase() === 'athlete' || 
-          role.eventRoleName?.toLowerCase() === 'athletes'
+        const athleteRole = data.data.data.find(
+          (role: any) =>
+            role.eventRoleName?.toLowerCase() === "athlete" ||
+            role.eventRoleName?.toLowerCase() === "athletes",
         );
 
         if (athleteRole && athleteRole.nodeId) {
@@ -1719,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Retry logic: try twice for each page
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&pageNo=${pageNo}`;
+          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&pageNo=${pageNo}&itemsPerPage=4000`;
           if (nodeId) {
             url += `&nodeId=${nodeId}`;
           }
@@ -1882,47 +1910,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Competition not found" });
       }
 
-      // Special case for Albania Open 2025 - use real SimplyCompete API data
-      if (competitionId === 428 && competition.name === "Albania Open 2025") {
-        const eventId = "11f0475f-66b5-53f3-95c6-0225d1e4088f";
-        const nodeId = "11f0475f-66c7-f1a3-95c6-0225d1e4088f";
-
-        console.log(
-          `Fetching participants for Albania Open 2025 from SimplyCompete API...`,
-        );
-
-        const allParticipants = await fetchAllSimplyCompeteParticipants(
-          eventId,
-          nodeId,
-        );
-
-        console.log(`Retrieved ${allParticipants.length} total participants`);
-
-        const result = groupParticipants(allParticipants);
-        console.log(
-          `Processed participants into ${result.length} weight categories`,
-        );
-        return res.json(result);
-      }
-
-      // Check if competition has a SimplyCompete event ID for general case
+      // Check if competition has a SimplyCompete event ID
       const simplyCompeteEventId = (competition as any).simplyCompeteEventId;
       if (simplyCompeteEventId) {
         console.log(
           `Fetching participants for ${competition.name} from SimplyCompete API...`,
         );
-        
+
         // Get athlete role node_id from eventHierarchy
         const athleteNodeId = await getAthleteNodeId(simplyCompeteEventId);
-        
+
         if (!athleteNodeId) {
           return res.status(500).json({
             error: "Failed to fetch athlete role node_id from event hierarchy",
           });
         }
-        
-        const participants =
-          await fetchAllSimplyCompeteParticipants(simplyCompeteEventId, athleteNodeId);
+
+        const participants = await fetchAllSimplyCompeteParticipants(
+          simplyCompeteEventId,
+          athleteNodeId,
+        );
         return res.json(groupParticipants(participants));
       }
 
@@ -2176,11 +2183,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Step 1: Get athlete role node_id from eventHierarchy
         const athleteNodeId = await getAthleteNodeId(simplyCompeteEventId);
-        
+
         if (!athleteNodeId) {
           await browser.close();
           return res.status(500).json({
-            error: "Failed to fetch athlete role node_id from event hierarchy. Cannot proceed with sync.",
+            error:
+              "Failed to fetch athlete role node_id from event hierarchy. Cannot proceed with sync.",
           });
         }
 
@@ -2844,11 +2852,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: schema.competitionParticipants.id,
           competitionId: schema.competitions.id,
           athleteId: schema.competitionParticipants.athleteId,
-          eventType: sql<string>`'competition'`.as('eventType'),
+          eventType: sql<string>`'competition'`.as("eventType"),
           title: schema.competitions.name,
-          description: sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as('description'),
+          description:
+            sql<string>`CONCAT('Place: ', ${schema.competitionParticipants.eventResult}, ' | Points: ', ${schema.competitionParticipants.points})`.as(
+              "description",
+            ),
           date: schema.competitions.startDate,
-          location: sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as('location'),
+          location:
+            sql<string>`CONCAT(${schema.competitions.city}, ', ', ${schema.competitions.country})`.as(
+              "location",
+            ),
           status: schema.competitions.status,
           competitionLevel: schema.competitions.competitionType,
           eventResult: schema.competitionParticipants.eventResult,
@@ -2857,7 +2871,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logo: schema.competitions.logo,
         })
         .from(schema.competitionParticipants)
-        .leftJoin(schema.competitions, eq(schema.competitionParticipants.competitionId, schema.competitions.id))
+        .leftJoin(
+          schema.competitions,
+          eq(
+            schema.competitionParticipants.competitionId,
+            schema.competitions.id,
+          ),
+        )
         .where(eq(schema.competitionParticipants.athleteId, athleteId));
       res.json(events);
     } catch (error) {
@@ -2869,7 +2889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/athletes/:id/competitions", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.id);
-      
+
       if (!athleteId) {
         return res.status(400).json({ error: "Invalid athlete ID" });
       }
@@ -2880,7 +2900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(schema.competitionParticipants)
         .where(eq(schema.competitionParticipants.athleteId, athleteId));
 
-      const competitionIds = participations.map(p => p.competitionId);
+      const competitionIds = participations.map((p) => p.competitionId);
       res.json(competitionIds);
     } catch (error) {
       console.error("Error fetching athlete competitions:", error);
