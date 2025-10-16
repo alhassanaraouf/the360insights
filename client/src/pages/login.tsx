@@ -3,12 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Chrome, Lock, User, Mail } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Trophy, Lock, User } from "lucide-react";
 import { UserRole } from "@shared/access-control";
 
 export default function Login() {
@@ -141,10 +139,6 @@ export default function Login() {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    window.location.href = `/api/auth/${provider}`;
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -167,66 +161,18 @@ export default function Login() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Welcome</CardTitle>
             <CardDescription className="text-center">
-              Choose your preferred sign-in method
+              Sign in to your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="social" className="w-full">
+            <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="social">Quick Sign In</TabsTrigger>
-                <TabsTrigger value="local">Email & Password</TabsTrigger>
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Create Account</TabsTrigger>
               </TabsList>
 
-              {/* Social Login Tab */}
-              <TabsContent value="social" className="space-y-4">
-                <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => handleSocialLogin('google')}
-                    disabled={isLoading}
-                  >
-                    <Chrome className="mr-2 h-4 w-4" />
-                    Continue with Google
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => handleSocialLogin('microsoft')}
-                    disabled={isLoading}
-                  >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23">
-                      <path fill="#f35325" d="M1 1h10v10H1z"/>
-                      <path fill="#81bc06" d="M12 1h10v10H12z"/>
-                      <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-                      <path fill="#ffba08" d="M12 12h10v10H12z"/>
-                    </svg>
-                    Continue with Microsoft
-                  </Button>
-
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => window.location.href = '/api/login'}
-                    disabled={isLoading}
-                  >
-                    <div className="mr-2 h-4 w-4 bg-blue-600 rounded"></div>
-                    Continue with Replit
-                  </Button>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with email
-                    </span>
-                  </div>
-                </div>
-
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-4">
                 <form onSubmit={handleLocalLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -237,6 +183,7 @@ export default function Login() {
                       placeholder="Enter your email"
                       required
                       disabled={isLoading}
+                      data-testid="input-email"
                     />
                   </div>
                   <div className="space-y-2">
@@ -248,17 +195,18 @@ export default function Login() {
                       placeholder="Enter your password"
                       required
                       disabled={isLoading}
+                      data-testid="input-password"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signin">
                     <Lock className="mr-2 h-4 w-4" />
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
 
-              {/* Local Registration Tab */}
-              <TabsContent value="local" className="space-y-4">
+              {/* Registration Tab */}
+              <TabsContent value="register" className="space-y-4">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
