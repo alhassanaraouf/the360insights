@@ -122,7 +122,7 @@ export const competitions = pgTable("competitions", {
   category: text("category"), // Weight category (e.g., "M-54 kg", "All")
   gradeLevel: text("grade_level"), // G1, G2, etc.
   pointsAvailable: decimal("points_available", { precision: 10, scale: 2 }).notNull(), // Maximum points offered
-  competitionType: varchar("competition_type", { length: 50 }).notNull(), // 'world', 'continental', 'national', etc.
+  competitionType: varchar("competition_type", { length: 100 }).notNull(), // 'world', 'continental', 'national', etc.
   registrationDeadline: text("registration_deadline"), // Registration deadline
   status: varchar("status", { length: 20 }).default("upcoming"), // 'upcoming', 'ongoing', 'completed', 'cancelled'
   simplyCompeteEventId: varchar("simply_compete_event_id", { length: 255 }), // External SimplyCompete event ID
