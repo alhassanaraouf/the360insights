@@ -64,7 +64,7 @@ export default function Competitions() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("upcoming");
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterAthlete, setFilterAthlete] = useState("all");
   const [athleteSearchOpen, setAthleteSearchOpen] = useState(false);
