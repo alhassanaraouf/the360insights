@@ -419,16 +419,7 @@ export default function Competitions() {
                                 filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
                               }`}
                             />
-                            <Avatar className="h-6 w-6 mr-2">
-                              <AvatarImage 
-                                src={`/api/athletes/${athlete.id}/image`} 
-                                alt={athlete.name}
-                              />
-                              <AvatarFallback className="text-xs">
-                                <UserIcon className="h-3 w-3" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
+                            <div className="flex flex-col flex-1">
                               <span className="font-medium">{athlete.name}</span>
                               {athlete.nationality && (
                                 <span className="text-xs text-muted-foreground">{athlete.nationality}</span>
