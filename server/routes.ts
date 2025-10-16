@@ -2181,14 +2181,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       try {
-        // Step 1: Get athlete role node_id from eventHierarchy
-        const athleteNodeId = await getAthleteNodeId(simplyCompeteEventId);
+        // Step 1: Fetch eventHierarchy with stealth browser to get athlete role node_id
+        let athleteNodeId: string | null = null;
+        let hierarchyError: Error | null = null;
 
-        if (!athleteNodeId) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const hierarchyUrl = `https://worldtkd.simplycompete.com/events/eventHierarchy?eventId=${simplyCompeteEventId}`;
+            
+            console.log(
+              `🔍 Fetching event hierarchy with stealth browser (attempt ${attempt}/2): ${hierarchyUrl}`,
+            );
+
+            const hierarchyPage = await browser.newPage();
+            await hierarchyPage.setViewport({ width: 1920, height: 1080 });
+            await hierarchyPage.setUserAgent(
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            );
+
+            await hierarchyPage.goto(hierarchyUrl, {
+              waitUntil: "networkidle0",
+              timeout: 30000,
+            });
+
+            const hierarchyContent = await hierarchyPage.evaluate(() => document.body.textContent);
+            await hierarchyPage.close();
+
+            if (!hierarchyContent) {
+              throw new Error("Empty response from eventHierarchy");
+            }
+
+            // Parse the hierarchy response
+            const hierarchyData = JSON.parse(hierarchyContent);
+            
+            // Find athlete role node_id
+            if (hierarchyData?.data?.data && Array.isArray(hierarchyData.data.data)) {
+              const athleteRole = hierarchyData.data.data.find((role: any) => 
+                role.eventRoleName?.toLowerCase() === 'athlete' || 
+                role.eventRoleName?.toLowerCase() === 'athletes'
+              );
+
+              if (athleteRole && athleteRole.nodeId) {
+                athleteNodeId = athleteRole.nodeId;
+                console.log(`✅ Found athlete role node_id: ${athleteNodeId}`);
+                hierarchyError = null;
+                break;
+              }
+            }
+
+            throw new Error("Could not find athlete role in event hierarchy");
+          } catch (error: any) {
+            hierarchyError = error;
+            console.error(`❌ Hierarchy fetch attempt ${attempt} failed:`, error.message);
+
+            if (attempt < 2) {
+              console.log(`⏳ Retrying hierarchy fetch in 2 seconds...`);
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+            }
+          }
+        }
+
+        if (hierarchyError || !athleteNodeId) {
           await browser.close();
           return res.status(500).json({
-            error:
-              "Failed to fetch athlete role node_id from event hierarchy. Cannot proceed with sync.",
+            error: "Failed to fetch athlete role node_id from event hierarchy. Cannot proceed with sync.",
           });
         }
 
