@@ -91,6 +91,7 @@ export default function Competitions() {
   // Fetch athletes for filter (lightweight - no rankings)
   const { data: athletes, isLoading: isLoadingAthletes } = useQuery<any[]>({
     queryKey: ['/api/athletes/simple'],
+    enabled: athleteSearchOpen, // Only fetch when dropdown is opened
   });
 
   // Check if user is admin
@@ -264,55 +265,135 @@ export default function Competitions() {
       <div className="mobile-padding mobile-space-y">
         {/* Search and Filter Controls */}
         <Card>
-          <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
-              {/* Active Filters Indicator */}
-              {(filterStatus !== "all" || filterLocation !== "all" || filterAthlete !== "all") && (
-                <div className="md:col-span-2 lg:col-span-5 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Active filters:</span>
-                  {filterStatus !== "all" && (
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs capitalize">
-                      {filterStatus}
-                    </span>
-                  )}
-                  {filterLocation !== "all" && (
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
-                      {filterLocation}
-                    </span>
-                  )}
-                  {filterAthlete !== "all" && (
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
-                      {athletes?.find(a => a.id === parseInt(filterAthlete))?.name || 'Athlete'}
-                    </span>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => {
-                      setFilterStatus("all");
-                      setFilterLocation("all");
-                      setFilterAthlete("all");
-                    }}
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                    data-testid="button-clear-all-filters"
-                  >
-                    Clear all
-                  </Button>
-                </div>
-              )}
-
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search competitions or location..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search-competitions"
-                />
+          <CardContent className="p-4 md:p-6 space-y-4">
+            {/* Active Filters Indicator */}
+            {(filterStatus !== "all" || filterLocation !== "all" || filterAthlete !== "all") && (
+              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Active filters:</span>
+                {filterStatus !== "all" && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs capitalize">
+                    {filterStatus}
+                  </span>
+                )}
+                {filterLocation !== "all" && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                    {filterLocation}
+                  </span>
+                )}
+                {filterAthlete !== "all" && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                    {athletes?.find(a => a.id === parseInt(filterAthlete))?.name || 'Athlete'}
+                  </span>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setFilterStatus("all");
+                    setFilterLocation("all");
+                    setFilterAthlete("all");
+                  }}
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                  data-testid="button-clear-all-filters"
+                >
+                  Clear all
+                </Button>
               </div>
+            )}
 
+            {/* Search - Full Width */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search competitions or location..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-competitions"
+              />
+            </div>
+
+            {/* Athlete Filter - Full Width Below Search */}
+            <Popover open={athleteSearchOpen} onOpenChange={setAthleteSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={athleteSearchOpen}
+                  className="w-full justify-between"
+                  data-testid="select-filter-athlete"
+                >
+                  {filterAthlete === "all" ? (
+                    <span className="text-muted-foreground">All athletes</span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage 
+                          src={`/api/athletes/${filterAthlete}/image`} 
+                          alt={athletes?.find(a => a.id === parseInt(filterAthlete))?.name}
+                        />
+                        <AvatarFallback className="text-xs">
+                          <UserIcon className="h-3 w-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{athletes?.find(a => a.id === parseInt(filterAthlete))?.name}</span>
+                    </div>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search by name, nationality..." />
+                  <CommandList>
+                    <CommandEmpty>
+                      {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setFilterAthlete("all");
+                          setAthleteSearchOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            filterAthlete === "all" ? "opacity-100" : "opacity-0"
+                          }`}
+                        />
+                        All Athletes
+                      </CommandItem>
+                      {athleteSearchOpen && athletes && athletes.map((athlete) => (
+                        <CommandItem
+                          key={athlete.id}
+                          value={`${athlete.name} ${athlete.nationality || ''}`}
+                          onSelect={() => {
+                            setFilterAthlete(athlete.id.toString());
+                            setAthleteSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          <div className="flex flex-col flex-1">
+                            <span className="font-medium">{athlete.name}</span>
+                            {athlete.nationality && (
+                              <span className="text-xs text-muted-foreground">{athlete.nationality}</span>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Other Filters in a Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Sort By */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger data-testid="select-sort-by">
@@ -353,85 +434,6 @@ export default function Competitions() {
                   ))}
                 </SelectContent>
               </Select>
-
-              {/* Filter by Athlete */}
-              <Popover open={athleteSearchOpen} onOpenChange={setAthleteSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={athleteSearchOpen}
-                    className="w-full justify-between"
-                    data-testid="select-filter-athlete"
-                  >
-                    {filterAthlete === "all" ? (
-                      <span className="text-muted-foreground">All athletes</span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage 
-                            src={`/api/athletes/${filterAthlete}/image`} 
-                            alt={athletes?.find(a => a.id === parseInt(filterAthlete))?.name}
-                          />
-                          <AvatarFallback className="text-xs">
-                            <UserIcon className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{athletes?.find(a => a.id === parseInt(filterAthlete))?.name}</span>
-                      </div>
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search by name, nationality..." />
-                    <CommandList>
-                      <CommandEmpty>
-                        {isLoadingAthletes ? "Loading athletes..." : "No athlete found."}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="all"
-                          onSelect={() => {
-                            setFilterAthlete("all");
-                            setAthleteSearchOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              filterAthlete === "all" ? "opacity-100" : "opacity-0"
-                            }`}
-                          />
-                          All Athletes
-                        </CommandItem>
-                        {athletes && athletes.map((athlete) => (
-                          <CommandItem
-                            key={athlete.id}
-                            value={`${athlete.name} ${athlete.nationality || ''}`}
-                            onSelect={() => {
-                              setFilterAthlete(athlete.id.toString());
-                              setAthleteSearchOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                filterAthlete === athlete.id.toString() ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-                            <div className="flex flex-col flex-1">
-                              <span className="font-medium">{athlete.name}</span>
-                              {athlete.nationality && (
-                                <span className="text-xs text-muted-foreground">{athlete.nationality}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
             </div>
           </CardContent>
         </Card>
