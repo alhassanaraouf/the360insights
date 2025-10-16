@@ -61,6 +61,7 @@ export default function OpponentAnalysis() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [customNotes, setCustomNotes] = useState<string>("");
+  const [runAnalysis, setRunAnalysis] = useState<boolean>(false);
   const observerTarget = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
@@ -144,7 +145,7 @@ export default function OpponentAnalysis() {
 
   const { data: analysis, isLoading: analysisLoading } = useQuery<OpponentAnalysis>({
     queryKey: ["/api/ai/opponent-analysis", selectedAthleteId, selectedOpponent, customNotes],
-    enabled: !!selectedOpponent && !!selectedAthleteId,
+    enabled: !!selectedOpponent && !!selectedAthleteId && runAnalysis,
     queryFn: async () => {
       if (!selectedOpponent || !selectedAthleteId) return null;
       const response = await apiRequest("POST", `/api/ai/opponent-analysis/${selectedAthleteId}/${selectedOpponent}`, {
@@ -197,6 +198,7 @@ export default function OpponentAnalysis() {
   const handleOpponentSelect = async (opponentId: string) => {
     setSelectedOpponent(opponentId);
     setOpponentSelectorOpen(false);
+    setRunAnalysis(false); // Reset analysis when changing opponent
     
     // Check if opponent has a playing style, if not generate one
     const opponent = opponents?.find((o) => o.id.toString() === opponentId);
@@ -384,6 +386,28 @@ export default function OpponentAnalysis() {
                 Additional context to help AI generate better tactical analysis
               </p>
             </div>
+
+            {selectedOpponent && (
+              <Button
+                onClick={() => setRunAnalysis(true)}
+                disabled={analysisLoading || !selectedOpponent}
+                className="w-full"
+                size="lg"
+                data-testid="button-run-analysis"
+              >
+                {analysisLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Run AI Analysis
+                  </>
+                )}
+              </Button>
+            )}
           </CardContent>
         </Card>
 
