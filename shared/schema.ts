@@ -142,6 +142,8 @@ export const competitionParticipants = pgTable("competition_participants", {
   seedNumber: integer("seed_number"), // Tournament seeding position
   weightCategory: varchar("weight_category", { length: 50 }), // e.g., "-68kg", "-57kg"
   subeventName: varchar("subevent_name", { length: 100 }), // Subevent/Division (e.g., "Senior Division")
+  points: decimal("points", { precision: 10, scale: 2 }), // Points earned in competition
+  eventResult: text("event_result"), // Competition finishing place/result (e.g., "1st", "2nd", "Gold Medal")
   registrationDate: timestamp("registration_date").defaultNow(),
   status: varchar("status", { length: 20 }).default("registered"), // 'registered', 'confirmed', 'withdrawn'
   createdAt: timestamp("created_at").defaultNow(),
