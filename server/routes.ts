@@ -1643,6 +1643,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to fetch athlete role node_id from eventHierarchy
+  async function getAthleteNodeId(eventId: string): Promise<string | null> {
+    try {
+      const url = `https://worldtkd.simplycompete.com/events/eventHierarchy?eventId=${eventId}`;
+      console.log(`🔍 Fetching event hierarchy to get athlete role node_id: ${url}`);
+
+      const headers = {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        Priority: "u=1, i",
+        Referer: "https://worldtkd.simplycompete.com/events",
+        "Sec-Ch-Ua":
+          '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      };
+
+      const response = await fetch(url, { headers });
+
+      if (!response.ok) {
+        console.error(
+          `Failed to fetch event hierarchy:`,
+          response.status,
+          response.statusText,
+        );
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Find the athlete role node in the hierarchy
+      // The structure is data.data.data which contains an array of event roles
+      if (data?.data?.data && Array.isArray(data.data.data)) {
+        const athleteRole = data.data.data.find((role: any) => 
+          role.eventRoleName?.toLowerCase() === 'athlete' || 
+          role.eventRoleName?.toLowerCase() === 'athletes'
+        );
+
+        if (athleteRole && athleteRole.nodeId) {
+          console.log(`✅ Found athlete role node_id: ${athleteRole.nodeId}`);
+          return athleteRole.nodeId;
+        }
+      }
+
+      console.warn(`⚠️ Could not find athlete role in event hierarchy`);
+      return null;
+    } catch (error: any) {
+      console.error(`❌ Error fetching athlete node_id:`, error.message);
+      return null;
+    }
+  }
+
   // Function to fetch all participants from SimplyCompete API with pagination
   async function fetchAllSimplyCompeteParticipants(
     eventId: string,
@@ -1659,9 +1719,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Retry logic: try twice for each page
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&itemsPerPage=4000&pageNo=${pageNo}`;
+          let url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${eventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&pageNo=${pageNo}`;
           if (nodeId) {
-            url += `&nodeId=${nodeId}&nodeLevel=EventRole`;
+            url += `&nodeId=${nodeId}`;
           }
 
           console.log(
@@ -1851,8 +1911,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(
           `Fetching participants for ${competition.name} from SimplyCompete API...`,
         );
+        
+        // Get athlete role node_id from eventHierarchy
+        const athleteNodeId = await getAthleteNodeId(simplyCompeteEventId);
+        
+        if (!athleteNodeId) {
+          return res.status(500).json({
+            error: "Failed to fetch athlete role node_id from event hierarchy",
+          });
+        }
+        
         const participants =
-          await fetchAllSimplyCompeteParticipants(simplyCompeteEventId);
+          await fetchAllSimplyCompeteParticipants(simplyCompeteEventId, athleteNodeId);
         return res.json(groupParticipants(participants));
       }
 
@@ -2104,13 +2174,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       try {
-        // Fetch participants with retry logic
+        // Step 1: Get athlete role node_id from eventHierarchy
+        const athleteNodeId = await getAthleteNodeId(simplyCompeteEventId);
+        
+        if (!athleteNodeId) {
+          await browser.close();
+          return res.status(500).json({
+            error: "Failed to fetch athlete role node_id from event hierarchy. Cannot proceed with sync.",
+          });
+        }
+
+        // Step 2: Fetch participants filtered by athlete node_id
         let textContent: string | null = null;
         let fetchError: Error | null = null;
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeLevel=EventRole&itemsPerPage=4000&pageNo=0`;
+            const url = `https://worldtkd.simplycompete.com/events/getEventParticipant?eventId=${simplyCompeteEventId}&isHideUnpaidEntries=false&nodeId=${athleteNodeId}&nodeLevel=EventRole&pageNo=0`;
 
             console.log(
               `📡 Fetching participants with stealth browser (attempt ${attempt}/2): ${url}`,
