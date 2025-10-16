@@ -658,6 +658,7 @@ export class DatabaseStorage implements IStorage {
         .delete(trainingRecommendations)
         .where(eq(trainingRecommendations.athleteId, id)),
       db.delete(aiQueries).where(eq(aiQueries.athleteId, id)),
+      db.delete(competitionParticipants).where(eq(competitionParticipants.athleteId, id)),
     ]);
 
     // Finally delete the athlete
