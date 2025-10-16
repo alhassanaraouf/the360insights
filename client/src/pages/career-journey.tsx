@@ -143,7 +143,7 @@ export default function CareerJourney() {
                         <div 
                           key={event.id} 
                           className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => window.location.href = `/competitions?id=${event.competitionId}`}
+                          onClick={() => window.location.href = `/competition/${event.competitionId}`}
                           data-testid={`competition-card-${event.competitionId}`}
                         >
                           {/* Competition Logo */}
