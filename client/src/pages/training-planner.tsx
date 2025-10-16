@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +152,26 @@ export default function TrainingPlanner() {
     enabled: !!selectedAthleteId,
   });
 
+  // Fetch athlete's world rankings to get highest ranked weight
+  const { data: athleteRankings } = useQuery<any[]>({
+    queryKey: [`/api/athletes/${selectedAthleteId}/ranks`],
+    enabled: !!selectedAthleteId,
+  });
+
+  // Calculate highest world rank weight and set as default
+  const highestRankWeight = athleteRankings?.filter(rank => rank.rankingType === 'world')
+    .sort((a, b) => (a.ranking || Infinity) - (b.ranking || Infinity))[0];
+
+  // Set default target weight when athlete's highest rank is loaded
+  useEffect(() => {
+    if (highestRankWeight && !planParameters.targetWeight && selectedAthleteId) {
+      const weightMatch = highestRankWeight.category?.match(/(\d+)/);
+      if (weightMatch) {
+        setPlanParameters(prev => ({...prev, targetWeight: weightMatch[1]}));
+      }
+    }
+  }, [highestRankWeight, planParameters.targetWeight, selectedAthleteId]);
+
   // Fetch saved training plans for the selected athlete
   const { data: savedPlans, refetch: refetchPlans } = useQuery<any[]>({
     queryKey: [`/api/training/plans/${selectedAthleteId}`],
@@ -171,7 +191,16 @@ export default function TrainingPlanner() {
     
     // Then filter by selected G-levels
     if (selectedGLevels.length === 0) return false; // Show NO competitions if no levels selected
-    return comp.gradeLevel && selectedGLevels.includes(comp.gradeLevel);
+    
+    // Handle competitions without grade level (show them if "all" is in selected levels)
+    if (!comp.gradeLevel) return false;
+    
+    // Normalize grade level for comparison (handle both G-14 and G14 formats)
+    const normalizedCompGrade = comp.gradeLevel.replace(/-/g, '').toUpperCase();
+    return selectedGLevels.some(level => {
+      const normalizedLevel = level.replace(/-/g, '').toUpperCase();
+      return normalizedLevel === normalizedCompGrade;
+    });
   }) || [];
 
   // Check if competition plan is selected
@@ -379,7 +408,33 @@ export default function TrainingPlanner() {
                     <Label htmlFor="targetCompetition">Target Competition</Label>
                     <Select 
                       value={planParameters.targetCompetition} 
-                      onValueChange={(value) => setPlanParameters(prev => ({...prev, targetCompetition: value}))}
+                      onValueChange={(value) => {
+                        setPlanParameters(prev => ({...prev, targetCompetition: value}));
+                        
+                        // Auto-fill competition date when a competition is selected
+                        if (value !== 'custom') {
+                          const selectedComp = availableCompetitions.find(comp => comp.name === value);
+                          if (selectedComp?.startDate) {
+                            let formattedDate = '';
+                            
+                            // Handle both MM/DD/YYYY and YYYY-MM-DD formats
+                            if (selectedComp.startDate.includes('/')) {
+                              // Convert MM/DD/YYYY to YYYY-MM-DD
+                              const dateParts = selectedComp.startDate.split('/');
+                              if (dateParts.length === 3) {
+                                formattedDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+                              }
+                            } else if (selectedComp.startDate.includes('-')) {
+                              // Already in YYYY-MM-DD format
+                              formattedDate = selectedComp.startDate;
+                            }
+                            
+                            if (formattedDate) {
+                              setPlanParameters(prev => ({...prev, competitionDate: formattedDate}));
+                            }
+                          }
+                        }
+                      }}
                     >
                       <SelectTrigger className="text-left h-auto min-h-[2.5rem] py-2">
                         <SelectValue 
