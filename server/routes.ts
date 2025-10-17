@@ -40,6 +40,11 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for deployment - must respond quickly
+  app.get("/", (_req, res) => {
+    res.status(200).send("OK");
+  });
+
   // Setup authentication middleware
   await setupAuth(app);
 

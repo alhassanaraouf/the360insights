@@ -9,7 +9,7 @@ packages = ["gitFull", "glibcLocales", "jq", "playwright-driver", "chromium", "n
 [deployment]
 deploymentTarget = "vm"
 build = ["npm", "run", "build"]
-run = ["npm", "start"]
+run = ["node", "dist/index.js"]
 
 [workflows]
 runButton = "Project"
@@ -55,6 +55,10 @@ externalPort = 3003
 [[ports]]
 localPort = 34643
 externalPort = 3000
+
+[[ports]]
+localPort = 39631
+externalPort = 6800
 
 [[ports]]
 localPort = 40223
