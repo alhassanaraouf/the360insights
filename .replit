@@ -7,9 +7,9 @@ channel = "stable-24_05"
 packages = ["gitFull", "glibcLocales", "jq", "playwright-driver", "chromium", "nss", "glib", "atk", "cups", "at-spi2-atk", "gtk3", "pango", "libdrm", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXrandr", "mesa", "expat", "alsa-lib", "nspr"]
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "vm"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "node index.js"]
+run = ["npm", "start"]
 
 [workflows]
 runButton = "Project"
