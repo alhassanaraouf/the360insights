@@ -402,7 +402,7 @@ export default function MatchAnalysis() {
   const { toast } = useToast();
 
   // Fetch previous analyses
-  const { data: previousAnalyses, isLoading: loadingHistory } = useQuery({
+  const { data: previousAnalyses, isLoading: loadingHistory } = useQuery<any[]>({
     queryKey: ['/api/video-analysis/history'],
   });
 
