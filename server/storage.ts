@@ -236,6 +236,7 @@ export interface IStorage {
   getVideoAnalysis(id: number): Promise<VideoAnalysis | undefined>;
   getVideoAnalysesByUserId(userId: string): Promise<VideoAnalysis[]>;
   updateVideoAnalysisPath(id: number, videoPath: string): Promise<void>;
+  deleteVideoAnalysis(id: number): Promise<void>;
 
   // Performance Analysis Cache
   getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
@@ -1873,6 +1874,12 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(videoAnalysis)
       .set({ videoPath })
+      .where(eq(videoAnalysis.id, id));
+  }
+
+  async deleteVideoAnalysis(id: number): Promise<void> {
+    await db
+      .delete(videoAnalysis)
       .where(eq(videoAnalysis.id, id));
   }
 }

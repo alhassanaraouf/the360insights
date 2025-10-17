@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   TrendingUp,
   Clock,
   PlayCircle,
+  Trash2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -393,7 +395,6 @@ function VideoPlayerSection({
 export default function MatchAnalysis() {
   const [analysisType, setAnalysisType] = useState<"match" | "clip">("match");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [round, setRound] = useState<string>("entire-match");
   const [clipRequest, setClipRequest] = useState("");
   const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(
     null,
@@ -404,6 +405,36 @@ export default function MatchAnalysis() {
   // Fetch previous analyses
   const { data: previousAnalyses, isLoading: loadingHistory } = useQuery<any[]>({
     queryKey: ['/api/video-analysis/history'],
+  });
+
+  const deleteAnalysisMutation = useMutation({
+    mutationFn: async (analysisId: number) => {
+      const response = await fetch(`/api/video-analysis/${analysisId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete analysis");
+      }
+
+      return analysisId;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Analysis Deleted",
+        description: "Video analysis has been successfully deleted",
+      });
+      // Invalidate and refetch the history
+      queryClient.invalidateQueries({ queryKey: ['/api/video-analysis/history'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete analysis",
+        variant: "destructive",
+      });
+    },
   });
 
   const analyzeVideoMutation = useMutation({
@@ -418,9 +449,6 @@ export default function MatchAnalysis() {
       formData.append("video", file);
 
       if (type === "match") {
-        if (round && round !== "entire-match") {
-          formData.append("round", round);
-        }
         const response = await fetch("/api/video-analysis/match", {
           method: "POST",
           body: formData,
@@ -500,7 +528,6 @@ export default function MatchAnalysis() {
 
   const handleReset = () => {
     setVideoFile(null);
-    setRound("entire-match");
     setClipRequest("");
     setMatchResult(null);
     setClipResult(null);
@@ -583,11 +610,10 @@ export default function MatchAnalysis() {
                 {previousAnalyses.slice(0, 6).map((analysis: any) => (
                   <Card
                     key={analysis.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => loadPreviousAnalysis(analysis)}
+                    className="cursor-pointer hover:shadow-lg transition-shadow relative group"
                     data-testid={`previous-analysis-${analysis.id}`}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-4" onClick={() => loadPreviousAnalysis(analysis)}>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0">
                           <PlayCircle className="h-10 w-10 text-primary" />
@@ -612,6 +638,18 @@ export default function MatchAnalysis() {
                         </div>
                       </div>
                     </CardContent>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteAnalysisMutation.mutate(analysis.id);
+                      }}
+                      data-testid={`delete-analysis-${analysis.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </Card>
                 ))}
               </div>
@@ -660,30 +698,6 @@ export default function MatchAnalysis() {
                       {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="round">Round (Optional)</Label>
-                  <Select
-                    value={round}
-                    onValueChange={setRound}
-                    disabled={analyzeVideoMutation.isPending}
-                  >
-                    <SelectTrigger data-testid="select-round">
-                      <SelectValue placeholder="Analyze entire match" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entire-match">Entire Match</SelectItem>
-                      <SelectItem value="no-rounds">No Rounds</SelectItem>
-                      {Array.from({ length: 50 }, (_, i) => i + 1).map(
-                        (num) => (
-                          <SelectItem key={num} value={num.toString()}>
-                            Round {num}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
                 </div>
               </TabsContent>
 

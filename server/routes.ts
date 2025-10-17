@@ -313,6 +313,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Delete video analysis
+  app.delete(
+    "/api/video-analysis/:id",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const analysisId = parseInt(req.params.id);
+        const analysis = await storage.getVideoAnalysis(analysisId);
+
+        if (!analysis) {
+          return res.status(404).json({ error: "Analysis not found" });
+        }
+
+        // Delete video from bucket storage if it exists
+        if (analysis.videoPath && analysis.videoPath.startsWith('videos/')) {
+          try {
+            await bucketStorage.deleteVideo(analysisId);
+          } catch (error) {
+            console.warn("Failed to delete video from bucket:", error);
+          }
+        }
+
+        // Delete analysis record from database
+        await storage.deleteVideoAnalysis(analysisId);
+
+        res.json({ success: true, message: "Analysis deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting video analysis:", error);
+        res.status(500).json({ error: "Failed to delete analysis" });
+      }
+    },
+  );
+
   // Serve stored video files
   app.get("/api/video-analysis/:id/video", async (req: any, res) => {
     try {
