@@ -7,7 +7,7 @@ channel = "stable-24_05"
 packages = ["gitFull", "glibcLocales", "jq", "playwright-driver", "chromium", "nss", "glib", "atk", "cups", "at-spi2-atk", "gtk3", "pango", "libdrm", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXrandr", "mesa", "expat", "alsa-lib", "nspr"]
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
 run = ["node", "dist/index.js"]
 
@@ -57,10 +57,6 @@ localPort = 34643
 externalPort = 3000
 
 [[ports]]
-localPort = 39631
-externalPort = 6800
-
-[[ports]]
 localPort = 40223
 externalPort = 4200
 
@@ -89,4 +85,4 @@ integrations = ["javascript_openai:1.0.0", "javascript_gemini:1.0.0"]
 expertMode = true
 
 [objectStorage]
-defaultBucketID = "replit-objstore-de6c58a6-b4f1-4ccd-8165-11037524c945"
+defaultBucketID = "replit-objstore-63b87864-7da4-4fc4-94df-fe5bd8d4c39b"
