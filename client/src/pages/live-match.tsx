@@ -41,6 +41,8 @@ interface MatchAnalysisResult {
   processingTimeMs: number;
   errors: any;
   videoPath?: string;
+  // NEW: prefer this if backend provides it; fallback to yellow_card_analysis
+  gam_jeom_analysis?: PlayerEvents;
 }
 
 interface PlayerEvent {
@@ -95,13 +97,16 @@ function VideoPlayerSection({
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
 
+  // Pick source for Gam-jeom analysis
+  const gamJeom = matchResult.gam_jeom_analysis || matchResult.yellow_card_analysis;
+
   // Get full player stats (final totals)
   const bluePlayer = matchResult.score_analysis?.players?.[0];
   const redPlayer = matchResult.score_analysis?.players?.[1];
   const blueKicks = matchResult.kick_count_analysis?.players?.[0];
   const redKicks = matchResult.kick_count_analysis?.players?.[1];
-  const blueViolations = matchResult.yellow_card_analysis?.players?.[0];
-  const redViolations = matchResult.yellow_card_analysis?.players?.[1];
+  const blueViolations = gamJeom?.players?.[0];
+  const redViolations = gamJeom?.players?.[1];
 
   // Reset state when viewing a different match analysis
   useEffect(() => {
@@ -163,8 +168,8 @@ function VideoPlayerSection({
       });
     });
 
-    // Extract violation events
-    matchResult.yellow_card_analysis?.players?.forEach((player) => {
+    // Extract violation events (Gam-jeom)
+    gamJeom?.players?.forEach((player) => {
       player.events?.forEach((event) => {
         events.push({
           timestamp: event.timestamp,
@@ -176,7 +181,7 @@ function VideoPlayerSection({
     });
 
     return events;
-  }, [matchResult]);
+  }, [matchResult, gamJeom]);
 
   // Calculate dynamic stats based on video playback
   const dynamicStats = useMemo(() => {
@@ -307,7 +312,7 @@ function VideoPlayerSection({
             </div>
             <div className="border rounded-lg p-3 text-center">
               <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                WARNINGS
+                GAM-JEOM
               </div>
               <div
                 className="text-3xl font-bold text-yellow-600 dark:text-yellow-400"
@@ -319,7 +324,7 @@ function VideoPlayerSection({
           </div>
 
           {/* Video Player (Center) */}
-          <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-black dark:via-gray-900 dark:to-black flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900/30 flex items-center justify-center p-4">
             <VideoPlayerWithMarkers
               videoUrl={`/api/video-analysis/${matchResult.id}/video`}
               events={timelineEvents}
@@ -355,7 +360,7 @@ function VideoPlayerSection({
             </div>
             <div className="border rounded-lg p-3 text-center">
               <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                WARNINGS
+                GAM-JEOM
               </div>
               <div
                 className="text-3xl font-bold text-yellow-600 dark:text-yellow-400"
@@ -529,22 +534,21 @@ export default function MatchAnalysis() {
 
   const getPlayerNames = (analysis: any) => {
     const analysisType = analysis.analysisType || analysis.analysis_type;
-    if (analysisType === 'match' && analysis.score_analysis) {
+    if (analysisType === 'match') {
       try {
-        const scoreData = typeof analysis.score_analysis === 'string' 
-          ? JSON.parse(analysis.score_analysis) 
-          : analysis.score_analysis;
+        const rawScore = analysis.scoreAnalysis ?? analysis.score_analysis;
+        const scoreData = typeof rawScore === 'string' ? JSON.parse(rawScore) : rawScore;
 
         if (scoreData?.players && scoreData.players.length >= 2) {
-          const player1 = scoreData.players[0]?.name || 'Unknown';
-          const player2 = scoreData.players[1]?.name || 'Unknown';
-          return `Player 1 (${player1}) vs Player 2 (${player2})`;
+          const p1 = scoreData.players[0]?.name?.trim() || 'Unknown';
+          const p2 = scoreData.players[1]?.name?.trim() || 'Unknown';
+          return `${p1} vs ${p2}`;
         }
       } catch (e) {
         console.error('Error parsing score analysis:', e);
       }
     }
-    return analysis.fileName || analysis.file_name || 'Video Analysis';
+    return 'Video Analysis';
   };
 
   const getAnalysisDate = (analysis: any) => {
@@ -758,7 +762,7 @@ export default function MatchAnalysis() {
                   data-testid="tab-violations"
                   className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-700 data-[state=active]:dark:bg-yellow-900/50 data-[state=active]:dark:text-yellow-300 data-[state=active]:font-semibold"
                 >
-                  Violations
+                  Gam-jeom
                 </TabsTrigger>
                 <TabsTrigger
                   value="advice"
@@ -955,14 +959,13 @@ export default function MatchAnalysis() {
 
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.yellow_card_analysis?.players?.slice().reverse().map(
+                  {(gamJeom?.players ?? []).slice().reverse().map(
                     (player, idx) => {
-                      // Use player name from score_analysis for consistency
-                      // Note: violations are reversed, so we need to reverse the index too
-                      const scoreIdx = matchResult.yellow_card_analysis?.players?.length ? 
-                        matchResult.yellow_card_analysis.players.length - 1 - idx : idx;
+                      // keep name alignment with score_analysis (accounting for reverse)
+                      const totalPlayers = gamJeom?.players?.length ?? 0;
+                      const scoreIdx = totalPlayers ? totalPlayers - 1 - idx : idx;
                       const playerName = matchResult.score_analysis?.players?.[scoreIdx]?.name || player.name;
-                      
+
                       return (
                         <Card key={idx}>
                           <CardHeader className="pb-3">
@@ -970,10 +973,7 @@ export default function MatchAnalysis() {
                               {playerName
                                 .toLowerCase()
                                 .split(" ")
-                                .map(
-                                  (word: string) =>
-                                    word.charAt(0).toUpperCase() + word.slice(1),
-                                )
+                                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                                 .join(" ")}
                               <span
                                 className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
@@ -987,7 +987,7 @@ export default function MatchAnalysis() {
                               className="text-2xl font-bold text-gray-900 dark:text-gray-100"
                               data-testid={`violations-total-${idx}`}
                             >
-                              {player.total} violations
+                              {player.total} gam-jeom
                             </div>
                             <div className="space-y-2">
                               {player.events?.map((event, eventIdx) => (

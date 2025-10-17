@@ -167,18 +167,17 @@ export default function VideoPlayerWithMarkers({
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full rounded-xl overflow-hidden ${className}`}
+      className={`relative w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900/40 ring-1 ring-slate-200 dark:ring-slate-800 ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      {/* Purple gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-600 to-blue-600 dark:from-purple-600 dark:via-purple-700 dark:to-blue-700" />
+      {/* Removed the full purple gradient background */}
       
       {/* Video Element */}
       <video
         ref={videoRef}
         src={videoUrl}
-        className="relative w-full h-auto bg-black/20"
+        className="relative w-full h-auto"
         data-testid="video-player"
       />
 
@@ -187,7 +186,7 @@ export default function VideoPlayerWithMarkers({
         <Button
           size="sm"
           variant="ghost"
-          className="text-white/90 hover:text-white hover:bg-white/20 rounded-full p-2"
+          className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full p-2"
           data-testid="button-share"
         >
           <Share2 className="h-5 w-5" />
@@ -211,7 +210,7 @@ export default function VideoPlayerWithMarkers({
       )}
 
       {/* Bottom Controls */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-5 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/80 via-slate-800/60 to-transparent p-5 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         {/* Timeline with Markers */}
         <div className="relative mb-4">
           {/* Background track */}

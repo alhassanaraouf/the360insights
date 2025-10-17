@@ -351,21 +351,21 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         // Yellow Card/Violations Analysis (JSON)
         (async () => {
           try {
-            onProgress("Reviewing violations...", 80);
+            onProgress("Reviewing gam-jeom penalties...", 80);
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
-Watch the scoreboard for referee signals indicating yellow cards, warnings, or penalties in ${roundText}.
+Watch ${roundText} and identify all Gam-jeom (penalty points) assessed by the referee. Track Gam-jeom using referee signals and scoreboard deductions.
 
 Return this EXACT JSON format:
 {
   "players": [
     {
       "name": "Actual Player Name",
-      "total": total_violations_count,
+      "total": total_gam_jeom_count,
       "events": [
         {
           "timestamp": "MM:SS",
-          "description": "Type of violation (e.g., yellow card, warning, penalty)",
+          "description": "Gam-jeom reason (e.g., grabbing, avoidance, falling, pushing, hitting below waist, out of bounds)",
           "value": 1
         }
       ]
@@ -373,7 +373,10 @@ Return this EXACT JSON format:
   ]
 }
 
-CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
+CRITICAL:
+- Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS
+- Use actual player names from video
+- Use the term "Gam-jeom" for penalty events in descriptions`;
 
             const result = await genAI.models.generateContent({
               model: "gemini-2.0-flash-exp",
@@ -536,6 +539,8 @@ Rules:
         punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
         kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
         yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        // NEW: provide a forward-compatible alias with preferred name
+        gam_jeom_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
         advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(matchAnalysisText),
         sport: "Taekwondo",
         roundAnalyzed: round,
