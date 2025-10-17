@@ -87,10 +87,22 @@ export default function Login() {
       return;
     }
 
-    if (formData.password.length < 6) {
+    // Client-side password policy mirror: 8+ chars, upper, lower, digit, special
+    const policy = {
+      minLen: 8,
+      upper: /[A-Z]/,
+      lower: /[a-z]/,
+      digit: /[0-9]/,
+      special: /[^A-Za-z0-9]/,
+    };
+    if (formData.password.length < policy.minLen
+      || !policy.upper.test(formData.password)
+      || !policy.lower.test(formData.password)
+      || !policy.digit.test(formData.password)
+      || !policy.special.test(formData.password)) {
       toast({
         title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
+        description: "Use at least 8 characters with uppercase, lowercase, a number, and a special character.",
         variant: "destructive",
       });
       return;
@@ -275,13 +287,14 @@ export default function Login() {
                       id="registerPassword"
                       name="password"
                       type="password"
-                      placeholder="Create a password (min. 6 characters)"
+                      placeholder="Create a strong password"
                       value={formData.password}
                       onChange={handleInputChange}
                       required
-                      minLength={6}
+                      minLength={8}
                       disabled={isLoading}
                     />
+                    <p className="text-xs text-gray-500">Use at least 8 characters with uppercase, lowercase, a number, and a special character.</p>
                   </div>
                   
                   <div className="space-y-2">

@@ -4,9 +4,11 @@ import bcrypt from "bcryptjs";
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
+import rateLimit from "express-rate-limit";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { UserRole } from "@shared/access-control";
+import { validatePassword, PASSWORD_POLICY_HINT } from "./password-policy";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -37,6 +39,29 @@ export async function setupAuth(app: Express) {
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Rate limiters for auth endpoints
+  const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10); // default 15 minutes
+  const maxLogin = parseInt(process.env.RATE_LIMIT_LOGIN_MAX || "10", 10);
+  const maxRegister = parseInt(process.env.RATE_LIMIT_REGISTER_MAX || "5", 10);
+
+  const loginLimiter = rateLimit({
+    windowMs,
+    max: maxLogin,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many login attempts. Please try again later." },
+    keyGenerator: (req) => (req.ip || "") + ":" + (req.body?.email || "")
+  });
+
+  const registerLimiter = rateLimit({
+    windowMs,
+    max: maxRegister,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many signup attempts. Please try again later." },
+    keyGenerator: (req) => (req.ip || "") + ":" + (req.body?.email || "")
+  });
 
   // Local Strategy (Username/Password)
   passport.use(new LocalStrategy({
@@ -75,7 +100,7 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: any, cb) => cb(null, user));
 
   // Local Auth Routes
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post("/api/auth/login", loginLimiter, (req, res, next) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         return res.status(500).json({ message: "Authentication error" });
@@ -92,9 +117,17 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", registerLimiter, async (req, res) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;
+      // Basic input checks
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+      const pwdCheck = validatePassword(password);
+      if (!pwdCheck.valid) {
+        return res.status(400).json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
+      }
       
       // Validate and sanitize role - only allow non-privileged roles during registration
       const allowedRegistrationRoles = [UserRole.ATHLETE, UserRole.ORG_ADMIN, UserRole.SPONSOR];
@@ -113,8 +146,8 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "User already exists with a password. Please use the login form." });
       }
       
-      // Hash password
-      const passwordHash = await bcrypt.hash(password, 12);
+  // Hash password
+  const passwordHash = await bcrypt.hash(password, 12);
       
       let user;
       if (existingUser) {
@@ -228,6 +261,12 @@ export async function setupAuth(app: Express) {
         if (!isValidPassword) {
           return res.status(400).json({ message: "Current password is incorrect" });
         }
+      }
+
+      // Validate new password strength
+      const pwdCheck = validatePassword(newPassword);
+      if (!pwdCheck.valid) {
+        return res.status(400).json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
       }
 
       // Hash new password
