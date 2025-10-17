@@ -383,6 +383,11 @@ export class DatabaseStorage implements IStorage {
           bio: user.bio,
           profileImageUrl: user.profileImageUrl,
           passwordHash: user.passwordHash,
+          // Email verification fields (optional)
+          emailVerified: (user as any).emailVerified,
+          emailVerificationOtp: (user as any).emailVerificationOtp,
+          emailVerificationExpires: (user as any).emailVerificationExpires,
+          emailVerificationAttempts: (user as any).emailVerificationAttempts,
           updatedAt: new Date(),
         },
       })

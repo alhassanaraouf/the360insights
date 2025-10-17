@@ -15,6 +15,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { UserRole } from "@shared/access-control";
 import { validatePassword, PASSWORD_POLICY_HINT } from "./password-policy";
+import { sendVerificationEmail } from "./email";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -72,55 +73,45 @@ export async function setupAuth(app: Express) {
   });
 
   // Local Strategy (Username/Password)
-  passport.use(
-    new LocalStrategy(
-      {
-        usernameField: "email",
-        passwordField: "password",
-      },
-      async (email: string, password: string, done: any) => {
-        try {
-          const user = await storage.getUserByEmail(email);
-          if (!user) {
-            return done(null, undefined, {
-              message: "Invalid email or password",
-            });
-          }
+  passport.use(new LocalStrategy({
+    usernameField: 'email',
+    passwordField: 'password'
+  }, async (email: string, password: string, done: any) => {
+    try {
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return done(null, undefined, { message: 'Invalid email or password' });
+      }
+      
+      if (!user.passwordHash) {
+        return done(null, undefined, { message: 'This account was created with a different login method. Please use that method or set up a password first.' });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!isValidPassword) {
+        return done(null, undefined, { message: 'Invalid email or password' });
+      }
+      
+      // Require email verification before allowing login
+      if ((user as any).emailVerified === false) {
+        return done(null, undefined, { message: 'Email not verified. Please verify your email.' });
+      }
+      
+      return done(null, { 
+        id: user.id, 
+        email: user.email, 
+        firstName: user.firstName, 
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        provider: 'local'
+      });
+    } catch (error) {
+      return done(error);
+    }
+  }));
 
-          if (!user.passwordHash) {
-            return done(null, undefined, {
-              message:
-                "This account was created with a different login method. Please use that method or set up a password first.",
-            });
-          }
-
-          const isValidPassword = await bcrypt.compare(
-            password,
-            user.passwordHash,
-          );
-          if (!isValidPassword) {
-            return done(null, undefined, {
-              message: "Invalid email or password",
-            });
-          }
-
-          return done(null, {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: user.profileImageUrl,
-            provider: "local",
-          });
-        } catch (error) {
-          return done(error);
-        }
-      },
-    ),
-  );
-
-  passport.serializeUser((user: any, cb) => cb(null, user));
-  passport.deserializeUser((user: any, cb) => cb(null, user));
+  passport.serializeUser((user: any, cb: (err: any, id?: any) => void) => cb(null, user));
+  passport.deserializeUser((user: any, cb: (err: any, user?: any) => void) => cb(null, user));
 
   // Local Auth Routes
   app.post(
@@ -146,113 +137,94 @@ export async function setupAuth(app: Express) {
     },
   );
 
-  app.post(
-    "/api/auth/register",
-    registerLimiter,
-    async (req: Request, res: Response) => {
-      try {
-        const { email, password, firstName, lastName, role } = req.body;
-        // Basic input checks
-        if (!email || typeof email !== "string") {
-          return res.status(400).json({ message: "Valid email is required" });
-        }
-        const pwdCheck = validatePassword(password);
-        if (!pwdCheck.valid) {
-          return res
-            .status(400)
-            .json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
-        }
-
-        // Validate and sanitize role - only allow non-privileged roles during registration
-        const allowedRegistrationRoles = [
-          UserRole.ATHLETE,
-          UserRole.ORG_ADMIN,
-          UserRole.SPONSOR,
-        ];
-        let validatedRole = UserRole.ATHLETE; // Default to athlete
-
-        if (role && allowedRegistrationRoles.includes(role as any)) {
-          validatedRole = role;
-        } else if (role) {
-          // Log suspicious attempts to claim admin or invalid roles
-          console.warn(
-            `Registration attempt with invalid/privileged role: ${role} for email: ${email}`,
-          );
-        }
-
-        // Check if user already exists
-        const existingUser = await storage.getUserByEmail(email);
-        if (existingUser && existingUser.passwordHash) {
-          return res
-            .status(400)
-            .json({
-              message: "User already exists. Please use the login form.",
-            });
-        }
-
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 12);
-
-        let user;
-        if (existingUser) {
-          // User exists but no password (from OAuth), add password
-          user = await storage.upsertUser({
-            ...existingUser,
-            firstName: firstName || existingUser.firstName,
-            lastName: lastName || existingUser.lastName,
-            role: validatedRole,
-            passwordHash,
-          });
-        } else {
-          // Create new user
-          user = await storage.upsertUser({
-            id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            email,
-            firstName,
-            lastName,
-            role: validatedRole,
-            passwordHash,
-            profileImageUrl: null,
-          });
-        }
-
-        // Log in the user
-        req.login(
-          {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: user.profileImageUrl,
-            provider: "local",
-          },
-          (err) => {
-            if (err) {
-              return res
-                .status(500)
-                .json({ message: "Registration successful but login failed" });
-            }
-            res.json({
-              message: "Account setup successful",
-              user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                profileImageUrl: user.profileImageUrl,
-              },
-            });
-          },
-        );
-      } catch (error) {
-        console.error("Registration error:", error);
-        res.status(500).json({ message: "Registration failed" });
+  app.post("/api/auth/register", registerLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+      // Basic input checks
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Valid email is required" });
       }
-    },
-  );
+      const pwdCheck = validatePassword(password);
+      if (!pwdCheck.valid) {
+        return res.status(400).json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
+      }
+      
+      // Validate and sanitize role - only allow non-privileged roles during registration
+      const allowedRegistrationRoles = [UserRole.ATHLETE, UserRole.ORG_ADMIN, UserRole.SPONSOR];
+      let validatedRole = UserRole.ATHLETE; // Default to athlete
+      
+      if (role && allowedRegistrationRoles.includes(role as any)) {
+        validatedRole = role;
+      } else if (role) {
+        // Log suspicious attempts to claim admin or invalid roles
+        console.warn(`Registration attempt with invalid/privileged role: ${role} for email: ${email}`);
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser && existingUser.passwordHash) {
+        return res.status(400).json({ message: "User already exists. Please use the login form." });
+      }
+      
+  // Hash password
+  const passwordHash = await bcrypt.hash(password, 12);
+      
+      let user;
+      if (existingUser) {
+        // User exists but no password (from OAuth), add password
+        user = await storage.upsertUser({
+          ...existingUser,
+          firstName: firstName || existingUser.firstName,
+          lastName: lastName || existingUser.lastName,
+          role: validatedRole,
+          passwordHash,
+          emailVerified: false,
+          emailVerificationOtp: null,
+          emailVerificationExpires: null,
+          emailVerificationAttempts: 0,
+        });
+      } else {
+        // Create new user
+        user = await storage.upsertUser({
+          id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          email,
+          firstName,
+          lastName,
+          role: validatedRole,
+          passwordHash,
+          profileImageUrl: null,
+          emailVerified: false,
+          emailVerificationOtp: null,
+          emailVerificationExpires: null,
+          emailVerificationAttempts: 0,
+        });
+      }
+      
+      // Generate OTP and send email
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit numeric
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await storage.upsertUser({
+        ...user,
+        emailVerificationOtp: otp,
+        emailVerificationExpires: expires,
+        emailVerificationAttempts: 0,
+      });
+      try {
+        await sendVerificationEmail(email, otp);
+      } catch (mailErr) {
+        console.error("Failed to send verification email:", mailErr);
+      }
+      
+      // Return response asking for verification
+      return res.json({ message: "Account created. Please verify your email with the code sent.", user: { id: user.id, email: user.email } });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
 
   // Profile management routes
-  app.put("/api/auth/profile", isAuthenticated, async (req, res) => {
+  app.put("/api/auth/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { firstName, lastName, email, bio } = req.body;
       const user = req.user as any;
@@ -291,7 +263,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  app.put("/api/auth/change-password", isAuthenticated, async (req, res) => {
+  app.put("/api/auth/change-password", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { currentPassword, newPassword } = req.body;
       const user = req.user as any;
@@ -347,7 +319,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  app.delete("/api/auth/delete-account", isAuthenticated, async (req, res) => {
+  app.delete("/api/auth/delete-account", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = req.user as any;
       let userId;
@@ -371,14 +343,14 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/api/logout", (req: Request, res: Response) => {
     req.logout(() => {
       res.redirect("/");
     });
   });
 }
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }

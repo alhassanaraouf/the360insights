@@ -26,6 +26,11 @@ export const users = pgTable("users", {
   bio: text("bio"), // User bio/description
   passwordHash: varchar("password_hash"), // For local authentication
   role: varchar("role", { length: 50 }).notNull().default("athlete"), // athlete, org_admin, sponsor, admin
+  // Email verification fields
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerificationOtp: varchar("email_verification_otp", { length: 10 }),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  emailVerificationAttempts: integer("email_verification_attempts").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
