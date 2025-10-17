@@ -152,10 +152,19 @@ export default function AccountSettings() {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    const policy = {
+      minLen: 8,
+      upper: /[A-Z]/,
+      lower: /[a-z]/,
+      digit: /[0-9]/,
+    };
+    if (passwordData.newPassword.length < policy.minLen
+      || !policy.upper.test(passwordData.newPassword)
+      || !policy.lower.test(passwordData.newPassword)
+      || !policy.digit.test(passwordData.newPassword)) {
       toast({
         title: "Weak Password",
-        description: "Password must be at least 6 characters long.",
+        description: "Use at least 8 characters with uppercase, lowercase, and a number.",
         variant: "destructive",
       });
       return;
@@ -345,9 +354,10 @@ export default function AccountSettings() {
                         newPassword: e.target.value
                       }))}
                       placeholder="Enter your new password"
-                      minLength={6}
+                      minLength={8}
                       disabled={changePasswordMutation.isPending}
                     />
+                    <p className="text-xs text-gray-500">Use at least 8 characters with uppercase, lowercase, and a number.</p>
                     <Button
                       type="button"
                       variant="ghost"

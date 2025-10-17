@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 
 import passport from "passport";
 import session from "express-session";
-import type { Express, RequestHandler } from "express";
+import type { Express, RequestHandler, Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
@@ -51,7 +51,7 @@ export async function setupAuth(app: Express) {
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many login attempts. Please try again later." },
-    keyGenerator: (req) => (req.ip || "") + ":" + (req.body?.email || "")
+    keyGenerator: (req: Request) => `${req.ip || ""}:${(req.body as any)?.email || ""}`
   });
 
   const registerLimiter = rateLimit({
@@ -60,7 +60,7 @@ export async function setupAuth(app: Express) {
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many signup attempts. Please try again later." },
-    keyGenerator: (req) => (req.ip || "") + ":" + (req.body?.email || "")
+    keyGenerator: (req: Request) => `${req.ip || ""}:${(req.body as any)?.email || ""}`
   });
 
   // Local Strategy (Username/Password)
@@ -100,7 +100,7 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: any, cb) => cb(null, user));
 
   // Local Auth Routes
-  app.post("/api/auth/login", loginLimiter, (req, res, next) => {
+  app.post("/api/auth/login", loginLimiter, (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         return res.status(500).json({ message: "Authentication error" });
@@ -117,7 +117,7 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/auth/register", registerLimiter, async (req, res) => {
+  app.post("/api/auth/register", registerLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;
       // Basic input checks

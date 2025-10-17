@@ -93,16 +93,14 @@ export default function Login() {
       upper: /[A-Z]/,
       lower: /[a-z]/,
       digit: /[0-9]/,
-      special: /[^A-Za-z0-9]/,
     };
     if (formData.password.length < policy.minLen
       || !policy.upper.test(formData.password)
       || !policy.lower.test(formData.password)
-      || !policy.digit.test(formData.password)
-      || !policy.special.test(formData.password)) {
+      || !policy.digit.test(formData.password)) {
       toast({
         title: "Weak Password",
-        description: "Use at least 8 characters with uppercase, lowercase, a number, and a special character.",
+        description: "Use at least 8 characters with uppercase, lowercase, and a number.",
         variant: "destructive",
       });
       return;
@@ -294,7 +292,7 @@ export default function Login() {
                       minLength={8}
                       disabled={isLoading}
                     />
-                    <p className="text-xs text-gray-500">Use at least 8 characters with uppercase, lowercase, a number, and a special character.</p>
+                    <p className="text-xs text-gray-500">Use at least 8 characters with uppercase, lowercase, and a number.</p>
                   </div>
                   
                   <div className="space-y-2">

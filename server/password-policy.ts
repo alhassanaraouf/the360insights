@@ -1,5 +1,5 @@
 // Strong password policy utilities
-// Requirements: min 8 chars, at least one uppercase, one lowercase, one digit, and one special character
+// Requirements: min 8 chars, at least one uppercase, one lowercase, and one digit
 
 export function validatePassword(password: string): { valid: boolean; message?: string } {
   if (typeof password !== "string" || password.length === 0) {
@@ -18,12 +18,10 @@ export function validatePassword(password: string): { valid: boolean; message?: 
   if (!/[0-9]/.test(password)) {
     return { valid: false, message: "Password must include at least one number" };
   }
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return { valid: false, message: "Password must include at least one special character" };
-  }
+  // No special character required
 
   return { valid: true };
 }
 
 export const PASSWORD_POLICY_HINT =
-  "Use at least 8 characters with uppercase, lowercase, a number, and a special character.";
+  "Use at least 8 characters with uppercase, lowercase, and a number.";
