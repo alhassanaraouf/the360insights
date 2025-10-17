@@ -120,66 +120,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate a jobId for progress tracking
         const jobId = randomUUID();
 
-        // Start analysis with progress tracking
-        const analysisResult = await geminiVideoAnalysis.analyzeMatch(
-          uploadedFilePath!,
-          round,
-          jobId,
-        );
+        // Respond immediately with jobId
+        res.json({ jobId });
 
-        // Store in database
-        let userId = null;
-        if (req.user) {
-          userId = req.user.claims?.sub || req.user.id;
-        }
+        // Start analysis in background
+        (async () => {
+          try {
+            const analysisResult = await geminiVideoAnalysis.analyzeMatch(
+              uploadedFilePath!,
+              round,
+              jobId,
+            );
 
-        // First save to database to get the analysis ID
-        const savedAnalysis = await storage.createVideoAnalysis({
-          userId,
-          analysisType: "match",
-          sport: "Taekwondo",
-          language: "english",
-          roundAnalyzed: round === "no-rounds" ? null : round,
-          matchAnalysis: analysisResult.match_analysis,
-          scoreAnalysis: analysisResult.score_analysis,
-          punchAnalysis: analysisResult.punch_analysis,
-          kickCountAnalysis: analysisResult.kick_count_analysis,
-          yellowCardAnalysis: analysisResult.yellow_card_analysis,
-          adviceAnalysis: analysisResult.advice_analysis,
-          errors: analysisResult.errors,
-          fileName: req.file.originalname,
-          fileSize: req.file.size,
-          videoPath: null, // Will be updated after bucket upload
-          processingTimeMs: analysisResult.processingTimeMs,
-        });
+            // Store in database
+            let userId = null;
+            if (req.user) {
+              userId = req.user.claims?.sub || req.user.id;
+            }
 
-        // Upload video to bucket storage
-        try {
-          const videoBuffer = fs.readFileSync(uploadedFilePath!);
-          const uploadResult = await bucketStorage.uploadVideo(
-            savedAnalysis.id,
-            videoBuffer,
-            req.file.originalname
-          );
-          
-          // Update the analysis with the bucket storage path
-          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadResult.key);
-          
-          // Clean up local file after successful upload
-          if (fs.existsSync(uploadedFilePath!)) {
-            fs.unlinkSync(uploadedFilePath!);
+            // First save to database to get the analysis ID
+            const savedAnalysis = await storage.createVideoAnalysis({
+              userId,
+              analysisType: "match",
+              sport: "Taekwondo",
+              language: "english",
+              roundAnalyzed: round === "no-rounds" ? null : round,
+              matchAnalysis: analysisResult.match_analysis,
+              scoreAnalysis: analysisResult.score_analysis,
+              punchAnalysis: analysisResult.punch_analysis,
+              kickCountAnalysis: analysisResult.kick_count_analysis,
+              yellowCardAnalysis: analysisResult.yellow_card_analysis,
+              adviceAnalysis: analysisResult.advice_analysis,
+              errors: analysisResult.errors,
+              fileName: req.file.originalname,
+              fileSize: req.file.size,
+              videoPath: null, // Will be updated after bucket upload
+              processingTimeMs: analysisResult.processingTimeMs,
+            });
+
+            // Upload video to bucket storage
+            try {
+              const videoBuffer = fs.readFileSync(uploadedFilePath!);
+              const uploadResult = await bucketStorage.uploadVideo(
+                savedAnalysis.id,
+                videoBuffer,
+                req.file.originalname
+              );
+              // Update the analysis with the bucket storage path
+              await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadResult.key);
+              // Clean up local file after successful upload
+              if (fs.existsSync(uploadedFilePath!)) {
+                fs.unlinkSync(uploadedFilePath!);
+              }
+            } catch (uploadError) {
+              console.error("Error uploading video to bucket:", uploadError);
+              // Keep the local path if bucket upload fails
+              await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadedFilePath!);
+            }
+          } catch (error: any) {
+            console.error("Match analysis error:", error);
+            // Only cleanup on error
+            if (uploadedFilePath) {
+              try {
+                if (fs.existsSync(uploadedFilePath)) {
+                  fs.unlinkSync(uploadedFilePath);
+                }
+              } catch (cleanupError) {
+                console.warn("Failed to cleanup uploaded file:", cleanupError);
+              }
+            }
           }
-        } catch (uploadError) {
-          console.error("Error uploading video to bucket:", uploadError);
-          // Keep the local path if bucket upload fails
-          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadedFilePath!);
-        }
-
-        res.json({
-          id: savedAnalysis.id,
-          jobId,
-          ...analysisResult,
-        });
+        })();
       } catch (error: any) {
         console.error("Match analysis error:", error);
         res.status(500).json({

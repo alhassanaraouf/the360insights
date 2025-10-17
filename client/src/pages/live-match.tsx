@@ -447,17 +447,16 @@ export default function MatchAnalysis() {
         throw new Error(error.message || "Failed to analyze video");
       }
 
+      // Only jobId is returned immediately
       return await response.json();
     },
     onSuccess: (data) => {
-      setMatchResult(data);
-      setProgressJobId(null);
-      setProgressStage("Uploading video file...");
-      setProgressPercent(10);
-      toast({
-        title: "Analysis Complete",
-        description: "Match video has been successfully analyzed",
-      });
+      // Start listening for progress as soon as jobId is received
+      if (data && data.jobId) {
+        setProgressJobId(data.jobId);
+        setProgressStage("Uploading video file...");
+        setProgressPercent(10);
+      }
     },
     onError: (error: any) => {
       setProgressJobId(null);
@@ -473,13 +472,26 @@ export default function MatchAnalysis() {
 
   // Listen for progress updates via SSE
   useEffect(() => {
-    if (!progressJobId || !analyzeVideoMutation.isPending) return;
+    if (!progressJobId) return;
     const eventSource = new EventSource(`/api/video-analysis/progress/${progressJobId}`);
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         setProgressStage(data.stage);
         setProgressPercent(data.progress);
+        // If analysis is complete, fetch the final result
+        if (data.stage === "Analysis complete" && data.analysisId) {
+          fetch(`/api/video-analysis/${data.analysisId}`)
+            .then((res) => res.json())
+            .then((result) => {
+              setMatchResult(result);
+              setProgressJobId(null);
+              toast({
+                title: "Analysis Complete",
+                description: "Match video has been successfully analyzed",
+              });
+            });
+        }
       } catch {}
     };
     eventSource.onerror = () => {
@@ -488,7 +500,7 @@ export default function MatchAnalysis() {
     return () => {
       eventSource.close();
     };
-  }, [progressJobId, analyzeVideoMutation.isPending]);
+  }, [progressJobId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -517,34 +529,8 @@ export default function MatchAnalysis() {
     setProgressStage("Uploading video file...");
     setProgressPercent(10);
     setProgressJobId(null);
-    analyzeVideoMutation.mutate(videoFile, {
-      onSuccess: (data) => {
-        setMatchResult(data);
-        setProgressJobId(null);
-        setProgressStage("Uploading video file...");
-        setProgressPercent(10);
-        toast({
-          title: "Analysis Complete",
-          description: "Match video has been successfully analyzed",
-        });
-      },
-      onError: (error: any) => {
-        setProgressJobId(null);
-        setProgressStage("Uploading video file...");
-        setProgressPercent(10);
-        toast({
-          title: "Analysis Failed",
-          description: error.message || "Failed to analyze video",
-          variant: "destructive",
-        });
-      },
-      onSettled: (data) => {
-        // If jobId is present, start listening for progress
-        if (data && data.jobId) {
-          setProgressJobId(data.jobId);
-        }
-      },
-    });
+    setMatchResult(null);
+    analyzeVideoMutation.mutate(videoFile);
   };
 
   const handleReset = () => {
