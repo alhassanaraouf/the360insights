@@ -385,10 +385,14 @@ export default function MatchAnalysis() {
 
   // Debug: Log the actual data structure
   useEffect(() => {
+    console.log('All previous analyses:', previousAnalyses);
     if (previousAnalyses && previousAnalyses.length > 0) {
       console.log('Previous analyses data:', previousAnalyses[0]);
       console.log('Analysis type:', previousAnalyses[0].analysis_type);
       console.log('Processed at:', previousAnalyses[0].processed_at);
+      const matchOnly = previousAnalyses.filter((a: any) => a.analysis_type === 'match');
+      console.log('Match analyses only:', matchOnly);
+      console.log('Match count:', matchOnly.length);
     }
   }, [previousAnalyses]);
 
