@@ -29,16 +29,16 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
 -   **Competitions Directory**: Full-featured competition browser with search, filters (status, location), sorting, competition cards with logos, and comprehensive detailed popup modals showing all competition information (location, dates, category, grade level, competition type, ranking points, registration deadline, organizer, sync metadata) - following the same pattern as Athletes directory. Defaults to showing upcoming competitions on page load.
 -   **Competition Sync**: Backend-only participant syncing using Puppeteer with stealth mode (JavaScript equivalent of Python's cloudscraper) to bypass Cloudflare protection; Fetches and processes participants server-side (page 0 only, 500 max participants) with intelligent athlete matching: primary match by SimplyCompete userId, fallback to name+nationality matching, automatic userId backfilling for existing athletes.
--   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback:
-    - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights
-    - Clip Analysis: Custom coaching advice for specific techniques
+-   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback (match analysis only):
+    - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights - always analyzes the complete match
     - Interactive Video Player: Purple gradient background with centered play button overlay, modern controls (skip back/forward, settings, PiP), timeline markers for kicks, scores, punches, and violations, auto-hide controls
     - Side-by-side Stats Display: Real-time visualization of player scores, kicks, and warnings
     - Video Storage: Videos uploaded to Replit Object Storage with environment-specific buckets (dev/prod) for proper isolation
     - Video Streaming: Efficient range-based video streaming for smooth playback from bucket storage
     - Event Timeline: Click markers to jump to specific moments in the match
     - Hover Tooltips: Detailed event information on timeline markers
-    - Previous Analyses: Grid view of user's previous analysis runs with click-to-load functionality
+    - Previous Analyses: Grid view of user's previous match analyses with player names and delete functionality
+    - Delete Functionality: Users can delete their own analyses with ownership verification and automatic cleanup of both database records and bucket storage videos
 -   **Rank-Up Calculator**: AI-powered rank advancement strategy with the following capabilities:
     - Compact visual progress indicators (7-stage analysis feedback)
     - Saved analyses management (view, delete, recalculate previous analyses)

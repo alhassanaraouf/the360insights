@@ -971,7 +971,7 @@ export default function MatchAnalysis() {
                           <CardTitle
                             className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}
                           >
-                            <Target className="h-5 w-5" />
+                            <Award className="h-5 w-5" />
                             {player.name
                               .toLowerCase()
                               .split(" ")
