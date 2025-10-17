@@ -21,7 +21,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Real-time Features**: WebSocket integration for live match analysis.
 -   **Data Management**: Data scraper, PDF report generation, multi-language support (English, Arabic), competition sync with SimplyCompete API.
 -   **Authentication**: Local email/password authentication with Passport.js and bcrypt password hashing.
--   **Object Storage**: Replit Object Storage for athlete profile pictures, competition logos, and other assets; Local file system storage for uploaded video files.
+-   **Object Storage**: Replit Object Storage for athlete profile pictures, competition logos, video analysis files, and other assets. Videos are stored in environment-specific buckets (dev/prod) for proper isolation.
 
 ### Feature Specifications
 -   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
@@ -32,11 +32,13 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   **Video Analysis System**: AI-powered Taekwondo match analysis with interactive video playback:
     - Match Analysis: Full match breakdown with scoring, techniques, and tactical insights
     - Clip Analysis: Custom coaching advice for specific techniques
-    - Interactive Video Player: Timeline markers for kicks, scores, punches, and violations
+    - Interactive Video Player: Purple gradient background with centered play button overlay, modern controls (skip back/forward, settings, PiP), timeline markers for kicks, scores, punches, and violations, auto-hide controls
     - Side-by-side Stats Display: Real-time visualization of player scores, kicks, and warnings
-    - Video Streaming: Efficient range-based video streaming for smooth playback
+    - Video Storage: Videos uploaded to Replit Object Storage with environment-specific buckets (dev/prod) for proper isolation
+    - Video Streaming: Efficient range-based video streaming for smooth playback from bucket storage
     - Event Timeline: Click markers to jump to specific moments in the match
     - Hover Tooltips: Detailed event information on timeline markers
+    - Previous Analyses: Grid view of user's previous analysis runs with click-to-load functionality
 -   **Rank-Up Calculator**: AI-powered rank advancement strategy with the following capabilities:
     - Compact visual progress indicators (7-stage analysis feedback)
     - Saved analyses management (view, delete, recalculate previous analyses)
