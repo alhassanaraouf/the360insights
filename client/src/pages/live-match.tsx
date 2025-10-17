@@ -492,14 +492,27 @@ export default function MatchAnalysis() {
   };
 
   const loadPreviousAnalysis = (analysis: any) => {
+    // Parse JSON strings if needed
+    const parseIfString = (data: any) => {
+      if (typeof data === 'string') {
+        try {
+          return JSON.parse(data);
+        } catch (e) {
+          console.error('Error parsing JSON:', e);
+          return data;
+        }
+      }
+      return data;
+    };
+
     setMatchResult({
       id: analysis.id,
       match_analysis: analysis.match_analysis,
-      score_analysis: analysis.score_analysis,
-      punch_analysis: analysis.punch_analysis,
-      kick_count_analysis: analysis.kick_count_analysis,
-      yellow_card_analysis: analysis.yellow_card_analysis,
-      advice_analysis: analysis.advice_analysis,
+      score_analysis: parseIfString(analysis.score_analysis),
+      punch_analysis: parseIfString(analysis.punch_analysis),
+      kick_count_analysis: parseIfString(analysis.kick_count_analysis),
+      yellow_card_analysis: parseIfString(analysis.yellow_card_analysis),
+      advice_analysis: parseIfString(analysis.advice_analysis),
       sport: analysis.sport,
       roundAnalyzed: analysis.round_analyzed,
       processedAt: analysis.processed_at,
