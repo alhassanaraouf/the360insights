@@ -471,6 +471,25 @@ export default function MatchAnalysis() {
     },
   });
 
+  // Listen for progress updates via SSE
+  useEffect(() => {
+    if (!progressJobId || !analyzeVideoMutation.isPending) return;
+    const eventSource = new EventSource(`/api/video-analysis/progress/${progressJobId}`);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setProgressStage(data.stage);
+        setProgressPercent(data.progress);
+      } catch {}
+    };
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+    return () => {
+      eventSource.close();
+    };
+  }, [progressJobId, analyzeVideoMutation.isPending]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -742,24 +761,6 @@ export default function MatchAnalysis() {
             </CardContent>
           </Card>
         )}
-  // Listen for progress updates via SSE
-  useEffect(() => {
-    if (!progressJobId || !analyzeVideoMutation.isPending) return;
-    const eventSource = new EventSource(`/api/video-analysis/progress/${progressJobId}`);
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setProgressStage(data.stage);
-        setProgressPercent(data.progress);
-      } catch {}
-    };
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
-    return () => {
-      eventSource.close();
-    };
-  }, [progressJobId, analyzeVideoMutation.isPending]);
 
         {/* Match Analysis Results */}
         {matchResult && !analyzeVideoMutation.isPending && (
