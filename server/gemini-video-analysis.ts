@@ -8,16 +8,19 @@ const progressStore: Record<string, { stage: string; progress: number; analysisI
 
 // Function to set final progress with analysisId
 export function setAnalysisComplete(jobId: string, analysisId: number) {
+  console.log(`[PROGRESS] Setting analysis complete for jobId: ${jobId}, analysisId: ${analysisId}`);
   progressStore[jobId] = {
     stage: "Analysis complete",
     progress: 100,
     analysisId
   };
+  console.log(`[PROGRESS] Progress store updated:`, progressStore[jobId]);
 }
 
 // Express route for SSE progress updates
 export function videoAnalysisProgressSSE(req, res) {
   const jobId = req.params.jobId;
+  console.log(`[SSE] Client connected for jobId: ${jobId}`);
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -27,12 +30,16 @@ export function videoAnalysisProgressSSE(req, res) {
   const sendProgress = () => {
     const entry = progressStore[jobId];
     if (entry && entry.progress !== lastProgress) {
+      console.log(`[SSE] Sending progress update for ${jobId}:`, entry);
       res.write(`data: ${JSON.stringify(entry)}\n\n`);
       lastProgress = entry.progress;
     }
   };
   const interval = setInterval(sendProgress, 1000);
-  req.on('close', () => clearInterval(interval));
+  req.on('close', () => {
+    console.log(`[SSE] Client disconnected for jobId: ${jobId}`);
+    clearInterval(interval);
+  });
 }
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
