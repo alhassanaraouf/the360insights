@@ -829,69 +829,15 @@ export default function MatchAnalysis() {
 
               <TabsContent value="punches" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.punch_analysis?.players?.map((player, idx) => (
-                    <Card key={idx}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                          {player.name
-                            .toLowerCase()
-                            .split(" ")
-                            .map(
-                              (word: string) =>
-                                word.charAt(0).toUpperCase() + word.slice(1),
-                            )
-                            .join(" ")}
-                          <span
-                            className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
-                          >
-                            {idx === 0 ? "blue" : "red"}
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div
-                          className="text-2xl font-bold text-gray-900 dark:text-gray-100"
-                          data-testid={`punches-total-${idx}`}
-                        >
-                          {player.total} punches
-                        </div>
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                          {player.events?.map((event, eventIdx) => (
-                            <div
-                              key={eventIdx}
-                              className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
-                            >
-                              <span
-                                className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
-                              >
-                                {event.timestamp}
-                              </span>
-                              <span
-                                className={
-                                  idx === 0
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-red-600 dark:text-red-400"
-                                }
-                              >
-                                {event.description}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="kicks" className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {matchResult.kick_count_analysis?.players?.map(
-                    (player, idx) => (
+                  {matchResult.punch_analysis?.players?.map((player, idx) => {
+                    // Use player name from score_analysis for consistency
+                    const playerName = matchResult.score_analysis?.players?.[idx]?.name || player.name;
+                    
+                    return (
                       <Card key={idx}>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            {player.name
+                            {playerName
                               .toLowerCase()
                               .split(" ")
                               .map(
@@ -909,9 +855,9 @@ export default function MatchAnalysis() {
                         <CardContent className="space-y-3">
                           <div
                             className="text-2xl font-bold text-gray-900 dark:text-gray-100"
-                            data-testid={`kicks-total-${idx}`}
+                            data-testid={`punches-total-${idx}`}
                           >
-                            {player.total} kicks
+                            {player.total} punches
                           </div>
                           <div className="space-y-2 max-h-64 overflow-y-auto">
                             {player.events?.map((event, eventIdx) => (
@@ -938,7 +884,71 @@ export default function MatchAnalysis() {
                           </div>
                         </CardContent>
                       </Card>
-                    ),
+                    );
+                  })}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="kicks" className="mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {matchResult.kick_count_analysis?.players?.map(
+                    (player, idx) => {
+                      // Use player name from score_analysis for consistency
+                      const playerName = matchResult.score_analysis?.players?.[idx]?.name || player.name;
+                      
+                      return (
+                        <Card key={idx}>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                              {playerName
+                                .toLowerCase()
+                                .split(" ")
+                                .map(
+                                  (word: string) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1),
+                                )
+                                .join(" ")}
+                              <span
+                                className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
+                              >
+                                {idx === 0 ? "blue" : "red"}
+                              </span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div
+                              className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                              data-testid={`kicks-total-${idx}`}
+                            >
+                              {player.total} kicks
+                            </div>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {player.events?.map((event, eventIdx) => (
+                                <div
+                                  key={eventIdx}
+                                  className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                                >
+                                  <span
+                                    className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}
+                                  >
+                                    {event.timestamp}
+                                  </span>
+                                  <span
+                                    className={
+                                      idx === 0
+                                        ? "text-blue-600 dark:text-blue-400"
+                                        : "text-red-600 dark:text-red-400"
+                                    }
+                                  >
+                                    {event.description}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    },
                   )}
                 </div>
               </TabsContent>
@@ -946,50 +956,58 @@ export default function MatchAnalysis() {
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {matchResult.yellow_card_analysis?.players?.slice().reverse().map(
-                    (player, idx) => (
-                      <Card key={idx}>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                            {player.name
-                              .toLowerCase()
-                              .split(" ")
-                              .map(
-                                (word: string) =>
-                                  word.charAt(0).toUpperCase() + word.slice(1),
-                              )
-                              .join(" ")}
-                            <span
-                              className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
-                            >
-                              {idx === 0 ? "blue" : "red"}
-                            </span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div
-                            className="text-2xl font-bold text-gray-900 dark:text-gray-100"
-                            data-testid={`violations-total-${idx}`}
-                          >
-                            {player.total} violations
-                          </div>
-                          <div className="space-y-2">
-                            {player.events?.map((event, eventIdx) => (
-                              <div
-                                key={eventIdx}
-                                className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                    (player, idx) => {
+                      // Use player name from score_analysis for consistency
+                      // Note: violations are reversed, so we need to reverse the index too
+                      const scoreIdx = matchResult.yellow_card_analysis?.players?.length ? 
+                        matchResult.yellow_card_analysis.players.length - 1 - idx : idx;
+                      const playerName = matchResult.score_analysis?.players?.[scoreIdx]?.name || player.name;
+                      
+                      return (
+                        <Card key={idx}>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                              {playerName
+                                .toLowerCase()
+                                .split(" ")
+                                .map(
+                                  (word: string) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1),
+                                )
+                                .join(" ")}
+                              <span
+                                className={`text-sm font-medium px-2 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
                               >
-                                <span className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}>
-                                  {event.timestamp}
-                                </span>
-                                <span className={idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}>
-                                  {event.description}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ),
+                                {idx === 0 ? "blue" : "red"}
+                              </span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div
+                              className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                              data-testid={`violations-total-${idx}`}
+                            >
+                              {player.total} violations
+                            </div>
+                            <div className="space-y-2">
+                              {player.events?.map((event, eventIdx) => (
+                                <div
+                                  key={eventIdx}
+                                  className={`flex justify-between items-center p-2 rounded text-sm ${idx === 0 ? "bg-blue-100 dark:bg-blue-900/40" : "bg-red-100 dark:bg-red-900/40"}`}
+                                >
+                                  <span className={`font-medium ${idx === 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"}`}>
+                                    {event.timestamp}
+                                  </span>
+                                  <span className={idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}>
+                                    {event.description}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    },
                   )}
                 </div>
               </TabsContent>
@@ -1001,6 +1019,9 @@ export default function MatchAnalysis() {
                     const playerColor = isBlue
                       ? "text-blue-600 dark:text-blue-300"
                       : "text-red-600 dark:text-red-300";
+                    
+                    // Use player name from score_analysis for consistency
+                    const playerName = matchResult.score_analysis?.players?.[idx]?.name || player.name;
 
                     return (
                       <Card key={idx}>
@@ -1009,7 +1030,7 @@ export default function MatchAnalysis() {
                             className={`flex items-center gap-2 ${playerColor} text-lg font-bold`}
                           >
                             <Award className="h-5 w-5" />
-                            {player.name
+                            {playerName
                               .toLowerCase()
                               .split(" ")
                               .map(
