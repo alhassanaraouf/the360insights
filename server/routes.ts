@@ -330,6 +330,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Get single video analysis by ID
+  app.get(
+    "/api/video-analysis/:id",
+    async (req: any, res) => {
+      try {
+        const analysisId = parseInt(req.params.id);
+        
+        if (isNaN(analysisId)) {
+          return res.status(400).json({ error: "Invalid analysis ID" });
+        }
+
+        const analysis = await storage.getVideoAnalysis(analysisId);
+
+        if (!analysis) {
+          return res.status(404).json({ error: "Analysis not found" });
+        }
+
+        res.json(analysis);
+      } catch (error) {
+        console.error("Error fetching video analysis:", error);
+        res.status(500).json({ error: "Failed to fetch analysis" });
+      }
+    },
+  );
+
   // Delete video analysis
   app.delete(
     "/api/video-analysis/:id",
