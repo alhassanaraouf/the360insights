@@ -510,7 +510,8 @@ export default function MatchAnalysis() {
   };
 
   const getPlayerNames = (analysis: any) => {
-    if (analysis.analysis_type === 'match' && analysis.score_analysis) {
+    const analysisType = analysis.analysisType || analysis.analysis_type;
+    if (analysisType === 'match' && analysis.score_analysis) {
       try {
         const scoreData = typeof analysis.score_analysis === 'string' 
           ? JSON.parse(analysis.score_analysis) 
@@ -525,7 +526,13 @@ export default function MatchAnalysis() {
         console.error('Error parsing score analysis:', e);
       }
     }
-    return analysis.file_name || 'Video Analysis';
+    return analysis.fileName || analysis.file_name || 'Video Analysis';
+  };
+
+  const getAnalysisDate = (analysis: any) => {
+    const date = analysis.processedAt || analysis.processed_at;
+    if (!date) return '';
+    return new Date(date).toLocaleString();
   };
 
   return (
@@ -550,7 +557,8 @@ export default function MatchAnalysis() {
                 {previousAnalyses
                 ?.filter((a: any) => (a.analysisType || a.analysis_type) === 'match')
                 .sort((a: any, b: any) => 
-                  new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+                  new Date(b.processedAt || b.processed_at || b.createdAt || b.created_at).getTime() - 
+                  new Date(a.processedAt || a.processed_at || a.createdAt || a.created_at).getTime()
                 )
                 .map((analysis: any) => (
                   <Card
@@ -568,7 +576,7 @@ export default function MatchAnalysis() {
                             {getPlayerNames(analysis)}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {new Date(analysis.processed_at).toLocaleDateString()}
+                            {getAnalysisDate(analysis)}
                           </p>
                         </div>
                       </div>
@@ -679,28 +687,30 @@ export default function MatchAnalysis() {
             {/* Video Player with Stats */}
             {matchResult.id && <VideoPlayerSection matchResult={matchResult} />}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Match Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <div
-                      className="text-gray-700 dark:text-gray-300"
-                      data-testid="text-match-analysis"
-                    >
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {matchResult.match_analysis}
-                      </ReactMarkdown>
+            {matchResult.match_analysis && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Match Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <div
+                        className="text-gray-700 dark:text-gray-300"
+                        data-testid="text-match-analysis"
+                      >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {matchResult.match_analysis}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             <Tabs defaultValue="scores" className="w-full">
               <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
