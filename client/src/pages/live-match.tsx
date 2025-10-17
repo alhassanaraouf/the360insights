@@ -382,6 +382,7 @@ export default function MatchAnalysis() {
   const [progressJobId, setProgressJobId] = useState<string | null>(null);
   const [progressStage, setProgressStage] = useState<string>("Uploading video file...");
   const [progressPercent, setProgressPercent] = useState<number>(10);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const { toast } = useToast();
 
   // Fetch previous analyses
@@ -456,12 +457,14 @@ export default function MatchAnalysis() {
         setProgressJobId(data.jobId);
         setProgressStage("Uploading video file...");
         setProgressPercent(10);
+        setIsAnalyzing(true);
       }
     },
     onError: (error: any) => {
       setProgressJobId(null);
       setProgressStage("Uploading video file...");
       setProgressPercent(10);
+      setIsAnalyzing(false);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze video",
@@ -486,6 +489,7 @@ export default function MatchAnalysis() {
             .then((result) => {
               setMatchResult(result);
               setProgressJobId(null);
+              setIsAnalyzing(false);
               toast({
                 title: "Analysis Complete",
                 description: "Match video has been successfully analyzed",
@@ -496,6 +500,7 @@ export default function MatchAnalysis() {
     };
     eventSource.onerror = () => {
       eventSource.close();
+      setIsAnalyzing(false);
     };
     return () => {
       eventSource.close();
@@ -530,6 +535,7 @@ export default function MatchAnalysis() {
     setProgressPercent(10);
     setProgressJobId(null);
     setMatchResult(null);
+    setIsAnalyzing(false);
     analyzeVideoMutation.mutate(videoFile);
   };
 
@@ -684,7 +690,7 @@ export default function MatchAnalysis() {
                 type="file"
                 accept="video/mp4"
                 onChange={handleFileChange}
-                disabled={analyzeVideoMutation.isPending}
+                disabled={isAnalyzing}
                 data-testid="input-video-file"
               />
               {videoFile && (
@@ -698,11 +704,11 @@ export default function MatchAnalysis() {
             <div className="flex gap-2">
               <Button
                 onClick={handleAnalyze}
-                disabled={analyzeVideoMutation.isPending || !videoFile}
+                disabled={isAnalyzing || !videoFile}
                 className="flex-1"
                 data-testid="button-analyze"
               >
-                {analyzeVideoMutation.isPending ? (
+                {isAnalyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Analyzing...
@@ -718,7 +724,7 @@ export default function MatchAnalysis() {
                 <Button
                   variant="outline"
                   onClick={handleReset}
-                  disabled={analyzeVideoMutation.isPending}
+                  disabled={isAnalyzing}
                   data-testid="button-reset"
                 >
                   Reset
@@ -729,7 +735,7 @@ export default function MatchAnalysis() {
         </Card>
 
         {/* Loading State */}
-        {analyzeVideoMutation.isPending && (
+        {isAnalyzing && (
           <Card>
             <CardContent className="p-8">
               <div className="space-y-4">
@@ -749,7 +755,7 @@ export default function MatchAnalysis() {
         )}
 
         {/* Match Analysis Results */}
-        {matchResult && !analyzeVideoMutation.isPending && (
+        {matchResult && !isAnalyzing && (
           <div className="space-y-6">
             {/* Video Player with Stats */}
             {matchResult.id && <VideoPlayerSection matchResult={matchResult} />}
