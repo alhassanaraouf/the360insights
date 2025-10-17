@@ -53,6 +53,13 @@ export const athletes = pgTable("athletes", {
   teamOrganizationName: text("team_organization_name"), // Team organization
   teamName: text("team_name"), // Team name
   coachId: integer("coach_id").references(() => coaches.id),
+  // Legacy fields (still in database)
+  worldRank: integer("world_rank"),
+  readinessIndex: decimal("readiness_index", { precision: 5, scale: 2 }),
+  winRate: decimal("win_rate", { precision: 5, scale: 2 }),
+  nextMatchDays: integer("next_match_days"),
+  coachName: text("coach_name"),
+  coachTitle: text("coach_title"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   worldCategoryIdx: index("athletes_world_category_idx").on(table.worldCategory),
@@ -92,18 +99,44 @@ export const weaknesses = pgTable("weaknesses", {
   athleteIdIdx: index("weaknesses_athlete_id_idx").on(table.athleteId),
 }));
 
-// Removed opponents table - opponents are now treated as regular athletes
+// Legacy opponents table (still in database, but deprecated)
+export const opponents = pgTable("opponents", {
+  id: serial("id").primaryKey(),
+  athleteId: integer("athlete_id").references(() => athletes.id),
+  name: text("name").notNull(),
+  nationality: text("nationality").notNull(),
+  worldRank: integer("world_rank"),
+  profileImage: text("profile_image"),
+  playingStyle: text("playing_style"),
+  threatLevel: text("threat_level"),
+  recentForm: text("recent_form").array(),
+  matchDate: text("match_date"),
+  winProbability: decimal("win_probability", { precision: 5, scale: 2 }),
+}, (table) => ({
+  athleteIdIdx: index("opponents_athlete_id_idx").on(table.athleteId),
+}));
+
+// Legacy performance data table (still in database)
+export const performanceData = pgTable("performance_data", {
+  id: serial("id").primaryKey(),
+  athleteId: integer("athlete_id").references(() => athletes.id),
+  month: text("month").notNull(),
+  performanceScore: decimal("performance_score", { precision: 5, scale: 2 }),
+  ranking: integer("ranking"),
+}, (table) => ({
+  athleteIdIdx: index("performance_data_athlete_id_idx").on(table.athleteId),
+}));
 
 export const athleteRanks = pgTable("athlete_ranks", {
   id: serial("id").primaryKey(),
-  athleteId: integer("athlete_id").notNull().references(() => athletes.id),
+  athleteId: integer("athlete_id").references(() => athletes.id),
   rankingType: varchar("ranking_type", { length: 50 }).notNull(), // 'world' or 'olympic'
-  category: text("category").notNull(),
+  category: text("category"), // Nullable in database
   ranking: integer("ranking").notNull(),
   previousRanking: integer("previous_ranking"),
   rankChange: integer("rank_change"),
   points: decimal("points", { precision: 10, scale: 2 }),
-  rankingDate: text("ranking_date")
+  rankingDate: text("ranking_date").notNull() // Not null in database
 }, (table) => ({
   athleteIdIdx: index("athlete_ranks_athlete_id_idx").on(table.athleteId),
   rankingTypeIdx: index("athlete_ranks_ranking_type_idx").on(table.rankingType),
@@ -308,7 +341,15 @@ export const insertWeaknessSchema = createInsertSchema(weaknesses).omit({
   id: true,
 });
 
-// Opponent schema removed - opponents are now treated as regular athletes
+// Legacy opponent schema (still in database)
+export const insertOpponentSchema = createInsertSchema(opponents).omit({
+  id: true,
+});
+
+// Legacy performance data schema (still in database)
+export const insertPerformanceDataSchema = createInsertSchema(performanceData).omit({
+  id: true,
+});
 
 export const insertAthleteRankSchema = createInsertSchema(athleteRanks).omit({
   id: true,
@@ -424,7 +465,15 @@ export type Strength = typeof strengths.$inferSelect;
 export type InsertStrength = z.infer<typeof insertStrengthSchema>;
 export type Weakness = typeof weaknesses.$inferSelect;
 export type InsertWeakness = z.infer<typeof insertWeaknessSchema>;
-// Opponent types removed - opponents are now treated as regular athletes
+
+// Legacy opponent types (still in database)
+export type Opponent = typeof opponents.$inferSelect;
+export type InsertOpponent = z.infer<typeof insertOpponentSchema>;
+
+// Legacy performance data types (still in database)
+export type PerformanceData = typeof performanceData.$inferSelect;
+export type InsertPerformanceData = z.infer<typeof insertPerformanceDataSchema>;
+
 export type AthleteRank = typeof athleteRanks.$inferSelect;
 export type InsertAthleteRank = z.infer<typeof insertAthleteRankSchema>;
 export type TrainingRecommendation = typeof trainingRecommendations.$inferSelect;
