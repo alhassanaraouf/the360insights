@@ -570,18 +570,17 @@ export default function MatchAnalysis() {
 
       <div className="p-6 space-y-6">
         {/* Previous Analyses Section */}
-        {previousAnalyses && previousAnalyses.filter((a: any) => (a.analysisType || a.analysis_type) === 'match').length > 0 && (
+        {previousAnalyses && previousAnalyses.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Previous Match Analyses
+                Previous Match Analyses (Debug: {previousAnalyses.length} items)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {previousAnalyses
-                ?.filter((a: any) => (a.analysisType || a.analysis_type) === 'match')
                 .sort((a: any, b: any) => 
                   new Date(b.processedAt || b.processed_at || b.createdAt || b.created_at).getTime() - 
                   new Date(a.processedAt || a.processed_at || a.createdAt || a.created_at).getTime()
