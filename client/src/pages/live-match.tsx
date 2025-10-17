@@ -492,6 +492,8 @@ export default function MatchAnalysis() {
   };
 
   const loadPreviousAnalysis = (analysis: any) => {
+    console.log('Loading previous analysis:', analysis);
+    
     // Parse JSON strings if needed
     const parseIfString = (data: any) => {
       if (typeof data === 'string') {
@@ -505,21 +507,24 @@ export default function MatchAnalysis() {
       return data;
     };
 
-    setMatchResult({
+    const parsedResult = {
       id: analysis.id,
-      match_analysis: analysis.match_analysis,
-      score_analysis: parseIfString(analysis.score_analysis),
-      punch_analysis: parseIfString(analysis.punch_analysis),
-      kick_count_analysis: parseIfString(analysis.kick_count_analysis),
-      yellow_card_analysis: parseIfString(analysis.yellow_card_analysis),
-      advice_analysis: parseIfString(analysis.advice_analysis),
+      match_analysis: analysis.matchAnalysis || analysis.match_analysis,
+      score_analysis: parseIfString(analysis.scoreAnalysis || analysis.score_analysis),
+      punch_analysis: parseIfString(analysis.punchAnalysis || analysis.punch_analysis),
+      kick_count_analysis: parseIfString(analysis.kickCountAnalysis || analysis.kick_count_analysis),
+      yellow_card_analysis: parseIfString(analysis.yellowCardAnalysis || analysis.yellow_card_analysis),
+      advice_analysis: parseIfString(analysis.adviceAnalysis || analysis.advice_analysis),
       sport: analysis.sport,
-      roundAnalyzed: analysis.round_analyzed,
-      processedAt: analysis.processed_at,
-      processingTimeMs: analysis.processing_time_ms,
+      roundAnalyzed: analysis.roundAnalyzed || analysis.round_analyzed,
+      processedAt: analysis.processedAt || analysis.processed_at,
+      processingTimeMs: analysis.processingTimeMs || analysis.processing_time_ms,
       errors: analysis.errors,
-      videoPath: analysis.video_path,
-    });
+      videoPath: analysis.videoPath || analysis.video_path,
+    };
+
+    console.log('Parsed result:', parsedResult);
+    setMatchResult(parsedResult);
   };
 
   const getPlayerNames = (analysis: any) => {
