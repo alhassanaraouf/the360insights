@@ -486,8 +486,26 @@ export default function MatchAnalysis() {
         // If analysis is complete, fetch the final result
         if (data.stage === "Analysis complete" && data.analysisId) {
           console.log('Fetching analysis result for ID:', data.analysisId);
-          fetch(`/api/video-analysis/${data.analysisId}`)
-            .then((res) => res.json())
+          fetch(`/api/video-analysis/${data.analysisId}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+          })
+            .then(async (res) => {
+              console.log('Response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
+              if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+              }
+              const contentType = res.headers.get('content-type');
+              if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Expected JSON but got:', contentType, 'Body preview:', text.substring(0, 200));
+                throw new Error('Server returned non-JSON response');
+              }
+              return res.json();
+            })
             .then((result) => {
               console.log('Analysis result received:', result);
               setMatchResult(result);
@@ -504,7 +522,7 @@ export default function MatchAnalysis() {
               setProgressJobId(null);
               toast({
                 title: "Failed to Load Results",
-                description: "Analysis completed but failed to load results",
+                description: error.message || "Analysis completed but failed to load results",
                 variant: "destructive",
               });
             });
