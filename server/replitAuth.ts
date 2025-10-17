@@ -3,7 +3,13 @@ import bcrypt from "bcryptjs";
 
 import passport from "passport";
 import session from "express-session";
-import type { Express, RequestHandler, Request, Response, NextFunction } from "express";
+import type {
+  Express,
+  RequestHandler,
+  Request,
+  Response,
+  NextFunction,
+} from "express";
 import rateLimit from "express-rate-limit";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
@@ -27,7 +33,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === "production",
       maxAge: sessionTtl,
     },
   });
@@ -51,7 +57,8 @@ export async function setupAuth(app: Express) {
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many login attempts. Please try again later." },
-    keyGenerator: (req: Request) => `${req.ip || ""}:${(req.body as any)?.email || ""}`
+    keyGenerator: (req: Request) =>
+      `${req.ip || ""}:${(req.body as any)?.email || ""}`,
   });
 
   const registerLimiter = rateLimit({
@@ -60,143 +67,189 @@ export async function setupAuth(app: Express) {
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many signup attempts. Please try again later." },
-    keyGenerator: (req: Request) => `${req.ip || ""}:${(req.body as any)?.email || ""}`
+    keyGenerator: (req: Request) =>
+      `${req.ip || ""}:${(req.body as any)?.email || ""}`,
   });
 
   // Local Strategy (Username/Password)
-  passport.use(new LocalStrategy({
-    usernameField: 'email',
-    passwordField: 'password'
-  }, async (email: string, password: string, done: any) => {
-    try {
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return done(null, undefined, { message: 'Invalid email or password' });
-      }
-      
-      if (!user.passwordHash) {
-        return done(null, undefined, { message: 'This account was created with a different login method. Please use that method or set up a password first.' });
-      }
-      
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      if (!isValidPassword) {
-        return done(null, undefined, { message: 'Invalid email or password' });
-      }
-      
-      return done(null, { 
-        id: user.id, 
-        email: user.email, 
-        firstName: user.firstName, 
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-        provider: 'local'
-      });
-    } catch (error) {
-      return done(error);
-    }
-  }));
+  passport.use(
+    new LocalStrategy(
+      {
+        usernameField: "email",
+        passwordField: "password",
+      },
+      async (email: string, password: string, done: any) => {
+        try {
+          const user = await storage.getUserByEmail(email);
+          if (!user) {
+            return done(null, undefined, {
+              message: "Invalid email or password",
+            });
+          }
+
+          if (!user.passwordHash) {
+            return done(null, undefined, {
+              message:
+                "This account was created with a different login method. Please use that method or set up a password first.",
+            });
+          }
+
+          const isValidPassword = await bcrypt.compare(
+            password,
+            user.passwordHash,
+          );
+          if (!isValidPassword) {
+            return done(null, undefined, {
+              message: "Invalid email or password",
+            });
+          }
+
+          return done(null, {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profileImageUrl: user.profileImageUrl,
+            provider: "local",
+          });
+        } catch (error) {
+          return done(error);
+        }
+      },
+    ),
+  );
 
   passport.serializeUser((user: any, cb) => cb(null, user));
   passport.deserializeUser((user: any, cb) => cb(null, user));
 
   // Local Auth Routes
-  app.post("/api/auth/login", loginLimiter, (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) {
-        return res.status(500).json({ message: "Authentication error" });
-      }
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      }
-      req.logIn(user, (err) => {
+  app.post(
+    "/api/auth/login",
+    loginLimiter,
+    (req: Request, res: Response, next: NextFunction) => {
+      passport.authenticate("local", (err: any, user: any, info: any) => {
         if (err) {
-          return res.status(500).json({ message: "Login failed" });
+          return res.status(500).json({ message: "Authentication error" });
         }
-        return res.json({ message: "Login successful", user });
-      });
-    })(req, res, next);
-  });
+        if (!user) {
+          return res
+            .status(401)
+            .json({ message: info?.message || "Invalid credentials" });
+        }
+        req.logIn(user, (err) => {
+          if (err) {
+            return res.status(500).json({ message: "Login failed" });
+          }
+          return res.json({ message: "Login successful", user });
+        });
+      })(req, res, next);
+    },
+  );
 
-  app.post("/api/auth/register", registerLimiter, async (req: Request, res: Response) => {
-    try {
-      const { email, password, firstName, lastName, role } = req.body;
-      // Basic input checks
-      if (!email || typeof email !== "string") {
-        return res.status(400).json({ message: "Valid email is required" });
-      }
-      const pwdCheck = validatePassword(password);
-      if (!pwdCheck.valid) {
-        return res.status(400).json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
-      }
-      
-      // Validate and sanitize role - only allow non-privileged roles during registration
-      const allowedRegistrationRoles = [UserRole.ATHLETE, UserRole.ORG_ADMIN, UserRole.SPONSOR];
-      let validatedRole = UserRole.ATHLETE; // Default to athlete
-      
-      if (role && allowedRegistrationRoles.includes(role as any)) {
-        validatedRole = role;
-      } else if (role) {
-        // Log suspicious attempts to claim admin or invalid roles
-        console.warn(`Registration attempt with invalid/privileged role: ${role} for email: ${email}`);
-      }
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser && existingUser.passwordHash) {
-        return res.status(400).json({ message: "User already exists with a password. Please use the login form." });
-      }
-      
-  // Hash password
-  const passwordHash = await bcrypt.hash(password, 12);
-      
-      let user;
-      if (existingUser) {
-        // User exists but no password (from OAuth), add password
-        user = await storage.upsertUser({
-          ...existingUser,
-          firstName: firstName || existingUser.firstName,
-          lastName: lastName || existingUser.lastName,
-          role: validatedRole,
-          passwordHash,
-        });
-      } else {
-        // Create new user
-        user = await storage.upsertUser({
-          id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          email,
-          firstName,
-          lastName,
-          role: validatedRole,
-          passwordHash,
-          profileImageUrl: null,
-        });
-      }
-      
-      // Log in the user
-      req.login({ 
-        id: user.id, 
-        email: user.email, 
-        firstName: user.firstName, 
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-        provider: 'local'
-      }, (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Registration successful but login failed" });
+  app.post(
+    "/api/auth/register",
+    registerLimiter,
+    async (req: Request, res: Response) => {
+      try {
+        const { email, password, firstName, lastName, role } = req.body;
+        // Basic input checks
+        if (!email || typeof email !== "string") {
+          return res.status(400).json({ message: "Valid email is required" });
         }
-        res.json({ message: "Account setup successful", user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          profileImageUrl: user.profileImageUrl
-        }});
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Registration failed" });
-    }
-  });
+        const pwdCheck = validatePassword(password);
+        if (!pwdCheck.valid) {
+          return res
+            .status(400)
+            .json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
+        }
+
+        // Validate and sanitize role - only allow non-privileged roles during registration
+        const allowedRegistrationRoles = [
+          UserRole.ATHLETE,
+          UserRole.ORG_ADMIN,
+          UserRole.SPONSOR,
+        ];
+        let validatedRole = UserRole.ATHLETE; // Default to athlete
+
+        if (role && allowedRegistrationRoles.includes(role as any)) {
+          validatedRole = role;
+        } else if (role) {
+          // Log suspicious attempts to claim admin or invalid roles
+          console.warn(
+            `Registration attempt with invalid/privileged role: ${role} for email: ${email}`,
+          );
+        }
+
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.passwordHash) {
+          return res
+            .status(400)
+            .json({
+              message: "User already exists. Please use the login form.",
+            });
+        }
+
+        // Hash password
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        let user;
+        if (existingUser) {
+          // User exists but no password (from OAuth), add password
+          user = await storage.upsertUser({
+            ...existingUser,
+            firstName: firstName || existingUser.firstName,
+            lastName: lastName || existingUser.lastName,
+            role: validatedRole,
+            passwordHash,
+          });
+        } else {
+          // Create new user
+          user = await storage.upsertUser({
+            id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            email,
+            firstName,
+            lastName,
+            role: validatedRole,
+            passwordHash,
+            profileImageUrl: null,
+          });
+        }
+
+        // Log in the user
+        req.login(
+          {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profileImageUrl: user.profileImageUrl,
+            provider: "local",
+          },
+          (err) => {
+            if (err) {
+              return res
+                .status(500)
+                .json({ message: "Registration successful but login failed" });
+            }
+            res.json({
+              message: "Account setup successful",
+              user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                profileImageUrl: user.profileImageUrl,
+              },
+            });
+          },
+        );
+      } catch (error) {
+        console.error("Registration error:", error);
+        res.status(500).json({ message: "Registration failed" });
+      }
+    },
+  );
 
   // Profile management routes
   app.put("/api/auth/profile", isAuthenticated, async (req, res) => {
@@ -204,7 +257,7 @@ export async function setupAuth(app: Express) {
       const { firstName, lastName, email, bio } = req.body;
       const user = req.user as any;
       let userId;
-      
+
       if (user.claims) {
         userId = user.claims.sub;
       } else {
@@ -215,7 +268,9 @@ export async function setupAuth(app: Express) {
       if (email) {
         const existingUser = await storage.getUserByEmail(email);
         if (existingUser && existingUser.id !== userId) {
-          return res.status(400).json({ message: "Email is already in use by another account" });
+          return res
+            .status(400)
+            .json({ message: "Email is already in use by another account" });
         }
       }
 
@@ -241,7 +296,7 @@ export async function setupAuth(app: Express) {
       const { currentPassword, newPassword } = req.body;
       const user = req.user as any;
       let userId;
-      
+
       if (user.claims) {
         userId = user.claims.sub;
       } else {
@@ -257,16 +312,23 @@ export async function setupAuth(app: Express) {
       // For OAuth users without password, allow setting password without current password
       if (dbUser.passwordHash) {
         // Verify current password
-        const isValidPassword = await bcrypt.compare(currentPassword, dbUser.passwordHash);
+        const isValidPassword = await bcrypt.compare(
+          currentPassword,
+          dbUser.passwordHash,
+        );
         if (!isValidPassword) {
-          return res.status(400).json({ message: "Current password is incorrect" });
+          return res
+            .status(400)
+            .json({ message: "Current password is incorrect" });
         }
       }
 
       // Validate new password strength
       const pwdCheck = validatePassword(newPassword);
       if (!pwdCheck.valid) {
-        return res.status(400).json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
+        return res
+          .status(400)
+          .json({ message: pwdCheck.message || PASSWORD_POLICY_HINT });
       }
 
       // Hash new password
@@ -289,7 +351,7 @@ export async function setupAuth(app: Express) {
     try {
       const user = req.user as any;
       let userId;
-      
+
       if (user.claims) {
         userId = user.claims.sub;
       } else {
