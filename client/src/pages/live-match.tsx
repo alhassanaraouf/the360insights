@@ -178,7 +178,7 @@ function VideoPlayerSection({
     return events;
   }, [matchResult]);
 
-  // Calculate dynamic counters based on video playback
+  // Calculate dynamic stats based on video playback
   const dynamicStats = useMemo(() => {
     if (!hasStartedPlaying) {
       // Show full results when video hasn't been played yet
@@ -515,7 +515,7 @@ export default function MatchAnalysis() {
         const scoreData = typeof analysis.score_analysis === 'string' 
           ? JSON.parse(analysis.score_analysis) 
           : analysis.score_analysis;
-        
+
         if (scoreData?.players && scoreData.players.length >= 2) {
           const player1 = scoreData.players[0]?.name || 'Player 1';
           const player2 = scoreData.players[1]?.name || 'Player 2';
@@ -537,7 +537,7 @@ export default function MatchAnalysis() {
 
       <div className="p-6 space-y-6">
         {/* Previous Analyses Section */}
-        {previousAnalyses && previousAnalyses.filter((a: any) => a.analysis_type === 'match').length > 0 && (
+        {previousAnalyses && previousAnalyses.filter((a: any) => (a.analysisType || a.analysis_type) === 'match').length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -547,7 +547,12 @@ export default function MatchAnalysis() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {previousAnalyses.filter((a: any) => a.analysis_type === 'match').slice(0, 6).map((analysis: any) => (
+                {previousAnalyses
+                ?.filter((a: any) => (a.analysisType || a.analysis_type) === 'match')
+                .sort((a: any, b: any) => 
+                  new Date(b.createdAt || b.created_at).getTime() - new Date(a.createdAt || a.created_at).getTime()
+                )
+                .map((analysis: any) => (
                   <Card
                     key={analysis.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow relative group"
