@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import {
   AlertCircle,
   Target,
   TrendingUp,
+  Clock,
+  PlayCircle,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -397,6 +399,11 @@ export default function MatchAnalysis() {
   const [clipResult, setClipResult] = useState<ClipAnalysisResult | null>(null);
   const { toast } = useToast();
 
+  // Fetch previous analyses
+  const { data: previousAnalyses, isLoading: loadingHistory } = useQuery({
+    queryKey: ['/api/video-analysis/history'],
+  });
+
   const analyzeVideoMutation = useMutation({
     mutationFn: async ({
       file,
@@ -497,6 +504,40 @@ export default function MatchAnalysis() {
     setClipResult(null);
   };
 
+  const loadPreviousAnalysis = (analysis: any) => {
+    if (analysis.analysis_type === 'match') {
+      setMatchResult({
+        id: analysis.id,
+        match_analysis: analysis.match_analysis,
+        score_analysis: analysis.score_analysis,
+        punch_analysis: analysis.punch_analysis,
+        kick_count_analysis: analysis.kick_count_analysis,
+        yellow_card_analysis: analysis.yellow_card_analysis,
+        advice_analysis: analysis.advice_analysis,
+        sport: analysis.sport,
+        roundAnalyzed: analysis.round_analyzed,
+        processedAt: analysis.processed_at,
+        processingTimeMs: analysis.processing_time_ms,
+        errors: analysis.errors,
+      });
+      setClipResult(null);
+      setAnalysisType('match');
+    } else {
+      setClipResult({
+        id: analysis.id,
+        analysisType: analysis.analysis_type,
+        userRequest: analysis.user_request,
+        sport: analysis.sport,
+        language: analysis.language,
+        analysis: analysis.clip_analysis,
+        processedAt: analysis.processed_at,
+        processingTimeMs: analysis.processing_time_ms,
+      });
+      setMatchResult(null);
+      setAnalysisType('clip');
+    }
+  };
+
   return (
     <>
       <Header
@@ -505,6 +546,56 @@ export default function MatchAnalysis() {
       />
 
       <div className="p-6 space-y-6">
+        {/* Previous Analyses Section */}
+        {previousAnalyses && previousAnalyses.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Previous Analyses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {previousAnalyses.slice(0, 6).map((analysis: any) => (
+                  <Card
+                    key={analysis.id}
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => loadPreviousAnalysis(analysis)}
+                    data-testid={`previous-analysis-${analysis.id}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <PlayCircle className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded bg-primary/10 text-primary">
+                              {analysis.analysis_type === 'match' ? 'Match' : 'Clip'}
+                            </span>
+                            {analysis.round_analyzed && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Round {analysis.round_analyzed}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {analysis.file_name || 'Video Analysis'}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {new Date(analysis.processed_at).toLocaleDateString()} at{' '}
+                            {new Date(analysis.processed_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* Analysis Type Selection */}
         <Card>
           <CardHeader>
