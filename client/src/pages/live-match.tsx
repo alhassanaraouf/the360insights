@@ -378,9 +378,10 @@ function VideoPlayerSection({
 
 export default function MatchAnalysis() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(
-    null,
-  );
+  const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(null);
+  const [progressJobId, setProgressJobId] = useState<string | null>(null);
+  const [progressStage, setProgressStage] = useState<string>("Uploading video file...");
+  const [progressPercent, setProgressPercent] = useState<number>(10);
   const { toast } = useToast();
 
   // Fetch previous analyses
@@ -450,12 +451,18 @@ export default function MatchAnalysis() {
     },
     onSuccess: (data) => {
       setMatchResult(data);
+      setProgressJobId(null);
+      setProgressStage("Uploading video file...");
+      setProgressPercent(10);
       toast({
         title: "Analysis Complete",
         description: "Match video has been successfully analyzed",
       });
     },
     onError: (error: any) => {
+      setProgressJobId(null);
+      setProgressStage("Uploading video file...");
+      setProgressPercent(10);
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze video",
@@ -488,7 +495,37 @@ export default function MatchAnalysis() {
       });
       return;
     }
-    analyzeVideoMutation.mutate(videoFile);
+    setProgressStage("Uploading video file...");
+    setProgressPercent(10);
+    setProgressJobId(null);
+    analyzeVideoMutation.mutate(videoFile, {
+      onSuccess: (data) => {
+        setMatchResult(data);
+        setProgressJobId(null);
+        setProgressStage("Uploading video file...");
+        setProgressPercent(10);
+        toast({
+          title: "Analysis Complete",
+          description: "Match video has been successfully analyzed",
+        });
+      },
+      onError: (error: any) => {
+        setProgressJobId(null);
+        setProgressStage("Uploading video file...");
+        setProgressPercent(10);
+        toast({
+          title: "Analysis Failed",
+          description: error.message || "Failed to analyze video",
+          variant: "destructive",
+        });
+      },
+      onSettled: (data) => {
+        // If jobId is present, start listening for progress
+        if (data && data.jobId) {
+          setProgressJobId(data.jobId);
+        }
+      },
+    });
   };
 
   const handleReset = () => {
@@ -695,16 +732,34 @@ export default function MatchAnalysis() {
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
                 <div className="text-center space-y-2">
-                  <p className="text-lg font-medium">Analyzing video...</p>
+                  <p className="text-lg font-medium" data-testid="progress-stage">{progressStage}</p>
                   <p className="text-sm text-gray-500">
-                    This may take 4-7 minutes depending on video length
+                    Progress: {progressPercent}%
                   </p>
                 </div>
-                <Progress value={50} className="w-full" />
+                <Progress value={progressPercent} className="w-full" />
               </div>
             </CardContent>
           </Card>
         )}
+  // Listen for progress updates via SSE
+  useEffect(() => {
+    if (!progressJobId || !analyzeVideoMutation.isPending) return;
+    const eventSource = new EventSource(`/api/video-analysis/progress/${progressJobId}`);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setProgressStage(data.stage);
+        setProgressPercent(data.progress);
+      } catch {}
+    };
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+    return () => {
+      eventSource.close();
+    };
+  }, [progressJobId, analyzeVideoMutation.isPending]);
 
         {/* Match Analysis Results */}
         {matchResult && !analyzeVideoMutation.isPending && (

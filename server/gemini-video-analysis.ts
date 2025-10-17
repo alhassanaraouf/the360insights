@@ -1,7 +1,30 @@
 import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 import * as fs from "fs";
 import * as path from "path";
+import { randomUUID } from "crypto";
 
+// In-memory progress store (for demo; use Redis for production)
+const progressStore: Record<string, { stage: string; progress: number }> = {};
+
+// Express route for SSE progress updates
+export function videoAnalysisProgressSSE(req, res) {
+  const jobId = req.params.jobId;
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  let lastProgress = -1;
+  const sendProgress = () => {
+    const entry = progressStore[jobId];
+    if (entry && entry.progress !== lastProgress) {
+      res.write(`data: ${JSON.stringify(entry)}\n\n`);
+      lastProgress = entry.progress;
+    }
+  };
+  const interval = setInterval(sendProgress, 1000);
+  req.on('close', () => clearInterval(interval));
+}
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
 if (!API_KEY) {
@@ -284,11 +307,16 @@ export class GeminiVideoAnalysis {
   async analyzeMatch(
     videoPath: string,
     round: number | 'no-rounds' | null,
-    onProgress: (stage: string, progress: number) => void
+    jobId?: string
   ) {
     const startTime = Date.now();
     let uploadedFile: any = null;
 
+    // Progress reporting
+    const setProgress = (stage: string, progress: number) => {
+      if (jobId) progressStore[jobId] = { stage, progress };
+    };
+    const onProgress = setProgress;
     try {
       // Upload and process video
       uploadedFile = await this.uploadAndProcessVideo(videoPath, onProgress);
@@ -299,8 +327,8 @@ export class GeminiVideoAnalysis {
         ? `round ${round}` 
         : 'entire match';
 
-      // Run all analyses in parallel
-      onProgress("Running comprehensive analysis...", 30);
+  // Run all analyses in parallel
+  onProgress("Running comprehensive analysis...", 30);
 
       const analysisPromises = [
         // Match Analysis (Text)
@@ -648,7 +676,7 @@ Rules:
 
       const results = await Promise.allSettled(analysisPromises);
 
-      onProgress("Finalizing analysis...", 95);
+  onProgress("Finalizing analysis...", 95);
 
       // Extract results
       const [matchResult, scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
@@ -657,7 +685,8 @@ Rules:
 
       const matchAnalysisText = matchResult.status === 'fulfilled' ? matchResult.value.data : null;
       
-      return {
+  if (jobId) delete progressStore[jobId];
+  return {
         match_analysis: matchAnalysisText,
         score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
         punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText),

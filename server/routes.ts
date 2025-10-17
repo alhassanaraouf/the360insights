@@ -31,7 +31,8 @@ import { db } from "./db";
 import * as schema from "../shared/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import multer from "multer";
-import { geminiVideoAnalysis } from "./gemini-video-analysis";
+import { geminiVideoAnalysis, videoAnalysisProgressSSE } from "./gemini-video-analysis";
+import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { exec } from "child_process";
@@ -116,15 +117,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : parseInt(req.body.round)
           : null;
 
-        // Progress tracking - in real app, use WebSockets/SSE
-        const onProgress = (stage: string, progress: number) => {
-          console.log(`Progress: ${stage} - ${progress}%`);
-        };
+        // Generate a jobId for progress tracking
+        const jobId = randomUUID();
 
+        // Start analysis with progress tracking
         const analysisResult = await geminiVideoAnalysis.analyzeMatch(
           uploadedFilePath!,
           round,
-          onProgress,
+          jobId,
         );
 
         // Store in database
@@ -177,6 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           id: savedAnalysis.id,
+          jobId,
           ...analysisResult,
         });
       } catch (error: any) {
@@ -198,6 +199,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+  // SSE endpoint for progress updates
+  app.get("/api/video-analysis/progress/:jobId", videoAnalysisProgressSSE);
 
   // Clip analysis endpoint
   app.post(
