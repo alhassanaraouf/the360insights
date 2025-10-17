@@ -63,11 +63,39 @@ function parseAdviceJsonWithRecovery(responseText: string) {
     return { parsed: tryParse(cleaned), recovered: true };
   } catch {}
 
-  // 3) Balance braces/brackets using a stack, append required closers, then retry
-  const text = responseText.trim();
-  const stack: string[] = [];
+  // 3) Fix truncated strings - close any unclosed string literals
+  let text = responseText.trim();
   let inString = false;
   let escaped = false;
+  let lastQuoteIndex = -1;
+  
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      lastQuoteIndex = i;
+      inString = !inString;
+    }
+  }
+  
+  // If we ended in a string, close it
+  if (inString && lastQuoteIndex >= 0) {
+    text = text + '"';
+    console.log('[ADVICE] Closed unclosed string literal');
+  }
+
+  // 4) Balance braces/brackets using a stack, append required closers
+  const stack: string[] = [];
+  inString = false;
+  escaped = false;
+  
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (inString) {
@@ -88,9 +116,6 @@ function parseAdviceJsonWithRecovery(responseText: string) {
       const top = stack[stack.length - 1];
       if ((ch === '}' && top === '{') || (ch === ']' && top === '[')) {
         stack.pop();
-      } else {
-        // mismatched closer; abort balancing
-        break;
       }
     }
   }
@@ -101,39 +126,57 @@ function parseAdviceJsonWithRecovery(responseText: string) {
     .map((c) => (c === '{' ? '}' : ']'))
     .join('');
 
-  try {
-    return { parsed: tryParse(text + closers), recovered: true };
-  } catch {}
-
-  // 4) Truncate to last balanced index (where stack would have been empty)
-  let curly = 0;
-  let square = 0;
-  inString = false;
-  escaped = false;
-  let lastBalanced = -1;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (ch === '\\') {
-        escaped = true;
-      } else if (ch === '"') {
-        inString = false;
-      }
-    } else {
-      if (ch === '"') inString = true;
-      else if (ch === '{') curly++;
-      else if (ch === '}') curly = Math.max(0, curly - 1);
-      else if (ch === '[') square++;
-      else if (ch === ']') square = Math.max(0, square - 1);
-      if (!inString && curly === 0 && square === 0) lastBalanced = i + 1;
-    }
+  if (closers) {
+    text = text + closers;
+    console.log('[ADVICE] Added missing closers:', closers);
   }
-  if (lastBalanced > 0) {
-    const truncated = text.slice(0, lastBalanced);
+
+  try {
+    return { parsed: tryParse(text), recovered: true };
+  } catch (e: any) {
+    console.log('[ADVICE] Still failed after balancing:', e.message);
+  }
+
+  // 5) Truncate to last valid comma or closing bracket before attempting final parse
+  const lastComma = text.lastIndexOf(',');
+  const lastCloseBracket = text.lastIndexOf(']');
+  const lastCloseBrace = text.lastIndexOf('}');
+  const truncatePoint = Math.max(lastComma, lastCloseBracket, lastCloseBrace);
+  
+  if (truncatePoint > text.length / 2) {
+    const truncated = text.slice(0, truncatePoint + 1);
+    
+    // Re-balance after truncation
+    const stackAfter: string[] = [];
+    let inStr = false;
+    let esc = false;
+    
+    for (let i = 0; i < truncated.length; i++) {
+      const ch = truncated[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === '{' || ch === '[') stackAfter.push(ch);
+      else if (ch === '}' || ch === ']') {
+        const top = stackAfter[stackAfter.length - 1];
+        if ((ch === '}' && top === '{') || (ch === ']' && top === '[')) {
+          stackAfter.pop();
+        }
+      }
+    }
+    
+    const closersAfter = stackAfter
+      .slice()
+      .reverse()
+      .map((c) => (c === '{' ? '}' : ']'))
+      .join('');
+    
     try {
-      return { parsed: tryParse(truncated), recovered: true };
+      return { parsed: tryParse(truncated + closersAfter), recovered: true };
     } catch {}
   }
 
@@ -571,19 +614,30 @@ Rules:
             try {
               const { parsed: p, recovered } = parseAdviceJsonWithRecovery(responseText) as any;
               parsed = p;
-              console.log('[ADVICE] Parsed JSON', recovered ? '(after recovery)' : '(direct)');
+              console.log('[ADVICE] Successfully parsed JSON', recovered ? '(with recovery)' : '(direct parse)');
+              console.log('[ADVICE] Parsed structure has', parsed.players?.length || 0, 'players');
             } catch (e: any) {
-              console.error('[ADVICE] Parsing failed after recovery:', e.message);
+              console.error('[ADVICE] Parsing failed after all recovery attempts:', e.message);
+              console.error('[ADVICE] Response preview:', responseText.substring(0, 500));
               throw new Error('Cannot parse advice JSON: ' + e.message);
             }
 
             // Validate that we have proper data
             if (!parsed.players || parsed.players.length === 0) {
-              console.error('Parsed data:', JSON.stringify(parsed).substring(0, 500));
+              console.error('[ADVICE] Invalid structure - missing or empty players array');
+              console.error('[ADVICE] Parsed data preview:', JSON.stringify(parsed).substring(0, 500));
               throw new Error('Invalid advice structure - missing or empty players array');
             }
 
-            console.log('Successfully validated advice for', parsed.players.length, 'players');
+            // Validate each player has the required advice structure
+            for (let i = 0; i < parsed.players.length; i++) {
+              const player = parsed.players[i];
+              if (!player.tactical_advice || !player.technical_advice || !player.mental_advice) {
+                console.warn(`[ADVICE] Player ${i} (${player.name}) missing advice categories`);
+              }
+            }
+
+            console.log('[ADVICE] ✓ Successfully validated advice for', parsed.players.length, 'players');
             return { data: parsed, error: null };
           } catch (error: any) {
             console.error('Advice analysis error:', error.message);
