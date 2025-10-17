@@ -40,9 +40,9 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check endpoint for deployment - must respond quickly
-  app.get("/", (_req, res) => {
-    res.status(200).send("OK");
+  // Health check endpoint for deployment - use /api/health instead of / to not interfere with static files
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
   });
 
   // Setup authentication middleware
