@@ -519,6 +519,10 @@ export default function MatchAnalysis() {
       punch_analysis: parseIfString(analysis.punchAnalysis || analysis.punch_analysis),
       kick_count_analysis: parseIfString(analysis.kickCountAnalysis || analysis.kick_count_analysis),
       yellow_card_analysis: parseIfString(analysis.yellowCardAnalysis || analysis.yellow_card_analysis),
+      // Prefer gam_jeom_analysis if available, else fallback; keep yellow_card_analysis for backward compatibility
+      gam_jeom_analysis: parseIfString(
+        analysis.gamJeomAnalysis || analysis.gam_jeom_analysis || analysis.yellowCardAnalysis || analysis.yellow_card_analysis
+      ),
       advice_analysis: parseIfString(analysis.adviceAnalysis || analysis.advice_analysis),
       sport: analysis.sport,
       roundAnalyzed: analysis.roundAnalyzed || analysis.round_analyzed,
@@ -959,10 +963,10 @@ export default function MatchAnalysis() {
 
               <TabsContent value="violations" className="mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {(gamJeom?.players ?? []).slice().reverse().map(
+                  {(((matchResult.gam_jeom_analysis || matchResult.yellow_card_analysis)?.players) ?? []).slice().reverse().map(
                     (player, idx) => {
                       // keep name alignment with score_analysis (accounting for reverse)
-                      const totalPlayers = gamJeom?.players?.length ?? 0;
+                      const totalPlayers = (matchResult.gam_jeom_analysis || matchResult.yellow_card_analysis)?.players?.length ?? 0;
                       const scoreIdx = totalPlayers ? totalPlayers - 1 - idx : idx;
                       const playerName = matchResult.score_analysis?.players?.[scoreIdx]?.name || player.name;
 
