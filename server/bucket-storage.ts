@@ -20,6 +20,12 @@ export interface ImageUploadResult {
   size: number;
 }
 
+export interface VideoUploadResult {
+  url: string;
+  key: string;
+  size: number;
+}
+
 export class BucketStorageService {
   private bucketId = bucketId;
 
@@ -450,6 +456,150 @@ export class BucketStorageService {
     } catch (error) {
       console.error(`Error getting competition logo buffer for ${competitionId}:`, error);
       return null;
+    }
+  }
+
+  // Video upload methods
+  async uploadVideo(analysisId: number, videoBuffer: Buffer, fileName: string): Promise<VideoUploadResult> {
+    try {
+      const fileExtension = fileName.split('.').pop() || 'mp4';
+      const key = `videos/analysis/${analysisId}/video.${fileExtension}`;
+      
+      console.log(`📤 Uploading video ${key} to bucket: ${this.bucketId}`);
+      console.log(`   Size: ${videoBuffer.length} bytes`);
+      
+      // Upload to Replit Object Storage
+      const uploadResult = await client.uploadFromBytes(key, videoBuffer);
+      
+      console.log('Video upload result:', uploadResult);
+      
+      // Handle different response formats from Replit Object Storage
+      if (uploadResult.ok === false || (!uploadResult.ok && !uploadResult.success)) {
+        console.error('Video upload failed:', uploadResult.error || uploadResult);
+        throw new Error(`Upload failed: ${uploadResult.error?.message || uploadResult.message || 'Unknown error'}`);
+      }
+
+      // Verify upload was successful
+      if (!uploadResult.ok && !uploadResult.success) {
+        throw new Error('Video upload completed but status unclear');
+      }
+
+      // Return our API URL that will serve the video through the backend
+      const downloadUrl = `/api/video-analysis/${analysisId}/video`;
+      
+      return {
+        url: downloadUrl,
+        key,
+        size: videoBuffer.length
+      };
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      throw new Error('Failed to upload video');
+    }
+  }
+
+  async getVideoUrl(analysisId: number): Promise<string | null> {
+    try {
+      const prefix = `videos/analysis/${analysisId}/`;
+      const listResult = await client.list({ prefix });
+      
+      if (!listResult.success || !listResult.data || listResult.data.length === 0) {
+        return null;
+      }
+      
+      // Return our API URL that will serve the video through the backend
+      const downloadUrl = `/api/video-analysis/${analysisId}/video`;
+      
+      return downloadUrl;
+    } catch (error) {
+      console.error('Error getting video URL:', error);
+      return null;
+    }
+  }
+
+  async getVideoBuffer(analysisId: number): Promise<Buffer | null> {
+    try {
+      const prefix = `videos/analysis/${analysisId}/`;
+      const listResult = await client.list({ prefix });
+      
+      // Check different possible response formats
+      if (!listResult || (!listResult.success && !listResult.ok)) {
+        return null;
+      }
+      
+      // Handle different response formats
+      let items = listResult.data || listResult.items || listResult.value || [];
+      
+      if (!items || items.length === 0) {
+        return null;
+      }
+      
+      // Get the first video file
+      const selectedKey = items[0].key || items[0].name;
+      
+      // Download the video
+      const downloadResult = await client.downloadAsBytes(selectedKey);
+      
+      // Handle different response formats
+      if (!downloadResult || (!downloadResult.success && !downloadResult.ok)) {
+        return null;
+      }
+      
+      // For Replit Object Storage, the response format is { ok: true, value: [buffer] }
+      if (downloadResult.ok && downloadResult.value && Array.isArray(downloadResult.value)) {
+        const videoBuffer = downloadResult.value[0];
+        return Buffer.isBuffer(videoBuffer) ? videoBuffer : Buffer.from(videoBuffer);
+      }
+      
+      // Fallback to other possible formats
+      const data = downloadResult.data || downloadResult.bytes;
+      if (!data) {
+        return null;
+      }
+      
+      return Buffer.from(data);
+    } catch (error) {
+      console.error(`Error getting video buffer for analysis ${analysisId}:`, error);
+      return null;
+    }
+  }
+
+  async deleteVideo(analysisId: number): Promise<void> {
+    try {
+      // List all files for this analysis
+      const prefix = `videos/analysis/${analysisId}/`;
+      const listResult = await client.list({ prefix });
+      
+      if (listResult.success && listResult.data) {
+        // Delete all video files for this analysis
+        for (const obj of listResult.data) {
+          const deleteResult = await client.delete(obj.key);
+          if (!deleteResult.success && !deleteResult.ok) {
+            console.warn(`Failed to delete ${obj.key}:`, deleteResult.error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      throw new Error('Failed to delete video');
+    }
+  }
+
+  async checkVideoExists(analysisId: number): Promise<boolean> {
+    try {
+      const prefix = `videos/analysis/${analysisId}/`;
+      const listResult = await client.list({ prefix });
+      
+      if (!listResult || (!listResult.success && !listResult.ok)) {
+        return false;
+      }
+      
+      const items = listResult.data || listResult.items || listResult.value || [];
+      return items && items.length > 0;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error checking if video exists for analysis ${analysisId}:`, errorMessage);
+      return false;
     }
   }
 }

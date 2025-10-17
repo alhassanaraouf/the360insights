@@ -235,6 +235,7 @@ export interface IStorage {
   createVideoAnalysis(analysis: InsertVideoAnalysis): Promise<VideoAnalysis>;
   getVideoAnalysis(id: number): Promise<VideoAnalysis | undefined>;
   getVideoAnalysesByUserId(userId: string): Promise<VideoAnalysis[]>;
+  updateVideoAnalysisPath(id: number, videoPath: string): Promise<void>;
 
   // Performance Analysis Cache
   getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
@@ -1866,6 +1867,13 @@ export class DatabaseStorage implements IStorage {
       .from(videoAnalysis)
       .where(eq(videoAnalysis.userId, userId))
       .orderBy(desc(videoAnalysis.createdAt));
+  }
+
+  async updateVideoAnalysisPath(id: number, videoPath: string): Promise<void> {
+    await db
+      .update(videoAnalysis)
+      .set({ videoPath })
+      .where(eq(videoAnalysis.id, id));
   }
 }
 

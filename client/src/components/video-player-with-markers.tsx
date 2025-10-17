@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, Settings, Share2, RectangleHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -44,12 +44,14 @@ export default function VideoPlayerWithMarkers({
   onTimeUpdate 
 }: VideoPlayerWithMarkersProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [hoveredEvent, setHoveredEvent] = useState<TimelineEvent | null>(null);
+  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -117,10 +119,12 @@ export default function VideoPlayerWithMarkers({
   };
 
   const toggleFullscreen = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.requestFullscreen) {
-      video.requestFullscreen();
+    const container = containerRef.current;
+    if (!container) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (container.requestFullscreen) {
+      container.requestFullscreen();
     }
   };
 
@@ -142,35 +146,89 @@ export default function VideoPlayerWithMarkers({
     }
   };
 
+  // Auto-hide controls when playing
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowControls(true);
+      return;
+    }
+
+    const hideControlsTimer = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+
+    return () => clearTimeout(hideControlsTimer);
+  }, [isPlaying, currentTime]);
+
+  const handleMouseMove = () => {
+    setShowControls(true);
+  };
+
   return (
-    <div className={`w-full ${className}`}>
+    <div 
+      ref={containerRef}
+      className={`relative w-full rounded-xl overflow-hidden ${className}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+    >
+      {/* Purple gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-600 to-blue-600 dark:from-purple-600 dark:via-purple-700 dark:to-blue-700" />
+      
       {/* Video Element */}
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-auto bg-black rounded-t-xl"
+        className="relative w-full h-auto bg-black/20"
         data-testid="video-player"
       />
 
-      {/* Controls */}
-      <div className="bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 dark:from-gray-900 dark:via-black dark:to-gray-900 p-5 rounded-b-xl border-t border-gray-700/50 dark:border-gray-800">
+      {/* Share Button (Top Right) */}
+      <div className={`absolute top-4 right-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-white/90 hover:text-white hover:bg-white/20 rounded-full p-2"
+          data-testid="button-share"
+        >
+          <Share2 className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Large Centered Play Button (when paused) */}
+      {!isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={togglePlay}
+            className="group relative"
+            data-testid="button-play-overlay"
+          >
+            <div className="absolute inset-0 bg-white/30 dark:bg-white/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300" />
+            <div className="relative bg-white/90 dark:bg-white/80 rounded-full p-8 group-hover:bg-white group-hover:scale-110 transition-all duration-200 shadow-2xl">
+              <Play className="h-16 w-16 text-purple-600 dark:text-purple-700 fill-current" />
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Bottom Controls */}
+      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-5 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         {/* Timeline with Markers */}
         <div className="relative mb-4">
           {/* Background track */}
-          <div className="relative h-3 mb-2">
+          <div className="relative h-1.5 mb-2">
             <Slider
               value={[currentTime]}
               min={0}
               max={duration || 100}
               step={0.1}
               onValueChange={handleSeek}
-              className="cursor-pointer"
+              className="cursor-pointer [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
               data-testid="video-timeline"
             />
           </div>
           
           {/* Event Markers - positioned below the timeline */}
-          <div className="relative h-8 mt-1">
+          <div className="relative h-6 mt-1">
             {events.map((event, idx) => {
               const eventTime = timeToSeconds(event.timestamp);
               const position = (eventTime / duration) * 100;
@@ -187,14 +245,14 @@ export default function VideoPlayerWithMarkers({
                   onMouseLeave={() => setHoveredEvent(null)}
                   data-testid={`marker-${event.type}-${idx}`}
                 >
-                  <div className={`w-3 h-7 ${getEventColor(event.type)} rounded-md hover:scale-125 hover:shadow-lg transition-all duration-200 shadow-md`} />
+                  <div className={`w-2.5 h-6 ${getEventColor(event.type)} rounded-sm hover:scale-125 hover:shadow-lg transition-all duration-200 shadow-md`} />
                   
                   {/* Tooltip */}
                   {hoveredEvent === event && (
-                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-900 border border-gray-600 dark:border-gray-700 text-gray-100 dark:text-gray-200 text-xs p-3 rounded-lg shadow-2xl whitespace-nowrap z-50">
-                      <div className="font-bold text-blue-400 dark:text-blue-300 text-sm">{event.timestamp}</div>
+                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900/95 backdrop-blur-sm text-white text-xs p-3 rounded-lg shadow-2xl whitespace-nowrap z-50 border border-white/10">
+                      <div className="font-bold text-purple-400 text-sm">{event.timestamp}</div>
                       <div className="mt-1.5 font-medium">{event.description}</div>
-                      {event.player && <div className="text-gray-400 dark:text-gray-500 mt-1 text-xs">{event.player}</div>}
+                      {event.player && <div className="text-gray-400 mt-1 text-xs">{event.player}</div>}
                     </div>
                   )}
                 </div>
@@ -204,38 +262,61 @@ export default function VideoPlayerWithMarkers({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-3">
           {/* Play/Pause */}
           <Button
             size="sm"
             variant="ghost"
             onClick={togglePlay}
-            className="text-gray-300 dark:text-gray-400 hover:bg-blue-600/20 dark:hover:bg-blue-500/20 hover:text-blue-400 dark:hover:text-blue-300 transition-all duration-200"
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
             data-testid="button-play-pause"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </Button>
 
-          {/* Time Display */}
-          <div className="text-gray-300 dark:text-gray-400 text-sm font-mono bg-gray-700/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-md border border-gray-600/30 dark:border-gray-700/50" data-testid="text-time">
-            {secondsToTime(currentTime)} / {secondsToTime(duration)}
-          </div>
+          {/* Skip Back */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.max(0, currentTime - 10);
+              }
+            }}
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
+            data-testid="button-skip-back"
+          >
+            <SkipBack className="h-4 w-4" />
+          </Button>
 
-          <div className="flex-1" />
+          {/* Skip Forward */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.min(duration, currentTime + 10);
+              }
+            }}
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
+            data-testid="button-skip-forward"
+          >
+            <SkipForward className="h-4 w-4" />
+          </Button>
 
           {/* Volume */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={toggleMute}
-              className="text-gray-300 dark:text-gray-400 hover:bg-gray-700/50 dark:hover:bg-gray-800/50 hover:text-gray-100 dark:hover:text-gray-200 transition-all duration-200"
+              className="text-white hover:bg-white/20 transition-all duration-200 p-2"
               data-testid="button-mute"
             >
               {isMuted || volume === 0 ? (
-                <VolumeX className="h-5 w-5" />
+                <VolumeX className="h-4 w-4" />
               ) : (
-                <Volume2 className="h-5 w-5" />
+                <Volume2 className="h-4 w-4" />
               )}
             </Button>
             <Slider
@@ -244,20 +325,52 @@ export default function VideoPlayerWithMarkers({
               max={1}
               step={0.1}
               onValueChange={handleVolumeChange}
-              className="w-24"
+              className="w-20 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white"
               data-testid="slider-volume"
             />
           </div>
+
+          {/* Time Display */}
+          <div className="text-white text-sm font-medium ml-2" data-testid="text-time">
+            {secondsToTime(currentTime)} / {secondsToTime(duration)}
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Settings */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
+            data-testid="button-settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+
+          {/* Picture in Picture */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (videoRef.current && 'requestPictureInPicture' in videoRef.current) {
+                (videoRef.current as any).requestPictureInPicture();
+              }
+            }}
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
+            data-testid="button-pip"
+          >
+            <RectangleHorizontal className="h-4 w-4" />
+          </Button>
 
           {/* Fullscreen */}
           <Button
             size="sm"
             variant="ghost"
             onClick={toggleFullscreen}
-            className="text-gray-300 dark:text-gray-400 hover:bg-gray-700/50 dark:hover:bg-gray-800/50 hover:text-gray-100 dark:hover:text-gray-200 transition-all duration-200"
+            className="text-white hover:bg-white/20 transition-all duration-200 p-2"
             data-testid="button-fullscreen"
           >
-            <Maximize className="h-5 w-5" />
+            <Maximize className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -133,6 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId = req.user.claims?.sub || req.user.id;
         }
 
+        // First save to database to get the analysis ID
         const savedAnalysis = await storage.createVideoAnalysis({
           userId,
           analysisType: "match",
@@ -148,9 +149,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: analysisResult.errors,
           fileName: req.file.originalname,
           fileSize: req.file.size,
-          videoPath: uploadedFilePath,
+          videoPath: null, // Will be updated after bucket upload
           processingTimeMs: analysisResult.processingTimeMs,
         });
+
+        // Upload video to bucket storage
+        try {
+          const videoBuffer = fs.readFileSync(uploadedFilePath!);
+          const uploadResult = await bucketStorage.uploadVideo(
+            savedAnalysis.id,
+            videoBuffer,
+            req.file.originalname
+          );
+          
+          // Update the analysis with the bucket storage path
+          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadResult.key);
+          
+          // Clean up local file after successful upload
+          if (fs.existsSync(uploadedFilePath!)) {
+            fs.unlinkSync(uploadedFilePath!);
+          }
+        } catch (uploadError) {
+          console.error("Error uploading video to bucket:", uploadError);
+          // Keep the local path if bucket upload fails
+          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadedFilePath!);
+        }
 
         res.json({
           id: savedAnalysis.id,
@@ -214,6 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId = req.user.claims?.sub || req.user.id;
         }
 
+        // First save to database to get the analysis ID
         const savedAnalysis = await storage.createVideoAnalysis({
           userId,
           analysisType: "clip",
@@ -223,9 +247,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clipAnalysis: analysisResult.analysis,
           fileName: req.file.originalname,
           fileSize: req.file.size,
-          videoPath: uploadedFilePath,
+          videoPath: null, // Will be updated after bucket upload
           processingTimeMs: analysisResult.processingTimeMs,
         });
+
+        // Upload video to bucket storage
+        try {
+          const videoBuffer = fs.readFileSync(uploadedFilePath!);
+          const uploadResult = await bucketStorage.uploadVideo(
+            savedAnalysis.id,
+            videoBuffer,
+            req.file.originalname
+          );
+          
+          // Update the analysis with the bucket storage path
+          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadResult.key);
+          
+          // Clean up local file after successful upload
+          if (fs.existsSync(uploadedFilePath!)) {
+            fs.unlinkSync(uploadedFilePath!);
+          }
+        } catch (uploadError) {
+          console.error("Error uploading video to bucket:", uploadError);
+          // Keep the local path if bucket upload fails
+          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadedFilePath!);
+        }
 
         res.json({
           id: savedAnalysis.id,
@@ -277,39 +323,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Video not found" });
       }
 
-      // Check if file exists
-      if (!fs.existsSync(analysis.videoPath)) {
-        return res
-          .status(404)
-          .json({ error: "Video file not found on server" });
-      }
+      // Check if video is in bucket storage (starts with 'videos/')
+      const isInBucket = analysis.videoPath.startsWith('videos/');
+      
+      if (isInBucket) {
+        // Serve from bucket storage
+        const videoBuffer = await bucketStorage.getVideoBuffer(analysisId);
+        
+        if (!videoBuffer) {
+          return res.status(404).json({ error: "Video file not found in storage" });
+        }
 
-      // Stream the video file
-      const stat = fs.statSync(analysis.videoPath);
-      const fileSize = stat.size;
-      const range = req.headers.range;
+        const fileSize = videoBuffer.length;
+        const range = req.headers.range;
 
-      if (range) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunksize = end - start + 1;
-        const file = fs.createReadStream(analysis.videoPath, { start, end });
-        const head = {
-          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-          "Accept-Ranges": "bytes",
-          "Content-Length": chunksize,
-          "Content-Type": "video/mp4",
-        };
-        res.writeHead(206, head);
-        file.pipe(res);
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          const chunksize = end - start + 1;
+          const chunk = videoBuffer.slice(start, end + 1);
+          
+          const head = {
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunksize,
+            "Content-Type": "video/mp4",
+          };
+          res.writeHead(206, head);
+          res.end(chunk);
+        } else {
+          const head = {
+            "Content-Length": fileSize,
+            "Content-Type": "video/mp4",
+          };
+          res.writeHead(200, head);
+          res.end(videoBuffer);
+        }
       } else {
-        const head = {
-          "Content-Length": fileSize,
-          "Content-Type": "video/mp4",
-        };
-        res.writeHead(200, head);
-        fs.createReadStream(analysis.videoPath).pipe(res);
+        // Fallback: serve from local filesystem (for old videos)
+        if (!fs.existsSync(analysis.videoPath)) {
+          return res.status(404).json({ error: "Video file not found on server" });
+        }
+
+        const stat = fs.statSync(analysis.videoPath);
+        const fileSize = stat.size;
+        const range = req.headers.range;
+
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          const chunksize = end - start + 1;
+          const file = fs.createReadStream(analysis.videoPath, { start, end });
+          const head = {
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunksize,
+            "Content-Type": "video/mp4",
+          };
+          res.writeHead(206, head);
+          file.pipe(res);
+        } else {
+          const head = {
+            "Content-Length": fileSize,
+            "Content-Type": "video/mp4",
+          };
+          res.writeHead(200, head);
+          fs.createReadStream(analysis.videoPath).pipe(res);
+        }
       }
     } catch (error) {
       console.error("Error serving video:", error);
