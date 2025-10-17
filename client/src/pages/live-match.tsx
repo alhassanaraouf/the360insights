@@ -18,20 +18,11 @@ import {
   Activity,
   Award,
   AlertCircle,
-  Target,
   TrendingUp,
   Clock,
   PlayCircle,
   Trash2,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import VideoPlayerWithMarkers from "@/components/video-player-with-markers";
@@ -50,18 +41,6 @@ interface MatchAnalysisResult {
   processingTimeMs: number;
   errors: any;
   videoPath?: string;
-}
-
-interface ClipAnalysisResult {
-  id: number;
-  analysisType: string;
-  userRequest: string;
-  sport: string;
-  language: string;
-  videoPath?: string;
-  analysis: string;
-  processedAt: string;
-  processingTimeMs: number;
 }
 
 interface PlayerEvent {
@@ -393,13 +372,10 @@ function VideoPlayerSection({
 }
 
 export default function MatchAnalysis() {
-  const [analysisType, setAnalysisType] = useState<"match" | "clip">("match");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [clipRequest, setClipRequest] = useState("");
   const [matchResult, setMatchResult] = useState<MatchAnalysisResult | null>(
     null,
   );
-  const [clipResult, setClipResult] = useState<ClipAnalysisResult | null>(null);
   const { toast } = useToast();
 
   // Fetch previous analyses
@@ -447,56 +423,27 @@ export default function MatchAnalysis() {
   });
 
   const analyzeVideoMutation = useMutation({
-    mutationFn: async ({
-      file,
-      type,
-    }: {
-      file: File;
-      type: "match" | "clip";
-    }) => {
+    mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("video", file);
 
-      if (type === "match") {
-        const response = await fetch("/api/video-analysis/match", {
-          method: "POST",
-          body: formData,
-        });
+      const response = await fetch("/api/video-analysis/match", {
+        method: "POST",
+        body: formData,
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to analyze video");
-        }
-
-        return { type: "match", data: await response.json() };
-      } else {
-        if (!clipRequest) {
-          throw new Error("Please describe what you want to analyze");
-        }
-        formData.append("whatToAnalyze", clipRequest);
-
-        const response = await fetch("/api/video-analysis/clip", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to analyze video clip");
-        }
-
-        return { type: "clip", data: await response.json() };
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to analyze video");
       }
+
+      return await response.json();
     },
-    onSuccess: (result) => {
-      if (result.type === "match") {
-        setMatchResult(result.data);
-      } else {
-        setClipResult(result.data);
-      }
+    onSuccess: (data) => {
+      setMatchResult(data);
       toast({
         title: "Analysis Complete",
-        description: "Video has been successfully analyzed",
+        description: "Match video has been successfully analyzed",
       });
     },
     onError: (error: any) => {
@@ -532,50 +479,30 @@ export default function MatchAnalysis() {
       });
       return;
     }
-    analyzeVideoMutation.mutate({ file: videoFile, type: analysisType });
+    analyzeVideoMutation.mutate(videoFile);
   };
 
   const handleReset = () => {
     setVideoFile(null);
-    setClipRequest("");
     setMatchResult(null);
-    setClipResult(null);
   };
 
   const loadPreviousAnalysis = (analysis: any) => {
-    if (analysis.analysis_type === 'match') {
-      setMatchResult({
-        id: analysis.id,
-        match_analysis: analysis.match_analysis,
-        score_analysis: analysis.score_analysis,
-        punch_analysis: analysis.punch_analysis,
-        kick_count_analysis: analysis.kick_count_analysis,
-        yellow_card_analysis: analysis.yellow_card_analysis,
-        advice_analysis: analysis.advice_analysis,
-        sport: analysis.sport,
-        roundAnalyzed: analysis.round_analyzed,
-        processedAt: analysis.processed_at,
-        processingTimeMs: analysis.processing_time_ms,
-        errors: analysis.errors,
-        videoPath: analysis.video_path,
-      });
-      setClipResult(null);
-      setAnalysisType('match');
-    } else {
-      setClipResult({
-        id: analysis.id,
-        analysisType: analysis.analysis_type,
-        userRequest: analysis.user_request,
-        sport: analysis.sport,
-        language: analysis.language,
-        analysis: analysis.clip_analysis,
-        processedAt: analysis.processed_at,
-        processingTimeMs: analysis.processing_time_ms,
-        videoPath: analysis.video_path,
-      });
-      setMatchResult(null);
-      setAnalysisType('clip');
-    }
+    setMatchResult({
+      id: analysis.id,
+      match_analysis: analysis.match_analysis,
+      score_analysis: analysis.score_analysis,
+      punch_analysis: analysis.punch_analysis,
+      kick_count_analysis: analysis.kick_count_analysis,
+      yellow_card_analysis: analysis.yellow_card_analysis,
+      advice_analysis: analysis.advice_analysis,
+      sport: analysis.sport,
+      roundAnalyzed: analysis.round_analyzed,
+      processedAt: analysis.processed_at,
+      processingTimeMs: analysis.processing_time_ms,
+      errors: analysis.errors,
+      videoPath: analysis.video_path,
+    });
   };
 
   const getPlayerNames = (analysis: any) => {
@@ -606,17 +533,17 @@ export default function MatchAnalysis() {
 
       <div className="p-6 space-y-6">
         {/* Previous Analyses Section */}
-        {previousAnalyses && previousAnalyses.length > 0 && (
+        {previousAnalyses && previousAnalyses.filter((a: any) => a.analysis_type === 'match').length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Previous Analyses
+                Previous Match Analyses
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {previousAnalyses.slice(0, 6).map((analysis: any) => (
+                {previousAnalyses.filter((a: any) => a.analysis_type === 'match').slice(0, 6).map((analysis: any) => (
                   <Card
                     key={analysis.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow relative group"
@@ -628,16 +555,6 @@ export default function MatchAnalysis() {
                           <PlayCircle className="h-10 w-10 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium px-2 py-0.5 rounded bg-primary/10 text-primary">
-                              {analysis.analysis_type === 'match' ? 'Match' : 'Clip'}
-                            </span>
-                            {analysis.round_analyzed && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Round {analysis.round_analyzed}
-                              </span>
-                            )}
-                          </div>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                             {getPlayerNames(analysis)}
                           </p>
@@ -665,88 +582,34 @@ export default function MatchAnalysis() {
             </CardContent>
           </Card>
         )}
-        {/* Analysis Type Selection */}
+        {/* Match Analysis Upload */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Video className="h-5 w-5 text-primary" />
-              Video Analysis
+              Match Analysis
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Analysis Type Tabs */}
-            <Tabs
-              value={analysisType}
-              onValueChange={(v) => setAnalysisType(v as "match" | "clip")}
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="match" data-testid="tab-match-analysis">
-                  Match Analysis
-                </TabsTrigger>
-                <TabsTrigger value="clip" data-testid="tab-clip-analysis">
-                  Clip Analysis
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="match" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="video-file">
-                    Video File (MP4, max 500MB)
-                  </Label>
-                  <Input
-                    id="video-file"
-                    type="file"
-                    accept="video/mp4"
-                    onChange={handleFileChange}
-                    disabled={analyzeVideoMutation.isPending}
-                    data-testid="input-video-file"
-                  />
-                  {videoFile && (
-                    <p className="text-sm text-gray-500">
-                      Selected: {videoFile.name} (
-                      {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="clip" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clip-video-file">
-                    Video File (MP4, max 500MB)
-                  </Label>
-                  <Input
-                    id="clip-video-file"
-                    type="file"
-                    accept="video/mp4"
-                    onChange={handleFileChange}
-                    disabled={analyzeVideoMutation.isPending}
-                    data-testid="input-clip-video-file"
-                  />
-                  {videoFile && (
-                    <p className="text-sm text-gray-500">
-                      Selected: {videoFile.name} (
-                      {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="clip-request">
-                    What would you like to analyze?
-                  </Label>
-                  <Textarea
-                    id="clip-request"
-                    placeholder="e.g., Analyze my spinning hook kick technique"
-                    value={clipRequest}
-                    onChange={(e) => setClipRequest(e.target.value)}
-                    disabled={analyzeVideoMutation.isPending}
-                    rows={3}
-                    data-testid="textarea-clip-request"
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-2">
+              <Label htmlFor="video-file">
+                Video File (MP4, max 500MB)
+              </Label>
+              <Input
+                id="video-file"
+                type="file"
+                accept="video/mp4"
+                onChange={handleFileChange}
+                disabled={analyzeVideoMutation.isPending}
+                data-testid="input-video-file"
+              />
+              {videoFile && (
+                <p className="text-sm text-gray-500">
+                  Selected: {videoFile.name} (
+                  {(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <Button
@@ -767,7 +630,7 @@ export default function MatchAnalysis() {
                   </>
                 )}
               </Button>
-              {(matchResult || clipResult || videoFile) && (
+              {(matchResult || videoFile) && (
                 <Button
                   variant="outline"
                   onClick={handleReset}
@@ -1227,39 +1090,8 @@ export default function MatchAnalysis() {
           </div>
         )}
 
-        {/* Clip Analysis Results */}
-        {clipResult && !analyzeVideoMutation.isPending && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                Coaching Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Your Request: {clipResult.userRequest}
-                </p>
-              </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                  <div
-                    className="text-gray-700 dark:text-gray-300"
-                    data-testid="text-clip-analysis"
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {clipResult.analysis}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Empty State */}
-        {!matchResult && !clipResult && !analyzeVideoMutation.isPending && (
+        {!matchResult && !analyzeVideoMutation.isPending && (
           <Card>
             <CardContent className="p-12 text-center">
               <Video className="h-16 w-16 mx-auto mb-4 text-gray-400" />
