@@ -407,6 +407,15 @@ export default function MatchAnalysis() {
     queryKey: ['/api/video-analysis/history'],
   });
 
+  // Debug: Log the actual data structure
+  useEffect(() => {
+    if (previousAnalyses && previousAnalyses.length > 0) {
+      console.log('Previous analyses data:', previousAnalyses[0]);
+      console.log('Analysis type:', previousAnalyses[0].analysis_type);
+      console.log('Processed at:', previousAnalyses[0].processed_at);
+    }
+  }, [previousAnalyses]);
+
   const deleteAnalysisMutation = useMutation({
     mutationFn: async (analysisId: number) => {
       const response = await fetch(`/api/video-analysis/${analysisId}`, {
