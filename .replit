@@ -7,7 +7,7 @@ channel = "stable-24_05"
 packages = ["gitFull", "glibcLocales", "jq", "playwright-driver", "chromium", "nss", "glib", "atk", "cups", "at-spi2-atk", "gtk3", "pango", "libdrm", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXrandr", "mesa", "expat", "alsa-lib", "nspr"]
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
 run = ["node", "dist/index.js"]
 
