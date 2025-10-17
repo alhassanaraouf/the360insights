@@ -45,6 +45,101 @@ function cleanJsonResponse(responseText: string): string {
   }
 }
 
+// Robust JSON parser with recovery for advice payloads
+function parseAdviceJsonWithRecovery(responseText: string) {
+  // 1) Try direct parse
+  const tryParse = (text: string) => {
+    const trimmed = text.trim();
+    return JSON.parse(trimmed);
+  };
+
+  try {
+    return { parsed: tryParse(responseText), recovered: false };
+  } catch {}
+
+  // 2) Use generic cleaner (removes code fences, control chars, trailing commas)
+  try {
+    const cleaned = cleanJsonResponse(responseText);
+    return { parsed: tryParse(cleaned), recovered: true };
+  } catch {}
+
+  // 3) Balance braces/brackets using a stack, append required closers, then retry
+  const text = responseText.trim();
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === '{' || ch === '[') {
+      stack.push(ch);
+    } else if (ch === '}' || ch === ']') {
+      const top = stack[stack.length - 1];
+      if ((ch === '}' && top === '{') || (ch === ']' && top === '[')) {
+        stack.pop();
+      } else {
+        // mismatched closer; abort balancing
+        break;
+      }
+    }
+  }
+
+  const closers = stack
+    .slice()
+    .reverse()
+    .map((c) => (c === '{' ? '}' : ']'))
+    .join('');
+
+  try {
+    return { parsed: tryParse(text + closers), recovered: true };
+  } catch {}
+
+  // 4) Truncate to last balanced index (where stack would have been empty)
+  let curly = 0;
+  let square = 0;
+  inString = false;
+  escaped = false;
+  let lastBalanced = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+    } else {
+      if (ch === '"') inString = true;
+      else if (ch === '{') curly++;
+      else if (ch === '}') curly = Math.max(0, curly - 1);
+      else if (ch === '[') square++;
+      else if (ch === ']') square = Math.max(0, square - 1);
+      if (!inString && curly === 0 && square === 0) lastBalanced = i + 1;
+    }
+  }
+  if (lastBalanced > 0) {
+    const truncated = text.slice(0, lastBalanced);
+    try {
+      return { parsed: tryParse(truncated), recovered: true };
+    } catch {}
+  }
+
+  throw new Error('Cannot parse advice JSON after recovery attempts');
+}
+
 // Extract player names from match analysis text
 function extractPlayerNames(matchAnalysis: string): string[] {
   // Try to find player names in patterns like "Name (COUNTRY)" or just "Name"
@@ -460,58 +555,34 @@ Rules:
               ])
             });
 
-            // Extract text from Gemini response
+            // Extract and robustly parse JSON
             const responseText = result.text || '';
             if (!responseText) {
               console.error('[ADVICE] Empty response from Gemini');
               console.error('[ADVICE] Result object keys:', Object.keys(result));
               throw new Error('Empty response from Gemini');
             }
-            
+
             console.log('[ADVICE] Raw response length:', responseText.length);
             console.log('[ADVICE] First 300 chars:', responseText.substring(0, 300));
             console.log('[ADVICE] Last 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)));
-            
-            // Since we're using responseMimeType: "application/json", the response should be valid JSON
-            // Just trim whitespace and parse directly
-            let parsed;
+
+            let parsed: any;
             try {
-              const trimmed = responseText.trim();
-              parsed = JSON.parse(trimmed);
-              console.log('[ADVICE] Successfully parsed JSON directly');
+              const { parsed: p, recovered } = parseAdviceJsonWithRecovery(responseText) as any;
+              parsed = p;
+              console.log('[ADVICE] Parsed JSON', recovered ? '(after recovery)' : '(direct)');
             } catch (e: any) {
-              console.log('[ADVICE] Direct parse failed:', e.message);
-              console.log('[ADVICE] Trying to extract JSON from text...');
-              
-              // More aggressive: extract JSON from any surrounding text
-              let cleaned = responseText.trim();
-              const firstBrace = cleaned.indexOf('{');
-              const lastBrace = cleaned.lastIndexOf('}');
-              
-              if (firstBrace !== -1 && lastBrace !== -1) {
-                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-                console.log('[ADVICE] Extracted JSON length:', cleaned.length);
-                console.log('[ADVICE] Extracted first 200:', cleaned.substring(0, 200));
-                try {
-                  parsed = JSON.parse(cleaned);
-                  console.log('[ADVICE] Successfully parsed after extraction');
-                } catch (e2: any) {
-                  console.error('[ADVICE] Parse failed even after extraction:', e2.message);
-                  console.error('[ADVICE] Extracted text:', cleaned.substring(0, 500));
-                  throw new Error('Cannot parse advice JSON: ' + e2.message);
-                }
-              } else {
-                console.error('[ADVICE] No JSON braces found in response');
-                throw new Error('No JSON braces found in response');
-              }
+              console.error('[ADVICE] Parsing failed after recovery:', e.message);
+              throw new Error('Cannot parse advice JSON: ' + e.message);
             }
-            
+
             // Validate that we have proper data
             if (!parsed.players || parsed.players.length === 0) {
               console.error('Parsed data:', JSON.stringify(parsed).substring(0, 500));
               throw new Error('Invalid advice structure - missing or empty players array');
             }
-            
+
             console.log('Successfully validated advice for', parsed.players.length, 'players');
             return { data: parsed, error: null };
           } catch (error: any) {
