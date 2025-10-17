@@ -343,7 +343,6 @@ export class GeminiVideoAnalysis {
         // Match Analysis (Text)
         (async () => {
           try {
-            onProgress("Analyzing match dynamics...", 40);
             const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
 
 Write your response in English.
@@ -384,7 +383,6 @@ Provide a detailed narrative that captures the essence of the competition.`;
         // Score Analysis (JSON)
         (async () => {
           try {
-            onProgress("Identifying scoring patterns...", 50);
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
 Watch ${roundText} only. Identify when a player scored using the scoreboard. Focus on scoreboard changes for accuracy. Listen to commentators - they help reference which player scored how many points.
@@ -434,7 +432,6 @@ CRITICAL:
         // Punch Analysis (JSON)
         (async () => {
           try {
-            onProgress("Analyzing techniques...", 60);
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
 Track all punches thrown in ${roundText}. Count every attempt (successful or blocked).
@@ -479,8 +476,7 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
         // Kick Count Analysis (JSON)
         (async () => {
-          try {
-            onProgress("Counting kicks and punches...", 70);
+          try{
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
 Track all kicks executed in ${roundText}. Count every kick attempt regardless of success.
@@ -526,7 +522,6 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
         // Yellow Card/Violations Analysis (JSON)
         (async () => {
           try {
-            onProgress("Reviewing gam-jeom penalties...", 80);
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
 Watch ${roundText} and identify all Gam-jeom (penalty points) assessed by the referee. Track Gam-jeom using referee signals and scoreboard deductions.
@@ -575,7 +570,6 @@ CRITICAL:
         // Player Advice (JSON)
         (async () => {
           try {
-            onProgress("Generating player advice...", 90);
             const prompt = `IMPORTANT: Return ONLY valid JSON with no text before or after. Do not include any commentary.
 
 Analyze ${roundText} and provide coaching advice for each player.

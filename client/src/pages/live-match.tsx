@@ -480,13 +480,16 @@ export default function MatchAnalysis() {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('Progress update received:', data);
         setProgressStage(data.stage);
         setProgressPercent(data.progress);
         // If analysis is complete, fetch the final result
         if (data.stage === "Analysis complete" && data.analysisId) {
+          console.log('Fetching analysis result for ID:', data.analysisId);
           fetch(`/api/video-analysis/${data.analysisId}`)
             .then((res) => res.json())
             .then((result) => {
+              console.log('Analysis result received:', result);
               setMatchResult(result);
               setProgressJobId(null);
               setIsAnalyzing(false);
@@ -494,9 +497,21 @@ export default function MatchAnalysis() {
                 title: "Analysis Complete",
                 description: "Match video has been successfully analyzed",
               });
+            })
+            .catch((error) => {
+              console.error('Error fetching analysis result:', error);
+              setIsAnalyzing(false);
+              setProgressJobId(null);
+              toast({
+                title: "Failed to Load Results",
+                description: "Analysis completed but failed to load results",
+                variant: "destructive",
+              });
             });
         }
-      } catch {}
+      } catch (error) {
+        console.error('Error parsing progress update:', error);
+      }
     };
     eventSource.onerror = () => {
       eventSource.close();
@@ -505,7 +520,7 @@ export default function MatchAnalysis() {
     return () => {
       eventSource.close();
     };
-  }, [progressJobId]);
+  }, [progressJobId, toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
