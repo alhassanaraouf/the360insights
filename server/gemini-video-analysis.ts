@@ -589,8 +589,7 @@ Rules:
               model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
-                maxOutputTokens: 8192,
-                responseMimeType: "application/json"
+                maxOutputTokens: 16384,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
