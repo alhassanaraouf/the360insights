@@ -147,7 +147,7 @@ export default function CompetitionDetail() {
   const syncParticipantsMutation = useMutation({
     mutationFn: async () => {
       const result = await apiRequest('POST', `/api/competitions/${competitionId}/sync-participants`, {});
-      return result as any;
+      return await result.json();
     },
     onSuccess: (data: any) => {
       console.log('Sync response:', data);

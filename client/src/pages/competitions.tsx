@@ -173,10 +173,10 @@ export default function Competitions() {
       if (updated > 0) changes.push(`${updated} updated`);
       
       const changeText = changes.length > 0 ? changes.join(', ') : 'No changes';
-
+the 
       toast({
-        title: "Participants Synced Successfully! 🎉",
-        description: `Competition now has ${total} participant${total !== 1 ? 's' : ''} • ${changeText}${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
+        title: "✅ Sync complete",
+        description: `${synced} new, ${updated} updated, ${total} matched, ${created} created${errors > 0 ? ` • ${errors} error${errors !== 1 ? 's' : ''}` : ''}`,
       });
     },
     onError: (error: any) => {
