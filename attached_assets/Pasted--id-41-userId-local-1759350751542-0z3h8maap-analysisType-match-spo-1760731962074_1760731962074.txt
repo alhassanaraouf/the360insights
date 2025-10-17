@@ -1,0 +1,296 @@
+{
+    "id": 41,
+    "userId": "local_1759350751542_0z3h8maap",
+    "analysisType": "match",
+    "sport": "Taekwondo",
+    "language": "english",
+    "roundAnalyzed": null,
+    "matchAnalysis": "Okay, here's a detailed match analysis of the Taekwondo bout between the two athletes, focusing on the technical and tactical aspects of the fight.\n\n**Match Overview**\n\nThe match takes place on a standard Taekwondo octagonal mat, with a referee officiating and a panel of judges scoring. The competitors are wearing standard Taekwondo protective gear, including headgear and chest protectors. The athlete in red is named Ahmed, and the athlete in blue is named Youssef.\n\n**Opening Strategy and Tactics**\n\n*   **Ahmed (Red):** Ahmed starts with a more aggressive stance, immediately trying to close the distance. He uses a variety of kicks, including roundhouse kicks and turning kicks, to probe Youssef's defenses and score points. His initial strategy seems to be based on high-volume attacks and quick combinations.\n*   **Youssef (Blue):** Youssef adopts a more cautious approach, maintaining a longer distance and using footwork to evade Ahmed's initial attacks. He focuses on counter-attacking opportunities, using his lead leg to deliver quick, snapping kicks to Ahmed's chest protector.\n\n**Key Moments and Turning Points**\n\n*   **Early Exchanges (0:13-0:21):** Ahmed lands a clean head kick, scoring three points and taking an early lead. This moment establishes Ahmed as the aggressor and forces Youssef to adjust his strategy.\n*   **Youssef's Counter-Attacks (0:25-0:30):** Youssef begins to find success with his counter-attacks, landing several effective kicks to Ahmed's chest protector. This shift in momentum allows Youssef to close the score gap and gain confidence.\n*   **Ahmed's Dominance (0:34-0:42):** Ahmed executes a series of well-timed kicks, including a spinning back kick, that knocks Youssef off balance and onto the ground. This sequence demonstrates Ahmed's superior technical skills and tactical awareness.\n*   **Youssef's Struggles (1:11-1:17):** Youssef attempts a spinning kick, but Ahmed anticipates the move and counters with a well-placed kick that sends Youssef to the ground again. This moment highlights Youssef's difficulty in executing complex techniques under pressure.\n\n**Technical Execution Quality**\n\n*   **Ahmed:** Ahmed demonstrates a high level of technical proficiency, executing a wide range of kicks with speed, power, and accuracy. His spinning kicks and head kicks are particularly impressive, showcasing his flexibility and control.\n*   **Youssef:** Youssef's technical execution is less consistent than Ahmed's. While he shows flashes of skill with his counter-attacks, he struggles to execute complex techniques under pressure and often loses his balance.\n\n**Tactical Adjustments**\n\n*   **Ahmed:** After taking an early lead, Ahmed adjusts his strategy to maintain his advantage. He becomes more selective with his attacks, focusing on high-percentage scoring opportunities and avoiding unnecessary risks.\n*   **Youssef:** Youssef attempts to adjust his strategy by becoming more aggressive and initiating attacks, but he struggles to close the distance effectively and often leaves himself open to counter-attacks.\n\n**Momentum Shifts**\n\n*   The match experiences several momentum shifts, with Ahmed initially dominating before Youssef finds success with his counter-attacks. However, Ahmed ultimately regains control and maintains his lead.\n\n**Critical Decisions**\n\n*   Ahmed's decision to focus on high-percentage scoring opportunities after taking an early lead proves to be a wise one, allowing him to maintain his advantage and avoid unnecessary risks.\n*   Youssef's decision to become more aggressive ultimately backfires, as he struggles to close the distance effectively and leaves himself open to counter-attacks.\n\n**Overall Performance Assessment**\n\n*   **Ahmed:** Ahmed delivers a strong overall performance, demonstrating superior technical skills, tactical awareness, and mental fortitude. He executes a wide range of kicks with speed, power, and accuracy, and makes wise tactical adjustments to maintain his lead.\n*   **Youssef:** Youssef struggles to match Ahmed's technical skills and tactical awareness. While he shows flashes of skill with his counter-attacks, he is ultimately unable to close the score gap and falls short of victory.\n\n**Conclusion**\n\nAhmed wins the match due to his superior technical skills, tactical awareness, and mental fortitude. He executes a wide range of kicks with speed, power, and accuracy, and makes wise tactical adjustments to maintain his lead. Youssef struggles to match Ahmed's technical skills and tactical awareness, and ultimately falls short of victory.",
+    "scoreAnalysis": {
+        "players": [
+            {
+                "name": "FGY",
+                "total": 7,
+                "events": [
+                    {
+                        "value": 3,
+                        "timestamp": "00:20",
+                        "description": "Head kick"
+                    },
+                    {
+                        "value": 3,
+                        "timestamp": "00:36",
+                        "description": "Body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:30",
+                        "description": "Body kick"
+                    }
+                ]
+            },
+            {
+                "name": "KNP",
+                "total": 0,
+                "events": []
+            }
+        ]
+    },
+    "punchAnalysis": {
+        "players": [
+            {
+                "name": "Red",
+                "total": 1,
+                "events": [
+                    {
+                        "value": 1,
+                        "timestamp": "00:40",
+                        "description": "Punch to body"
+                    }
+                ]
+            },
+            {
+                "name": "Blue",
+                "total": 0,
+                "events": []
+            }
+        ]
+    },
+    "kickCountAnalysis": {
+        "players": [
+            {
+                "name": "Red",
+                "total": 13,
+                "events": [
+                    {
+                        "value": 1,
+                        "timestamp": "00:13",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:15",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:19",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:26",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:35",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:37",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:38",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:39",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:52",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:54",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:02",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:12",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:28",
+                        "description": "body kick"
+                    }
+                ]
+            },
+            {
+                "name": "Blue",
+                "total": 6,
+                "events": [
+                    {
+                        "value": 1,
+                        "timestamp": "00:16",
+                        "description": "body kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:35",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:36",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:03",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:13",
+                        "description": "head kick"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:29",
+                        "description": "body kick"
+                    }
+                ]
+            }
+        ]
+    },
+    "yellowCardAnalysis": {
+        "players": [
+            {
+                "name": "Ahmed Elsayed",
+                "total": 3,
+                "events": [
+                    {
+                        "value": 1,
+                        "timestamp": "00:23",
+                        "description": "Gam-jeom for grabbing"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "00:50",
+                        "description": "Gam-jeom for grabbing"
+                    },
+                    {
+                        "value": 1,
+                        "timestamp": "01:23",
+                        "description": "Gam-jeom for grabbing"
+                    }
+                ]
+            },
+            {
+                "name": "Youssef Ahmed",
+                "total": 0,
+                "events": []
+            }
+        ]
+    },
+    "adviceAnalysis": {
+        "players": [
+            {
+                "name": "Player Red",
+                "mental_advice": {
+                    "issues": [
+                        "Becomes frustrated when attacks are unsuccessful.",
+                        "Loses focus after scoring points."
+                    ],
+                    "improvements": [
+                        "Develop mental resilience to handle setbacks and maintain composure.",
+                        "Practice visualization techniques to stay focused and motivated throughout the match.",
+                        "Set process-oriented goals rather than solely focusing on the outcome."
+                    ]
+                },
+                "tactical_advice": {
+                    "issues": [
+                        "Over-reliance on spinning kicks makes him predictable.",
+                        "Fails to effectively close the distance after initial attacks.",
+                        "Does not adapt strategy when opponent anticipates his moves."
+                    ],
+                    "improvements": [
+                        "Incorporate more varied attacks, including punches and front kicks.",
+                        "Practice footwork drills to improve closing distance and maintaining control of the fight.",
+                        "Develop alternative strategies to use when the primary plan is countered."
+                    ]
+                },
+                "technical_advice": {
+                    "issues": [
+                        "Spinning kicks lack power and precision.",
+                        "Balance is compromised during and after executing spinning kicks.",
+                        "Telegraphs spinning kicks, making them easy to block or evade."
+                    ],
+                    "improvements": [
+                        "Focus on proper technique and core engagement to increase power in spinning kicks.",
+                        "Improve balance through specific exercises and drills.",
+                        "Work on disguising intentions and creating openings before launching spinning kicks."
+                    ]
+                }
+            },
+            {
+                "name": "Player Blue",
+                "mental_advice": {
+                    "issues": [
+                        "Lacks confidence in his ability to initiate attacks.",
+                        "Becomes discouraged when behind in points."
+                    ],
+                    "improvements": [
+                        "Practice positive self-talk and visualization to build confidence.",
+                        "Develop a mental strategy for overcoming deficits and staying motivated.",
+                        "Focus on executing the game plan rather than dwelling on the score."
+                    ]
+                },
+                "tactical_advice": {
+                    "issues": [
+                        "Relies too heavily on counter-attacks and doesn't initiate enough.",
+                        "Struggles to adapt when opponent changes tactics.",
+                        "Does not effectively use the ring to his advantage."
+                    ],
+                    "improvements": [
+                        "Incorporate more proactive attacks to keep the opponent guessing.",
+                        "Develop a wider range of counter-attacking options.",
+                        "Practice using footwork to control the center of the ring and dictate the pace of the fight."
+                    ]
+                },
+                "technical_advice": {
+                    "issues": [
+                        "Counter-attacks lack power and precision.",
+                        "Footwork is slow and predictable.",
+                        "Defense is passive and relies too much on blocking."
+                    ],
+                    "improvements": [
+                        "Focus on generating more power in counter-attacks through proper technique and body mechanics.",
+                        "Improve footwork speed and agility through specific drills.",
+                        "Incorporate more active defensive techniques, such as parrying and evading."
+                    ]
+                }
+            }
+        ]
+    },
+    "userRequest": null,
+    "clipAnalysis": null,
+    "errors": {
+        "kick": null,
+        "match": null,
+        "punch": null,
+        "score": null,
+        "advice": null,
+        "violation": null
+    },
+    "fileName": "WhatsApp Video 2025-10-14 at 21.10.32.mp4",
+    "fileSize": 15370702,
+    "videoPath": null,
+    "processingTimeMs": 19944,
+    "processedAt": "2025-10-17T20:11:28.862Z",
+    "createdAt": "2025-10-17T20:11:28.862Z"
+}

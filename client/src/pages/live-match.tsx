@@ -508,7 +508,39 @@ export default function MatchAnalysis() {
             })
             .then((result) => {
               console.log('Analysis result received:', result);
-              setMatchResult(result);
+              // Convert camelCase to snake_case to match frontend expectations
+              const parseIfString = (data: any) => {
+                if (typeof data === 'string') {
+                  try {
+                    return JSON.parse(data);
+                  } catch (e) {
+                    console.error('Error parsing JSON:', e);
+                    return data;
+                  }
+                }
+                return data;
+              };
+
+              const parsedResult = {
+                id: result.id,
+                match_analysis: result.matchAnalysis || result.match_analysis,
+                score_analysis: parseIfString(result.scoreAnalysis || result.score_analysis),
+                punch_analysis: parseIfString(result.punchAnalysis || result.punch_analysis),
+                kick_count_analysis: parseIfString(result.kickCountAnalysis || result.kick_count_analysis),
+                yellow_card_analysis: parseIfString(result.yellowCardAnalysis || result.yellow_card_analysis),
+                gam_jeom_analysis: parseIfString(
+                  result.gamJeomAnalysis || result.gam_jeom_analysis || result.yellowCardAnalysis || result.yellow_card_analysis
+                ),
+                advice_analysis: parseIfString(result.adviceAnalysis || result.advice_analysis),
+                sport: result.sport,
+                roundAnalyzed: result.roundAnalyzed || result.round_analyzed,
+                processedAt: result.processedAt || result.processed_at,
+                processingTimeMs: result.processingTimeMs || result.processing_time_ms,
+                errors: result.errors,
+                videoPath: result.videoPath || result.video_path,
+              };
+
+              setMatchResult(parsedResult);
               setProgressJobId(null);
               setIsAnalyzing(false);
               toast({
