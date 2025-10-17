@@ -4,7 +4,16 @@ import * as path from "path";
 import { randomUUID } from "crypto";
 
 // In-memory progress store (for demo; use Redis for production)
-const progressStore: Record<string, { stage: string; progress: number }> = {};
+const progressStore: Record<string, { stage: string; progress: number; analysisId?: number }> = {};
+
+// Function to set final progress with analysisId
+export function setAnalysisComplete(jobId: string, analysisId: number) {
+  progressStore[jobId] = {
+    stage: "Analysis complete",
+    progress: 100,
+    analysisId
+  };
+}
 
 // Express route for SSE progress updates
 export function videoAnalysisProgressSSE(req, res) {

@@ -31,7 +31,7 @@ import { db } from "./db";
 import * as schema from "../shared/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import multer from "multer";
-import { geminiVideoAnalysis, videoAnalysisProgressSSE } from "./gemini-video-analysis";
+import { geminiVideoAnalysis, videoAnalysisProgressSSE, setAnalysisComplete } from "./gemini-video-analysis";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -157,6 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               videoPath: null, // Will be updated after bucket upload
               processingTimeMs: analysisResult.processingTimeMs,
             });
+
+            // Notify frontend that analysis is complete with the analysisId
+            setAnalysisComplete(jobId, savedAnalysis.id);
 
             // Upload video to bucket storage
             try {
