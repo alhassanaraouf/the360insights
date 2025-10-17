@@ -47,6 +47,7 @@ interface MatchAnalysisResult {
   processedAt: string;
   processingTimeMs: number;
   errors: any;
+  videoPath?: string;
 }
 
 interface ClipAnalysisResult {
@@ -55,6 +56,7 @@ interface ClipAnalysisResult {
   userRequest: string;
   sport: string;
   language: string;
+  videoPath?: string;
   analysis: string;
   processedAt: string;
   processingTimeMs: number;
@@ -519,6 +521,7 @@ export default function MatchAnalysis() {
         processedAt: analysis.processed_at,
         processingTimeMs: analysis.processing_time_ms,
         errors: analysis.errors,
+        videoPath: analysis.video_path,
       });
       setClipResult(null);
       setAnalysisType('match');
@@ -532,10 +535,30 @@ export default function MatchAnalysis() {
         analysis: analysis.clip_analysis,
         processedAt: analysis.processed_at,
         processingTimeMs: analysis.processing_time_ms,
+        videoPath: analysis.video_path,
       });
       setMatchResult(null);
       setAnalysisType('clip');
     }
+  };
+
+  const getPlayerNames = (analysis: any) => {
+    if (analysis.analysis_type === 'match' && analysis.score_analysis) {
+      try {
+        const scoreData = typeof analysis.score_analysis === 'string' 
+          ? JSON.parse(analysis.score_analysis) 
+          : analysis.score_analysis;
+        
+        if (scoreData?.players && scoreData.players.length >= 2) {
+          const player1 = scoreData.players[0]?.name || 'Player 1';
+          const player2 = scoreData.players[1]?.name || 'Player 2';
+          return `${player1} vs ${player2}`;
+        }
+      } catch (e) {
+        console.error('Error parsing score analysis:', e);
+      }
+    }
+    return analysis.file_name || 'Video Analysis';
   };
 
   return (
@@ -581,11 +604,10 @@ export default function MatchAnalysis() {
                             )}
                           </div>
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {analysis.file_name || 'Video Analysis'}
+                            {getPlayerNames(analysis)}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {new Date(analysis.processed_at).toLocaleDateString()} at{' '}
-                            {new Date(analysis.processed_at).toLocaleTimeString()}
+                            {new Date(analysis.processed_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
