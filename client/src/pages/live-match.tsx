@@ -536,9 +536,9 @@ export default function MatchAnalysis() {
           : analysis.score_analysis;
 
         if (scoreData?.players && scoreData.players.length >= 2) {
-          const player1 = scoreData.players[0]?.name || 'Player 1';
-          const player2 = scoreData.players[1]?.name || 'Player 2';
-          return `${player1} vs ${player2}`;
+          const player1 = scoreData.players[0]?.name || 'Unknown';
+          const player2 = scoreData.players[1]?.name || 'Unknown';
+          return `Player 1 (${player1}) vs Player 2 (${player2})`;
         }
       } catch (e) {
         console.error('Error parsing score analysis:', e);
