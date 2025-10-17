@@ -72,6 +72,26 @@ export async function setupAuth(app: Express) {
       `${req.ip || ""}:${(req.body as any)?.email || ""}`,
   });
 
+  const verifyOtpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 attempts per email
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many verification attempts. Please try again later." },
+    keyGenerator: (req: Request) =>
+      `${req.ip || ""}:${(req.body as any)?.email || ""}`,
+  });
+
+  const resendOtpLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 1, // 1 resend per minute per email
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Please wait before requesting another code." },
+    keyGenerator: (req: Request) =>
+      `${req.ip || ""}:${(req.body as any)?.email || ""}`,
+  });
+
   // Local Strategy (Username/Password)
   passport.use(new LocalStrategy({
     usernameField: 'email',
@@ -220,6 +240,104 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Verify email OTP endpoint
+  app.post("/api/auth/verify-email", verifyOtpLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body;
+      
+      if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if already verified
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      
+      // Check if OTP has expired
+      if (!user.emailVerificationExpires || new Date() > user.emailVerificationExpires) {
+        return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      }
+      
+      // Check max attempts (prevent brute force)
+      if ((user.emailVerificationAttempts || 0) >= 5) {
+        return res.status(429).json({ message: "Too many failed attempts. Please request a new OTP." });
+      }
+      
+      // Verify OTP
+      if (user.emailVerificationOtp !== otp) {
+        // Increment failed attempts
+        await storage.upsertUser({
+          ...user,
+          emailVerificationAttempts: (user.emailVerificationAttempts || 0) + 1,
+        });
+        return res.status(400).json({ message: "Invalid OTP. Please try again." });
+      }
+      
+      // Success - mark email as verified and clear OTP fields
+      await storage.upsertUser({
+        ...user,
+        emailVerified: true,
+        emailVerificationOtp: null,
+        emailVerificationExpires: null,
+        emailVerificationAttempts: 0,
+      });
+      
+      return res.json({ message: "Email verified successfully! You can now log in." });
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Resend OTP endpoint
+  app.post("/api/auth/resend-otp", resendOtpLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if already verified
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      
+      // Generate new OTP and send email
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit numeric
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      await storage.upsertUser({
+        ...user,
+        emailVerificationOtp: otp,
+        emailVerificationExpires: expires,
+        emailVerificationAttempts: 0, // Reset attempts on resend
+      });
+      
+      try {
+        await sendVerificationEmail(email, otp);
+        return res.json({ message: "Verification code sent to your email" });
+      } catch (mailErr) {
+        console.error("Failed to send verification email:", mailErr);
+        return res.status(500).json({ message: "Failed to send email. Please try again." });
+      }
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      res.status(500).json({ message: "Failed to resend OTP" });
     }
   });
 
