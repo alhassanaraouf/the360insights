@@ -320,10 +320,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const analysisId = parseInt(req.params.id);
+        const userId = req.user.claims?.sub || req.user.id;
         const analysis = await storage.getVideoAnalysis(analysisId);
 
         if (!analysis) {
           return res.status(404).json({ error: "Analysis not found" });
+        }
+
+        // Check ownership - only the user who created the analysis can delete it
+        // Reject if analysis has no owner (legacy data) or if ownership doesn't match
+        if (!analysis.userId || analysis.userId !== userId) {
+          return res.status(403).json({ error: "Forbidden: You can only delete your own analyses" });
         }
 
         // Delete video from bucket storage if it exists
