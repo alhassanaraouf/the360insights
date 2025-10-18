@@ -174,6 +174,14 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
   const roundWidth = 200;
   const connectorWidth = 40;
 
+  // Calculate match center Y position for a given round and match index
+  const getMatchCenterY = (roundIndex: number, matchIndex: number): number => {
+    const spacing = Math.pow(2, roundIndex);
+    const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+    const gap = (matchHeight + matchGap) * spacing - matchGap;
+    return topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
+  };
+
   // Render a match box
   const MatchBox = ({ match }: { match: BracketParticipant[] }) => (
     <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800" style={{ height: `${matchHeight}px` }}>
@@ -293,10 +301,13 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       >
                         {round.map((_, matchIndex) => {
                           if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                            // Calculate Y position using corrected formula
-                            const y1 = topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
-                            const y2 = topMargin + matchHeight / 2 + (matchIndex + 1) * (matchHeight + gap);
-                            const yMid = (y1 + y2) / 2;
+                            // Y positions in current round
+                            const y1 = getMatchCenterY(roundIndex, matchIndex);
+                            const y2 = getMatchCenterY(roundIndex, matchIndex + 1);
+                            
+                            // Y position in next round (where these two matches feed into)
+                            const nextRoundMatchIndex = Math.floor(matchIndex / 2);
+                            const yNext = getMatchCenterY(roundIndex + 1, nextRoundMatchIndex);
                             
                             return (
                               <g key={matchIndex}>
@@ -333,9 +344,9 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                                 {/* Line to next round */}
                                 <line 
                                   x1={connectorWidth / 2} 
-                                  y1={yMid} 
+                                  y1={yNext} 
                                   x2={connectorWidth} 
-                                  y2={yMid} 
+                                  y2={yNext} 
                                   stroke="currentColor" 
                                   strokeWidth="2" 
                                   className="text-gray-400 dark:text-gray-500" 
@@ -389,10 +400,13 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       >
                         {round.map((_, matchIndex) => {
                           if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                            // Calculate Y position using corrected formula
-                            const y1 = topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
-                            const y2 = topMargin + matchHeight / 2 + (matchIndex + 1) * (matchHeight + gap);
-                            const yMid = (y1 + y2) / 2;
+                            // Y positions in current round
+                            const y1 = getMatchCenterY(actualRoundIndex, matchIndex);
+                            const y2 = getMatchCenterY(actualRoundIndex, matchIndex + 1);
+                            
+                            // Y position in next round (previous in our reversed display)
+                            const nextRoundMatchIndex = Math.floor(matchIndex / 2);
+                            const yNext = getMatchCenterY(actualRoundIndex + 1, nextRoundMatchIndex);
                             
                             return (
                               <g key={matchIndex}>
@@ -429,9 +443,9 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                                 {/* Line to next round */}
                                 <line 
                                   x1={connectorWidth / 2} 
-                                  y1={yMid} 
+                                  y1={yNext} 
                                   x2="0" 
-                                  y2={yMid} 
+                                  y2={yNext} 
                                   stroke="currentColor" 
                                   strokeWidth="2" 
                                   className="text-gray-400 dark:text-gray-500" 
