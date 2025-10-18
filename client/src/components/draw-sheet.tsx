@@ -169,17 +169,17 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
     return `Round ${roundIndex + 1}`;
   };
 
-  const matchHeight = 60;
-  const matchGap = 20;
+  const matchHeight = 70;
+  const matchGap = 15;
   const roundWidth = 200;
   const connectorWidth = 40;
 
   // Render a match box
   const MatchBox = ({ match }: { match: BracketParticipant[] }) => (
-    <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 h-full">
+    <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800" style={{ height: `${matchHeight}px` }}>
       {/* Athlete 1 */}
-      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" style={{ height: '50%' }}>
+        <div className="flex items-center gap-2 text-sm h-full">
           <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
             {match[0].seed > 0 ? match[0].seed : ''}
           </span>
@@ -196,8 +196,8 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
       
       {/* Athlete 2 */}
       {match[1] && (
-        <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <div className="flex items-center gap-2 text-sm">
+        <div className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" style={{ height: '50%' }}>
+          <div className="flex items-center gap-2 text-sm h-full">
             <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
               {match[1].seed > 0 ? match[1].seed : ''}
             </span>
@@ -276,10 +276,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       }}
                     >
                       {round.map((match, matchIndex) => (
-                        <div
-                          key={matchIndex}
-                          style={{ height: `${matchHeight}px` }}
-                        >
+                        <div key={matchIndex}>
                           <MatchBox match={match} />
                         </div>
                       ))}
@@ -289,21 +286,57 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     {roundIndex < leftRounds.length - 1 && (
                       <svg 
                         width={connectorWidth} 
-                        height={(matchHeight + matchGap) * Math.pow(2, roundIndex) * round.length}
-                        style={{ marginTop: `${topMargin}px` }}
+                        height={(matchHeight + matchGap) * Math.pow(2, roundIndex) * round.length + topMargin * 2}
+                        style={{ flexShrink: 0 }}
                       >
                         {round.map((_, matchIndex) => {
-                          if (matchIndex % 2 === 0) {
-                            const y1 = matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                            const y2 = (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                          if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
+                            const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const y2 = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
                             const yMid = (y1 + y2) / 2;
                             
                             return (
                               <g key={matchIndex}>
-                                <line x1="0" y1={y1} x2={connectorWidth / 2} y2={y1} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1="0" y1={y2} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1={connectorWidth / 2} y1={y1} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1={connectorWidth / 2} y1={yMid} x2={connectorWidth} y2={yMid} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                {/* Line from first match */}
+                                <line 
+                                  x1="0" 
+                                  y1={y1} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y1} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Line from second match */}
+                                <line 
+                                  x1="0" 
+                                  y1={y2} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y2} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Vertical connector */}
+                                <line 
+                                  x1={connectorWidth / 2} 
+                                  y1={y1} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y2} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Line to next round */}
+                                <line 
+                                  x1={connectorWidth / 2} 
+                                  y1={yMid} 
+                                  x2={connectorWidth} 
+                                  y2={yMid} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
                               </g>
                             );
                           }
@@ -321,7 +354,6 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
               className="flex flex-col justify-center"
               style={{ 
                 width: `${roundWidth}px`,
-                minHeight: `${matchHeight}px`
               }}
             >
               <div style={{ height: `${matchHeight}px` }}>
@@ -347,21 +379,57 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     {roundIndex > 0 && (
                       <svg 
                         width={connectorWidth} 
-                        height={(matchHeight + matchGap) * Math.pow(2, actualRoundIndex) * round.length}
-                        style={{ marginTop: `${topMargin}px` }}
+                        height={(matchHeight + matchGap) * Math.pow(2, actualRoundIndex) * round.length + topMargin * 2}
+                        style={{ flexShrink: 0 }}
                       >
                         {round.map((_, matchIndex) => {
-                          if (matchIndex % 2 === 0) {
-                            const y1 = matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                            const y2 = (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                          if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
+                            const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const y2 = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
                             const yMid = (y1 + y2) / 2;
                             
                             return (
                               <g key={matchIndex}>
-                                <line x1={connectorWidth} y1={y1} x2={connectorWidth / 2} y2={y1} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1={connectorWidth} y1={y2} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1={connectorWidth / 2} y1={y1} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
-                                <line x1={connectorWidth / 2} y1={yMid} x2="0" y2={yMid} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                {/* Line from first match */}
+                                <line 
+                                  x1={connectorWidth} 
+                                  y1={y1} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y1} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Line from second match */}
+                                <line 
+                                  x1={connectorWidth} 
+                                  y1={y2} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y2} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Vertical connector */}
+                                <line 
+                                  x1={connectorWidth / 2} 
+                                  y1={y1} 
+                                  x2={connectorWidth / 2} 
+                                  y2={y2} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
+                                {/* Line to next round */}
+                                <line 
+                                  x1={connectorWidth / 2} 
+                                  y1={yMid} 
+                                  x2="0" 
+                                  y2={yMid} 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  className="text-gray-400 dark:text-gray-500" 
+                                />
                               </g>
                             );
                           }
@@ -379,10 +447,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       }}
                     >
                       {round.map((match, matchIndex) => (
-                        <div
-                          key={matchIndex}
-                          style={{ height: `${matchHeight}px` }}
-                        >
+                        <div key={matchIndex}>
                           <MatchBox match={match} />
                         </div>
                       ))}
