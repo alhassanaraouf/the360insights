@@ -39,7 +39,8 @@ export default function Landing() {
           <Button
             size="lg"
             className="text-lg px-8 py-4"
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => (window.location.href = "/api/login")}
+            data-testid="button-get-started"
           >
             Get Started
           </Button>
@@ -139,7 +140,8 @@ export default function Landing() {
             size="lg"
             variant="secondary"
             className="text-lg px-8 py-4"
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => (window.location.href = "/api/login")}
+            data-testid="button-start-journey"
           >
             Start Your Journey
           </Button>
