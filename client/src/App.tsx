@@ -24,6 +24,7 @@ import SponsorshipHub from "@/pages/sponsorship-hub";
 import CompetitionDraws from "@/pages/competition-draws";
 import Competitions from "@/pages/competitions";
 import CompetitionDetail from "@/pages/competition-detail";
+import DrawsheetPage from "@/pages/drawsheet";
 
 
 
@@ -108,6 +109,11 @@ function Router() {
           <Route path="/competition/:id">
             <ResponsiveLayout>
               <CompetitionDetail />
+            </ResponsiveLayout>
+          </Route>
+          <Route path="/competition/:competitionId/drawsheet/:weightCategory">
+            <ResponsiveLayout>
+              <DrawsheetPage />
             </ResponsiveLayout>
           </Route>
 

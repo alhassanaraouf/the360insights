@@ -41,7 +41,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DrawSheet } from "@/components/draw-sheet";
 
 interface Competition {
   id: number;
@@ -79,27 +78,6 @@ export default function CompetitionDetail() {
   const [rankedOnly, setRankedOnly] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [selectedDrawWeight, setSelectedDrawWeight] = useState<string>("");
-  const [drawSheetOpen, setDrawSheetOpen] = useState(false);
-
-  // Fetch ALL participants for the selected weight division (not paginated)
-  const { data: drawParticipants, isLoading: drawParticipantsLoading } = useQuery<any[]>({
-    queryKey: [`/api/competitions/${competitionId}/participants`, 'all', selectedDrawWeight],
-    queryFn: async () => {
-      if (!selectedDrawWeight) return [];
-      
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '1000', // Get all participants
-        weightCategory: selectedDrawWeight,
-      });
-      
-      const response = await fetch(`/api/competitions/${competitionId}/participants?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch participants');
-      const data = await response.json();
-      return data.participants || [];
-    },
-    enabled: !!competitionId && !!selectedDrawWeight && drawSheetOpen,
-  });
 
   // Debounce search input
   useEffect(() => {
@@ -475,7 +453,7 @@ export default function CompetitionDetail() {
                 <Button
                   onClick={() => {
                     if (selectedDrawWeight) {
-                      setDrawSheetOpen(true);
+                      window.location.href = `/competition/${competitionId}/drawsheet/${encodeURIComponent(selectedDrawWeight)}`;
                     } else {
                       toast({
                         title: "Please select a weight division",
@@ -487,7 +465,7 @@ export default function CompetitionDetail() {
                   data-testid="button-generate-draw"
                 >
                   <Trophy className="w-4 h-4 mr-2" />
-                  Generate Drawsheet
+                  View Drawsheet
                 </Button>
               </div>
             </CardContent>
@@ -748,25 +726,6 @@ export default function CompetitionDetail() {
           </CardContent>
         </Card>
 
-        {/* Drawsheet Dialog */}
-        <Dialog open={drawSheetOpen} onOpenChange={setDrawSheetOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="drawsheet-dialog">
-            <DialogHeader>
-              <DialogTitle className="text-xl flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Drawsheet - {selectedDrawWeight}
-              </DialogTitle>
-            </DialogHeader>
-            
-            {selectedDrawWeight && (
-              <DrawSheet
-                competition={competition as any}
-                participants={drawParticipants || []}
-                isLoading={drawParticipantsLoading}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </>
   );
