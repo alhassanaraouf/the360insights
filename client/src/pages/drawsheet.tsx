@@ -183,11 +183,18 @@ export default function DrawsheetPage() {
   const roundWidth = 200;
   const connectorWidth = 40;
 
-  const getMatchCenterY = (roundIndex: number, matchIndex: number): number => {
+  // Calculate the absolute Y position of a match's center
+  const getAbsoluteMatchCenterY = (roundIndex: number, matchIndex: number): number => {
     const spacing = Math.pow(2, roundIndex);
     const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
     const gap = (matchHeight + matchGap) * spacing - matchGap;
     return topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
+  };
+  
+  // Calculate Y position in SVG coordinate space
+  const getSvgY = (absoluteY: number, svgRoundIndex: number): number => {
+    const svgTopMargin = (matchHeight + matchGap) * (Math.pow(2, svgRoundIndex) - 1) / 2;
+    return absoluteY - svgTopMargin;
   };
 
   const MatchBox = ({ match }: { match: BracketParticipant[] }) => (
@@ -379,10 +386,16 @@ export default function DrawsheetPage() {
                         >
                           {round.map((_, matchIndex) => {
                             if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                              const y1 = getMatchCenterY(roundIndex, matchIndex);
-                              const y2 = getMatchCenterY(roundIndex, matchIndex + 1);
+                              // Calculate absolute Y positions
+                              const absY1 = getAbsoluteMatchCenterY(roundIndex, matchIndex);
+                              const absY2 = getAbsoluteMatchCenterY(roundIndex, matchIndex + 1);
                               const nextMatchIndex = Math.floor(matchIndex / 2);
-                              const yNext = getMatchCenterY(roundIndex + 1, nextMatchIndex);
+                              const absYNext = getAbsoluteMatchCenterY(roundIndex + 1, nextMatchIndex);
+                              
+                              // Convert to SVG coordinate space (SVG is positioned at current round's top)
+                              const y1 = getSvgY(absY1, roundIndex);
+                              const y2 = getSvgY(absY2, roundIndex);
+                              const yNext = getSvgY(absYNext, roundIndex);
                               
                               return (
                                 <g key={matchIndex}>
@@ -433,10 +446,16 @@ export default function DrawsheetPage() {
                         >
                           {round.map((_, matchIndex) => {
                             if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                              const y1 = getMatchCenterY(actualRoundIndex, matchIndex);
-                              const y2 = getMatchCenterY(actualRoundIndex, matchIndex + 1);
+                              // Calculate absolute Y positions
+                              const absY1 = getAbsoluteMatchCenterY(actualRoundIndex, matchIndex);
+                              const absY2 = getAbsoluteMatchCenterY(actualRoundIndex, matchIndex + 1);
                               const nextMatchIndex = Math.floor(matchIndex / 2);
-                              const yNext = getMatchCenterY(actualRoundIndex + 1, nextMatchIndex);
+                              const absYNext = getAbsoluteMatchCenterY(actualRoundIndex + 1, nextMatchIndex);
+                              
+                              // Convert to SVG coordinate space (SVG is positioned at current round's top)
+                              const y1 = getSvgY(absY1, actualRoundIndex);
+                              const y2 = getSvgY(absY2, actualRoundIndex);
+                              const yNext = getSvgY(absYNext, actualRoundIndex);
                               
                               return (
                                 <g key={matchIndex}>
