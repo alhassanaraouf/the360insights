@@ -384,7 +384,7 @@ export const insertBidSettingsSchema = createInsertSchema(bidSettings).omit({
 
 export const upsertUserSchema = createInsertSchema(users);
 
-// Video analysis table for Taekwondo match and clip analysis
+// Video analysis table for Taekwondo match analysis
 export const videoAnalysis = pgTable("video_analysis", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 255 }).references(() => users.id),
@@ -393,7 +393,7 @@ export const videoAnalysis = pgTable("video_analysis", {
   language: varchar("language", { length: 20 }).default("english"),
   
   // Match analysis specific fields
-  roundAnalyzed: integer("round_analyzed"), // null for entire match or 'no-rounds'
+  roundAnalyzed: integer("round_analyzed"), // null indicates full-match analysis
   matchAnalysis: text("match_analysis"), // Narrative text
   scoreAnalysis: jsonb("score_analysis"), // Score events JSON
   punchAnalysis: jsonb("punch_analysis"), // Punch events JSON
@@ -401,9 +401,9 @@ export const videoAnalysis = pgTable("video_analysis", {
   yellowCardAnalysis: jsonb("yellow_card_analysis"), // Violations JSON
   adviceAnalysis: jsonb("advice_analysis"), // Player advice JSON
   
-  // Clip analysis specific fields
-  userRequest: text("user_request"), // What user wants analyzed
-  clipAnalysis: text("clip_analysis"), // Coaching advice text
+  // Legacy clip analysis fields (retained for historical records)
+  userRequest: text("user_request"), // What user previously wanted analyzed
+  clipAnalysis: text("clip_analysis"), // Historical coaching advice text
   
   // Error tracking
   errors: jsonb("errors"), // Track which components had errors

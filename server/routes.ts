@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/video-analysis/match",
     videoUpload.single("video"),
-    async (req: any, res) => {
+    async (req: any, res: any) => {
       let uploadedFilePath: string | undefined;
 
       try {
@@ -111,11 +111,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         uploadedFilePath = req.file.path;
-        const round = req.body.round
-          ? req.body.round === "no-rounds"
-            ? "no-rounds"
-            : parseInt(req.body.round)
-          : null;
 
         // Generate a jobId for progress tracking
         const jobId = randomUUID();
@@ -128,7 +123,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const analysisResult = await geminiVideoAnalysis.analyzeMatch(
               uploadedFilePath!,
-              round,
               jobId,
             );
 
@@ -144,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               analysisType: "match",
               sport: "Taekwondo",
               language: "english",
-              roundAnalyzed: round === "no-rounds" ? null : round,
+              roundAnalyzed: null,
               matchAnalysis: analysisResult.match_analysis,
               scoreAnalysis: analysisResult.score_analysis,
               punchAnalysis: analysisResult.punch_analysis,
@@ -215,104 +209,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   // SSE endpoint for progress updates
   app.get("/api/video-analysis/progress/:jobId", videoAnalysisProgressSSE);
-
-  // Clip analysis endpoint
-  app.post(
-    "/api/video-analysis/clip",
-    videoUpload.single("video"),
-    async (req: any, res) => {
-      let uploadedFilePath: string | undefined;
-
-      try {
-        if (!req.file) {
-          return res.status(400).json({ error: "No video file uploaded" });
-        }
-
-        if (!req.body.whatToAnalyze) {
-          return res
-            .status(400)
-            .json({ error: "Analysis request is required" });
-        }
-
-        uploadedFilePath = req.file.path;
-        const whatToAnalyze = req.body.whatToAnalyze;
-
-        // Progress tracking
-        const onProgress = (stage: string, progress: number) => {
-          console.log(`Progress: ${stage} - ${progress}%`);
-        };
-
-        const analysisResult = await geminiVideoAnalysis.analyzeClip(
-          uploadedFilePath!,
-          whatToAnalyze,
-          onProgress,
-        );
-
-        // Store in database
-        let userId = null;
-        if (req.user) {
-          userId = req.user.claims?.sub || req.user.id;
-        }
-
-        // First save to database to get the analysis ID
-        const savedAnalysis = await storage.createVideoAnalysis({
-          userId,
-          analysisType: "clip",
-          sport: "Taekwondo",
-          language: "english",
-          userRequest: whatToAnalyze,
-          clipAnalysis: analysisResult.analysis,
-          fileName: req.file.originalname,
-          fileSize: req.file.size,
-          videoPath: null, // Will be updated after bucket upload
-          processingTimeMs: analysisResult.processingTimeMs,
-        });
-
-        // Upload video to bucket storage
-        try {
-          const videoBuffer = fs.readFileSync(uploadedFilePath!);
-          const uploadResult = await bucketStorage.uploadVideo(
-            savedAnalysis.id,
-            videoBuffer,
-            req.file.originalname
-          );
-          
-          // Update the analysis with the bucket storage path
-          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadResult.key);
-          
-          // Clean up local file after successful upload
-          if (fs.existsSync(uploadedFilePath!)) {
-            fs.unlinkSync(uploadedFilePath!);
-          }
-        } catch (uploadError) {
-          console.error("Error uploading video to bucket:", uploadError);
-          // Keep the local path if bucket upload fails
-          await storage.updateVideoAnalysisPath(savedAnalysis.id, uploadedFilePath!);
-        }
-
-        res.json({
-          id: savedAnalysis.id,
-          ...analysisResult,
-        });
-      } catch (error: any) {
-        console.error("Clip analysis error:", error);
-        res.status(500).json({
-          error: "Failed to analyze video clip",
-          message: error.message,
-        });
-        // Only cleanup on error
-        if (uploadedFilePath) {
-          try {
-            if (fs.existsSync(uploadedFilePath)) {
-              fs.unlinkSync(uploadedFilePath);
-            }
-          } catch (cleanupError) {
-            console.warn("Failed to cleanup uploaded file:", cleanupError);
-          }
-        }
-      }
-    },
-  );
 
   // Get user's video analyses
   app.get(

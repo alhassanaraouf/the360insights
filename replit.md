@@ -77,7 +77,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   `ai_queries`: AI query history (indexed on: athleteId, timestamp)
 -   `training_plans`: Detailed training plans (indexed on: athleteId)
 -   `sponsorship_bids`: Sponsorship bids for athletes (indexed on: athleteId, sponsorUserId)
--   `video_analysis`: Video analysis records with stored video paths, match/clip analysis data, and event timelines (indexed on: userId, analysisType)
+-   `video_analysis`: Video analysis records with stored video paths, match analysis data, and event timelines; legacy clip entries remain for historical reference (indexed on: userId, analysisType)
 
 ## External Dependencies
 

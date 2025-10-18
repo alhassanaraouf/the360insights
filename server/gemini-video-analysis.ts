@@ -237,9 +237,102 @@ function extractPlayerNames(matchAnalysis: string): string[] {
   return ["Player 1", "Player 2"];
 }
 
+function ensureTwoPlayerNames(rawNames: string[]): string[] {
+  const sanitized = rawNames
+    .map((name) => (name || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const unique: string[] = [];
+  for (const name of sanitized) {
+    const lowerName = name.toLowerCase();
+    if (!unique.some((existing) => existing.toLowerCase() === lowerName)) {
+      unique.push(name);
+    }
+    if (unique.length === 2) break;
+  }
+
+  while (unique.length < 2) {
+    unique.push(`Player ${unique.length + 1}`);
+  }
+
+  return unique.slice(0, 2);
+}
+
+const GENERIC_NAME_PATTERNS = [
+  /^player\s*\d+$/i,
+  /^player\s*(one|two)$/i,
+  /^fighter\s*\d+$/i,
+  /^fighter\s*(one|two)$/i,
+  /^athlete\s*\d+$/i,
+  /^athlete\s*(one|two)$/i,
+  /^competitor\s*\d+$/i,
+  /^competitor\s*(one|two)$/i,
+  /^opponent\s*(one|two|\d+)?$/i,
+  /^(blue|red)(?:\s+(corner|fighter|player|athlete|team))?$/i,
+  /^team\s+(blue|red)$/i,
+  /^blue\s+team$/i,
+  /^red\s+team$/i,
+  /^okay$/i,
+  /^ok$/i,
+  /^taekwondo$/i,
+];
+
+function normalizeNameText(name: string): string {
+  return name.replace(/\s+/g, " ").trim();
+}
+
+function shouldReplaceName(currentName: string | undefined, fallbackName: string): boolean {
+  if (!currentName) return true;
+  const normalized = normalizeNameText(currentName);
+  if (!normalized) return true;
+
+  const lowered = normalized.toLowerCase();
+  if (GENERIC_NAME_PATTERNS.some((pattern) => pattern.test(lowered))) {
+    return true;
+  }
+
+  const stripped = lowered.replace(/\(.*?\)/g, "").trim();
+  if (GENERIC_NAME_PATTERNS.some((pattern) => pattern.test(stripped))) {
+    return true;
+  }
+
+  return false;
+}
+
+function applyConsistentPlayerNames<T extends { players?: Array<{ name?: string }> }>(
+  data: T,
+  playerNames: string[],
+): T {
+  if (!data || !Array.isArray(data.players)) {
+    return data;
+  }
+
+  const normalizedNames = ensureTwoPlayerNames(playerNames);
+
+  const players = data.players.map((player, idx) => {
+    const fallbackName = normalizedNames[idx] || `Player ${idx + 1}`;
+    const shouldUseFallback = shouldReplaceName(player?.name, fallbackName);
+    const nameToUse = shouldUseFallback
+      ? fallbackName
+      : normalizeNameText(player!.name!);
+
+    return {
+      ...player,
+      name: nameToUse,
+    };
+  });
+
+  return {
+    ...data,
+    players,
+  };
+}
+
 // Fallback JSON structure for errors
 function getFallbackPlayerStructure(matchAnalysis?: string) {
-  const names = matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"];
+  const names = ensureTwoPlayerNames(
+    matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"],
+  );
   return {
     players: [
       {
@@ -257,7 +350,9 @@ function getFallbackPlayerStructure(matchAnalysis?: string) {
 }
 
 function getFallbackAdviceStructure(matchAnalysis?: string) {
-  const names = matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"];
+  const names = ensureTwoPlayerNames(
+    matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"],
+  );
   return {
     players: [
       {
@@ -322,7 +417,6 @@ export class GeminiVideoAnalysis {
 
   async analyzeMatch(
     videoPath: string,
-    round: number | 'no-rounds' | null,
     jobId?: string
   ) {
     const startTime = Date.now();
@@ -337,11 +431,7 @@ export class GeminiVideoAnalysis {
       // Upload and process video
       uploadedFile = await this.uploadAndProcessVideo(videoPath, onProgress);
 
-      const roundText = round === 'no-rounds' 
-        ? 'entire match' 
-        : round 
-        ? `round ${round}` 
-        : 'entire match';
+      const roundText = 'entire match';
 
   // First, run match analysis to extract player names
   onProgress("Analyzing match narrative...", 30);
@@ -382,13 +472,16 @@ Provide a detailed narrative that captures the essence of the competition.`;
           ])
         });
 
-        matchAnalysisText = result.text || '';
-        playerNames = extractPlayerNames(matchAnalysisText);
+        const analysisText = result.text || '';
+        matchAnalysisText = analysisText;
+        playerNames = ensureTwoPlayerNames(extractPlayerNames(analysisText));
         console.log(`[ANALYSIS] Extracted player names: ${playerNames.join(', ')}`);
       } catch (error: any) {
         console.error('[ANALYSIS] Match analysis failed:', error.message);
         matchAnalysisText = null;
       }
+
+      playerNames = ensureTwoPlayerNames(playerNames);
 
   // Run remaining analyses in parallel with extracted player names
   onProgress("Running comprehensive analysis...", 40);
@@ -451,7 +544,10 @@ CRITICAL:
             const cleaned = cleanJsonResponse(result.text || '');
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
-            return { data: getFallbackPlayerStructure(), error: error.message };
+            return {
+              data: getFallbackPlayerStructure(matchAnalysisText || undefined),
+              error: error.message,
+            };
           }
         })(),
 
@@ -498,7 +594,10 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
             const cleaned = cleanJsonResponse(result.text || '');
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
-            return { data: getFallbackPlayerStructure(), error: error.message };
+            return {
+              data: getFallbackPlayerStructure(matchAnalysisText || undefined),
+              error: error.message,
+            };
           }
         })(),
 
@@ -545,7 +644,10 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
             const cleaned = cleanJsonResponse(result.text || '');
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
-            return { data: getFallbackPlayerStructure(), error: error.message };
+            return {
+              data: getFallbackPlayerStructure(matchAnalysisText || undefined),
+              error: error.message,
+            };
           }
         })(),
 
@@ -595,7 +697,10 @@ CRITICAL:
             const cleaned = cleanJsonResponse(result.text || '');
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
-            return { data: getFallbackPlayerStructure(), error: error.message };
+            return {
+              data: getFallbackPlayerStructure(matchAnalysisText || undefined),
+              error: error.message,
+            };
           }
         })(),
 
@@ -706,7 +811,10 @@ Rules:
           } catch (error: any) {
             console.error('Advice analysis error:', error.message);
             console.error('Full error:', error);
-            return { data: getFallbackAdviceStructure(), error: error.message };
+            return {
+              data: getFallbackAdviceStructure(matchAnalysisText || undefined),
+              error: error.message,
+            };
           }
         })()
       ];
@@ -719,111 +827,73 @@ Rules:
       const [scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
 
       const processingTime = Date.now() - startTime;
-      
-  if (jobId) delete progressStore[jobId];
-  return {
+      const normalizedNames = ensureTwoPlayerNames(playerNames);
+      const fallbackContext = matchAnalysisText || "";
+
+      const rawScoreAnalysis =
+        scoreResult.status === "fulfilled"
+          ? scoreResult.value.data
+          : getFallbackPlayerStructure(fallbackContext);
+      const rawPunchAnalysis =
+        punchResult.status === "fulfilled"
+          ? punchResult.value.data
+          : getFallbackPlayerStructure(fallbackContext);
+      const rawKickAnalysis =
+        kickResult.status === "fulfilled"
+          ? kickResult.value.data
+          : getFallbackPlayerStructure(fallbackContext);
+      const rawViolationAnalysis =
+        violationResult.status === "fulfilled"
+          ? violationResult.value.data
+          : getFallbackPlayerStructure(fallbackContext);
+      const rawAdviceAnalysis =
+        adviceResult.status === "fulfilled"
+          ? adviceResult.value.data
+          : getFallbackAdviceStructure(fallbackContext);
+
+      const scoreAnalysis = applyConsistentPlayerNames(rawScoreAnalysis, normalizedNames);
+      const punchAnalysis = applyConsistentPlayerNames(rawPunchAnalysis, normalizedNames);
+      const kickAnalysis = applyConsistentPlayerNames(rawKickAnalysis, normalizedNames);
+      const violationAnalysis = applyConsistentPlayerNames(rawViolationAnalysis, normalizedNames);
+      const adviceAnalysis = applyConsistentPlayerNames(rawAdviceAnalysis, normalizedNames);
+
+      if (jobId) delete progressStore[jobId];
+      return {
         match_analysis: matchAnalysisText,
-        score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
-        punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
-        kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
-        yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
+        score_analysis: scoreAnalysis,
+        punch_analysis: punchAnalysis,
+        kick_count_analysis: kickAnalysis,
+        yellow_card_analysis: violationAnalysis,
         // NEW: provide a forward-compatible alias with preferred name
-        gam_jeom_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
-        advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(matchAnalysisText || ""),
+        gam_jeom_analysis: violationAnalysis,
+        advice_analysis: adviceAnalysis,
         sport: "Taekwondo",
-        roundAnalyzed: round,
+        roundAnalyzed: null,
         processedAt: new Date().toISOString(),
         processingTimeMs: processingTime,
         errors: {
           match: matchAnalysisText === null ? "Match analysis failed" : null,
-          score: scoreResult.status === 'fulfilled' ? scoreResult.value.error : (scoreResult as PromiseRejectedResult).reason,
-          punch: punchResult.status === 'fulfilled' ? punchResult.value.error : (punchResult as PromiseRejectedResult).reason,
-          kick: kickResult.status === 'fulfilled' ? kickResult.value.error : (kickResult as PromiseRejectedResult).reason,
-          violation: violationResult.status === 'fulfilled' ? violationResult.value.error : (violationResult as PromiseRejectedResult).reason,
-          advice: adviceResult.status === 'fulfilled' ? adviceResult.value.error : (adviceResult as PromiseRejectedResult).reason,
-        }
-      };
-
-    } finally {
-      // Cleanup uploaded file
-      if (uploadedFile && uploadedFile.name) {
-        try {
-          await genAI.files.delete({ name: uploadedFile.name });
-          console.log('Uploaded file cleaned up successfully');
-        } catch (cleanupError) {
-          console.warn('Failed to cleanup uploaded file:', cleanupError);
-        }
-      }
-    }
-  }
-
-  async analyzeClip(
-    videoPath: string,
-    whatToAnalyze: string,
-    onProgress: (stage: string, progress: number) => void
-  ) {
-    const startTime = Date.now();
-    let uploadedFile: any = null;
-
-    try {
-      // Upload and process video
-      uploadedFile = await this.uploadAndProcessVideo(videoPath, onProgress);
-
-      onProgress("Understanding your request...", 30);
-      onProgress("Analyzing techniques...", 50);
-
-      const prompt = `You are an expert Taekwondo coach and performance analyst with extensive experience in professional training and technique optimization.
-
-Analyze this video clip based on the user's specific request and provide detailed, actionable coaching advice.
-
-User's Request: ${whatToAnalyze}
-
-Sport: Taekwondo
-Key Technical Elements: kicks, punches, head kicks, body kicks, spinning kicks
-
-IMPORTANT: Skip all introductory sentences. Do not start with phrases like "Of course", "As a coach", etc. Start directly with the analysis content.
-
-Please provide a comprehensive coaching analysis that:
-1. Directly addresses the user's specific question
-2. Identifies what each person is doing correctly
-3. Points out specific technical areas needing improvement
-4. Provides actionable steps and drills
-5. Compares technique to professional standards
-6. Includes safety considerations
-7. Suggests specific exercises and training methods
-8. If analyzing multiple people, provide individual feedback
-
-Please provide the analysis in English.
-Be specific, detailed, and constructive. Focus on practical coaching advice.`;
-
-      onProgress("Comparing to professional standards...", 70);
-
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.0-flash-exp",
-        config: {
-          temperature: 0,
-          maxOutputTokens: 8192,
+          score:
+            scoreResult.status === "fulfilled"
+              ? scoreResult.value.error
+              : (scoreResult as PromiseRejectedResult).reason,
+          punch:
+            punchResult.status === "fulfilled"
+              ? punchResult.value.error
+              : (punchResult as PromiseRejectedResult).reason,
+          kick:
+            kickResult.status === "fulfilled"
+              ? kickResult.value.error
+              : (kickResult as PromiseRejectedResult).reason,
+          violation:
+            violationResult.status === "fulfilled"
+              ? violationResult.value.error
+              : (violationResult as PromiseRejectedResult).reason,
+          advice:
+            adviceResult.status === "fulfilled"
+              ? adviceResult.value.error
+              : (adviceResult as PromiseRejectedResult).reason,
         },
-        contents: createUserContent([
-          createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-          prompt
-        ])
-      });
-
-      onProgress("Generating coaching advice...", 90);
-
-      const processingTime = Date.now() - startTime;
-
-      onProgress("Finalizing recommendations...", 100);
-
-      return {
-        analysisType: 'clip',
-        userRequest: whatToAnalyze,
-        sport: "Taekwondo",
-        language: "english",
-        analysis: result.text || '',
-        processedAt: new Date().toISOString(),
-        processingTimeMs: processingTime
       };
 
     } finally {
