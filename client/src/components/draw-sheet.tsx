@@ -18,16 +18,16 @@ interface BracketParticipant {
 
 // Helper function to get country flag emoji
 function getCountryFlag(countryCode: string): string {
-  if (!countryCode || countryCode.length !== 3) return "🏳️";
+  if (!countryCode) return "";
   
   // Map 3-letter codes to 2-letter codes for flag emojis
   const countryMap: Record<string, string> = {
     'USA': 'US', 'GBR': 'GB', 'KOR': 'KR', 'JPN': 'JP', 'CHN': 'CN',
-    'FRA': 'FR', 'DEU': 'DE', 'ITA': 'IT', 'ESP': 'ES', 'BRA': 'BR',
+    'FRA': 'FR', 'DEU': 'DE', 'GER': 'DE', 'ITA': 'IT', 'ESP': 'ES', 'BRA': 'BR',
     'CAN': 'CA', 'AUS': 'AU', 'MEX': 'MX', 'RUS': 'RU', 'IND': 'IN',
     'NLD': 'NL', 'SWE': 'SE', 'NOR': 'NO', 'DNK': 'DK', 'FIN': 'FI',
     'POL': 'PL', 'TUR': 'TR', 'GRC': 'GR', 'PRT': 'PT', 'BEL': 'BE',
-    'AUT': 'AT', 'CHE': 'CH', 'IRL': 'IE', 'NZL': 'NZ', 'ZAF': 'ZA',
+    'AUT': 'AT', 'CHE': 'CH', 'SUI': 'CH', 'IRL': 'IE', 'NZL': 'NZ', 'ZAF': 'ZA',
     'ARG': 'AR', 'CHL': 'CL', 'COL': 'CO', 'PER': 'PE', 'VEN': 'VE',
     'THA': 'TH', 'VNM': 'VN', 'IDN': 'ID', 'MYS': 'MY', 'SGP': 'SG',
     'PHL': 'PH', 'EGY': 'EG', 'MAR': 'MA', 'NGA': 'NG', 'KEN': 'KE',
@@ -36,19 +36,35 @@ function getCountryFlag(countryCode: string): string {
     'SRB': 'RS', 'SVK': 'SK', 'SVN': 'SI', 'UKR': 'UA', 'BLR': 'BY',
     'PAK': 'PK', 'BGD': 'BD', 'LKA': 'LK', 'NPL': 'NP', 'IRN': 'IR',
     'IRQ': 'IQ', 'JOR': 'JO', 'LBN': 'LB', 'SYR': 'SY', 'YEM': 'YE',
+    'UZB': 'UZ', 'KAZ': 'KZ', 'TKM': 'TM', 'AFG': 'AF', 'MNG': 'MN',
   };
 
-  const twoLetterCode = countryMap[countryCode.toUpperCase()] || countryCode.slice(0, 2);
+  const upperCode = countryCode.toUpperCase().trim();
+  
+  // Try to get 2-letter code
+  let twoLetterCode = countryMap[upperCode];
+  
+  // If not in map and it's already 2 letters, use it
+  if (!twoLetterCode && upperCode.length === 2) {
+    twoLetterCode = upperCode;
+  }
+  
+  // If not in map and it's 3 letters, try first 2
+  if (!twoLetterCode && upperCode.length === 3) {
+    twoLetterCode = upperCode.slice(0, 2);
+  }
+  
+  if (!twoLetterCode) return "";
   
   try {
-    // Convert country code to flag emoji
+    // Convert country code to flag emoji using regional indicator symbols
     const codePoints = twoLetterCode
       .toUpperCase()
       .split('')
       .map(char => 127397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
   } catch {
-    return "🏳️";
+    return "";
   }
 }
 
@@ -147,27 +163,104 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
 
   const matchHeight = 60;
   const matchGap = 20;
+  const roundWidth = 220;
+  const connectorWidth = 40;
 
   return (
     <div className="space-y-6">
       {/* Bracket Display */}
       <Card className="p-6 overflow-x-auto">
-        <div className="min-w-max">
+        <div className="min-w-max relative">
           {/* Round Headers */}
-          <div className="flex gap-8 mb-6">
+          <div className="flex mb-6">
             {rounds.map((round, roundIndex) => (
               <div
                 key={roundIndex}
                 className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
-                style={{ minWidth: '200px' }}
+                style={{ width: `${roundWidth + connectorWidth}px` }}
               >
                 {getRoundLabel(roundIndex, rounds.length)}
               </div>
             ))}
           </div>
 
+          {/* SVG for connector lines */}
+          <svg 
+            className="absolute top-16 left-0 pointer-events-none"
+            style={{ 
+              width: '100%', 
+              height: `${Math.max(...rounds.map((r, idx) => {
+                const spacing = Math.pow(2, idx);
+                const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+                return topMargin + r.length * ((matchHeight + matchGap) * spacing);
+              }))}px`,
+              zIndex: 0
+            }}
+          >
+            {rounds.map((round, roundIndex) => {
+              if (roundIndex === rounds.length - 1) return null; // No connectors after final
+              
+              const spacing = Math.pow(2, roundIndex);
+              const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+              const x1 = roundIndex * (roundWidth + connectorWidth) + roundWidth;
+              const x2 = x1 + connectorWidth;
+              
+              return round.map((match, matchIndex) => {
+                const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                const y2 = topMargin + Math.floor(matchIndex / 2) * ((matchHeight + matchGap) * spacing * 2) + matchHeight / 2 + (matchHeight + matchGap) * spacing / 2;
+                
+                // Every pair of matches connects to one match in next round
+                if (matchIndex % 2 === 0) {
+                  const y1Next = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                  
+                  return (
+                    <g key={`connector-${roundIndex}-${matchIndex}`}>
+                      {/* Horizontal line from match 1 */}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x1 + connectorWidth / 2}
+                        y2={y1}
+                        className="stroke-gray-400 dark:stroke-gray-500"
+                        strokeWidth="2"
+                      />
+                      {/* Horizontal line from match 2 */}
+                      <line
+                        x1={x1}
+                        y1={y1Next}
+                        x2={x1 + connectorWidth / 2}
+                        y2={y1Next}
+                        className="stroke-gray-400 dark:stroke-gray-500"
+                        strokeWidth="2"
+                      />
+                      {/* Vertical line connecting them */}
+                      <line
+                        x1={x1 + connectorWidth / 2}
+                        y1={y1}
+                        x2={x1 + connectorWidth / 2}
+                        y2={y1Next}
+                        className="stroke-gray-400 dark:stroke-gray-500"
+                        strokeWidth="2"
+                      />
+                      {/* Horizontal line to next round */}
+                      <line
+                        x1={x1 + connectorWidth / 2}
+                        y1={y2}
+                        x2={x2}
+                        y2={y2}
+                        className="stroke-gray-400 dark:stroke-gray-500"
+                        strokeWidth="2"
+                      />
+                    </g>
+                  );
+                }
+                return null;
+              });
+            })}
+          </svg>
+
           {/* Bracket Structure */}
-          <div className="flex gap-8">
+          <div className="flex relative" style={{ zIndex: 1 }}>
             {rounds.map((round, roundIndex) => {
               const spacing = Math.pow(2, roundIndex);
               const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
@@ -175,9 +268,9 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
               return (
                 <div
                   key={roundIndex}
-                  className="flex flex-col relative"
+                  className="flex flex-col"
                   style={{ 
-                    minWidth: '200px',
+                    width: `${roundWidth + connectorWidth}px`,
                     gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
                     marginTop: `${topMargin}px`
                   }}
@@ -186,21 +279,21 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     <div
                       key={matchIndex}
                       className="relative"
-                      style={{ height: `${matchHeight}px` }}
+                      style={{ height: `${matchHeight}px`, width: `${roundWidth}px` }}
                     >
                       {/* Match Container */}
-                      <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800">
+                      <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 h-full">
                         {/* Athlete 1 */}
                         <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-500 dark:text-gray-400 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400 text-xs w-4">
                               {match[0].seed > 0 ? match[0].seed : ''}
                             </span>
-                            <span className="font-medium truncate" title={match[0].name}>
-                              {match[0].name.length > 18 ? match[0].name.substring(0, 18) + '...' : match[0].name}
+                            <span className="font-medium truncate flex-1" title={match[0].name}>
+                              {match[0].name.length > 15 ? match[0].name.substring(0, 15) + '...' : match[0].name}
                             </span>
                             {match[0].country && (
-                              <span className="text-lg ml-auto">
+                              <span className="text-base" title={match[0].country}>
                                 {getCountryFlag(match[0].country)}
                               </span>
                             )}
@@ -211,14 +304,14 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                         {match[1] && (
                           <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-gray-500 dark:text-gray-400 text-xs">
+                              <span className="text-gray-500 dark:text-gray-400 text-xs w-4">
                                 {match[1].seed > 0 ? match[1].seed : ''}
                               </span>
-                              <span className="font-medium truncate" title={match[1].name}>
-                                {match[1].name.length > 18 ? match[1].name.substring(0, 18) + '...' : match[1].name}
+                              <span className="font-medium truncate flex-1" title={match[1].name}>
+                                {match[1].name.length > 15 ? match[1].name.substring(0, 15) + '...' : match[1].name}
                               </span>
                               {match[1].country && (
-                                <span className="text-lg ml-auto">
+                                <span className="text-base" title={match[1].country}>
                                   {getCountryFlag(match[1].country)}
                                 </span>
                               )}
@@ -226,14 +319,6 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                           </div>
                         )}
                       </div>
-
-                      {/* Connector line to next round */}
-                      {roundIndex < rounds.length - 1 && (
-                        <div
-                          className="absolute top-1/2 -right-8 w-8 h-0.5 bg-gray-300 dark:bg-gray-600"
-                          style={{ transform: 'translateY(-50%)' }}
-                        />
-                      )}
                     </div>
                   ))}
                 </div>
