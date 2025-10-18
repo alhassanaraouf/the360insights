@@ -351,8 +351,7 @@ export class GeminiVideoAnalysis {
 
       // Match Analysis (Text) - Run first to extract player names
       try {
-          try {
-            const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
+        const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
 
 Write your response in English.
 
