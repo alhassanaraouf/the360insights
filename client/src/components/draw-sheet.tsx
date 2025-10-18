@@ -16,6 +16,42 @@ interface BracketParticipant {
   participant: CompetitionParticipant & { athlete: Athlete };
 }
 
+// Helper function to get country flag emoji
+function getCountryFlag(countryCode: string): string {
+  if (!countryCode || countryCode.length !== 3) return "🏳️";
+  
+  // Map 3-letter codes to 2-letter codes for flag emojis
+  const countryMap: Record<string, string> = {
+    'USA': 'US', 'GBR': 'GB', 'KOR': 'KR', 'JPN': 'JP', 'CHN': 'CN',
+    'FRA': 'FR', 'DEU': 'DE', 'ITA': 'IT', 'ESP': 'ES', 'BRA': 'BR',
+    'CAN': 'CA', 'AUS': 'AU', 'MEX': 'MX', 'RUS': 'RU', 'IND': 'IN',
+    'NLD': 'NL', 'SWE': 'SE', 'NOR': 'NO', 'DNK': 'DK', 'FIN': 'FI',
+    'POL': 'PL', 'TUR': 'TR', 'GRC': 'GR', 'PRT': 'PT', 'BEL': 'BE',
+    'AUT': 'AT', 'CHE': 'CH', 'IRL': 'IE', 'NZL': 'NZ', 'ZAF': 'ZA',
+    'ARG': 'AR', 'CHL': 'CL', 'COL': 'CO', 'PER': 'PE', 'VEN': 'VE',
+    'THA': 'TH', 'VNM': 'VN', 'IDN': 'ID', 'MYS': 'MY', 'SGP': 'SG',
+    'PHL': 'PH', 'EGY': 'EG', 'MAR': 'MA', 'NGA': 'NG', 'KEN': 'KE',
+    'ISR': 'IL', 'SAU': 'SA', 'ARE': 'AE', 'QAT': 'QA', 'KWT': 'KW',
+    'CZE': 'CZ', 'HUN': 'HU', 'ROU': 'RO', 'BGR': 'BG', 'HRV': 'HR',
+    'SRB': 'RS', 'SVK': 'SK', 'SVN': 'SI', 'UKR': 'UA', 'BLR': 'BY',
+    'PAK': 'PK', 'BGD': 'BD', 'LKA': 'LK', 'NPL': 'NP', 'IRN': 'IR',
+    'IRQ': 'IQ', 'JOR': 'JO', 'LBN': 'LB', 'SYR': 'SY', 'YEM': 'YE',
+  };
+
+  const twoLetterCode = countryMap[countryCode.toUpperCase()] || countryCode.slice(0, 2);
+  
+  try {
+    // Convert country code to flag emoji
+    const codePoints = twoLetterCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  } catch {
+    return "🏳️";
+  }
+}
+
 export function DrawSheet({ competition, participants, isLoading }: DrawSheetProps) {
   const bracket = useMemo(() => {
     if (!participants || participants.length === 0) {
@@ -31,8 +67,9 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
       participant: p,
     }));
 
-    // Calculate bracket size (next power of 2)
-    const bracketSize = Math.pow(2, Math.ceil(Math.log2(seededParticipants.length)));
+    // Calculate bracket size (next power of 2, max 128)
+    let bracketSize = Math.pow(2, Math.ceil(Math.log2(seededParticipants.length)));
+    bracketSize = Math.min(bracketSize, 128); // Cap at 128
     
     // Pad with byes if needed
     while (seededParticipants.length < bracketSize) {
@@ -44,12 +81,24 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
       });
     }
 
-    // Split into two pools
-    const halfSize = bracketSize / 2;
-    const poolA = seededParticipants.slice(0, halfSize);
-    const poolB = seededParticipants.slice(halfSize);
+    // Calculate number of rounds
+    const totalRounds = Math.log2(bracketSize);
+    
+    // Generate rounds structure
+    const rounds: BracketParticipant[][][] = [];
+    let currentMatches = seededParticipants;
+    
+    for (let round = 0; round < totalRounds; round++) {
+      const matchPairs: BracketParticipant[][] = [];
+      for (let i = 0; i < currentMatches.length; i += 2) {
+        matchPairs.push([currentMatches[i], currentMatches[i + 1]]);
+      }
+      rounds.push(matchPairs);
+      // For next round, take winner slots (we'll just take first of each pair for display)
+      currentMatches = matchPairs.map(pair => pair[0]);
+    }
 
-    return { poolA, poolB, totalRounds: Math.log2(bracketSize) };
+    return { rounds, bracketSize, totalRounds };
   }, [participants]);
 
   if (isLoading) {
@@ -79,261 +128,124 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
 
   if (!bracket) return null;
 
-  const { poolA, poolB } = bracket;
+  const { rounds, bracketSize } = bracket;
+  
+  // Round labels based on bracket size
+  const getRoundLabel = (roundIndex: number, totalRounds: number): string => {
+    const roundsFromEnd = totalRounds - roundIndex;
+    
+    if (roundsFromEnd === 1) return "Final";
+    if (roundsFromEnd === 2) return "Semi Finals";
+    if (roundsFromEnd === 3) return "Quarter Finals";
+    if (roundsFromEnd === 4) return "Round of 16";
+    if (roundsFromEnd === 5) return "Round of 32";
+    if (roundsFromEnd === 6) return "Round of 64";
+    if (roundsFromEnd === 7) return "Round of 128";
+    
+    return `Round ${roundIndex + 1}`;
+  };
+
+  const matchHeight = 60;
+  const matchGap = 20;
 
   return (
     <div className="space-y-6">
       {/* Bracket Display */}
       <Card className="p-6 overflow-x-auto">
-        <div className="min-w-[1200px]">
-          {/* Pool Labels */}
-          <div className="flex justify-between mb-6">
-            <div className="text-lg font-semibold text-gray-900 dark:text-white">Pool A</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-white">Pool B</div>
+        <div className="min-w-max">
+          {/* Round Headers */}
+          <div className="flex gap-8 mb-6">
+            {rounds.map((round, roundIndex) => (
+              <div
+                key={roundIndex}
+                className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
+                style={{ minWidth: '200px' }}
+              >
+                {getRoundLabel(roundIndex, rounds.length)}
+              </div>
+            ))}
           </div>
 
           {/* Bracket Structure */}
-          <div className="relative">
-            <svg className="w-full" style={{ height: `${poolA.length * 40 + 100}px` }}>
-              {/* Pool A - Left Side */}
-              {poolA.map((p, idx) => {
-                const y = idx * 40 + 20;
-                return (
-                  <g key={`poolA-${idx}`}>
-                    {/* Athlete name */}
-                    <text
-                      x="10"
-                      y={y}
-                      className="text-sm fill-gray-900 dark:fill-white"
-                      data-testid={`pool-a-athlete-${idx}`}
-                    >
-                      ({p.seed}) {p.name.length > 25 ? p.name.substring(0, 25) + '...' : p.name} {p.country}
-                    </text>
-                    
-                    {/* First round bracket line */}
-                    <line
-                      x1="350"
-                      y1={y - 5}
-                      x2="380"
-                      y2={y - 5}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Connect pairs for first round */}
-                    {idx % 2 === 0 && idx + 1 < poolA.length && (
-                      <>
-                        <line
-                          x1="380"
-                          y1={y - 5}
-                          x2="380"
-                          y2={y + 35}
-                          className="stroke-gray-400 dark:stroke-gray-500"
-                          strokeWidth="1"
-                        />
-                        <line
-                          x1="380"
-                          y1={y + 15}
-                          x2="420"
-                          y2={y + 15}
-                          className="stroke-gray-400 dark:stroke-gray-500"
-                          strokeWidth="1"
-                        />
-                      </>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Second round connections - Pool A */}
-              {Array.from({ length: poolA.length / 4 }).map((_, idx) => {
-                const baseY = idx * 160 + 35;
-                return (
-                  <g key={`poolA-r2-${idx}`}>
-                    <line
-                      x1="420"
-                      y1={baseY}
-                      x2="420"
-                      y2={baseY + 80}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1="420"
-                      y1={baseY + 40}
-                      x2="460"
-                      y2={baseY + 40}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Semi-finals - Pool A */}
-              {poolA.length >= 8 && (
-                <g>
-                  <line
-                    x1="460"
-                    y1="75"
-                    x2="460"
-                    y2={poolA.length >= 16 ? "235" : "155"}
-                    className="stroke-gray-400 dark:stroke-gray-500"
-                    strokeWidth="1"
-                  />
-                  <line
-                    x1="460"
-                    y1={poolA.length >= 16 ? "155" : "115"}
-                    x2="500"
-                    y2={poolA.length >= 16 ? "155" : "115"}
-                    className="stroke-gray-400 dark:stroke-gray-500"
-                    strokeWidth="1"
-                  />
-                </g>
-              )}
-
-              {/* Pool B - Right Side */}
-              {poolB.map((p, idx) => {
-                const y = idx * 40 + 20;
-                const svgWidth = 1200;
-                return (
-                  <g key={`poolB-${idx}`}>
-                    {/* Athlete name */}
-                    <text
-                      x={svgWidth - 10}
-                      y={y}
-                      className="text-sm fill-gray-900 dark:fill-white"
-                      textAnchor="end"
-                      data-testid={`pool-b-athlete-${idx}`}
-                    >
-                      ({p.seed}) {p.name.length > 25 ? p.name.substring(0, 25) + '...' : p.name} {p.country}
-                    </text>
-                    
-                    {/* First round bracket line */}
-                    <line
-                      x1={svgWidth - 350}
-                      y1={y - 5}
-                      x2={svgWidth - 380}
-                      y2={y - 5}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                    
-                    {/* Connect pairs for first round */}
-                    {idx % 2 === 0 && idx + 1 < poolB.length && (
-                      <>
-                        <line
-                          x1={svgWidth - 380}
-                          y1={y - 5}
-                          x2={svgWidth - 380}
-                          y2={y + 35}
-                          className="stroke-gray-400 dark:stroke-gray-500"
-                          strokeWidth="1"
-                        />
-                        <line
-                          x1={svgWidth - 380}
-                          y1={y + 15}
-                          x2={svgWidth - 420}
-                          y2={y + 15}
-                          className="stroke-gray-400 dark:stroke-gray-500"
-                          strokeWidth="1"
-                        />
-                      </>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Second round connections - Pool B */}
-              {Array.from({ length: poolB.length / 4 }).map((_, idx) => {
-                const baseY = idx * 160 + 35;
-                const svgWidth = 1200;
-                return (
-                  <g key={`poolB-r2-${idx}`}>
-                    <line
-                      x1={svgWidth - 420}
-                      y1={baseY}
-                      x2={svgWidth - 420}
-                      y2={baseY + 80}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1={svgWidth - 420}
-                      y1={baseY + 40}
-                      x2={svgWidth - 460}
-                      y2={baseY + 40}
-                      className="stroke-gray-400 dark:stroke-gray-500"
-                      strokeWidth="1"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Semi-finals - Pool B */}
-              {poolB.length >= 8 && (
-                <g>
-                  <line
-                    x1="740"
-                    y1="75"
-                    x2="740"
-                    y2={poolB.length >= 16 ? "235" : "155"}
-                    className="stroke-gray-400 dark:stroke-gray-500"
-                    strokeWidth="1"
-                  />
-                  <line
-                    x1="740"
-                    y1={poolB.length >= 16 ? "155" : "115"}
-                    x2="700"
-                    y2={poolB.length >= 16 ? "155" : "115"}
-                    className="stroke-gray-400 dark:stroke-gray-500"
-                    strokeWidth="1"
-                  />
-                </g>
-              )}
-
-              {/* Finals connection in the middle */}
-              <g>
-                <line
-                  x1="500"
-                  y1={poolA.length >= 16 ? "155" : "115"}
-                  x2="550"
-                  y2={poolA.length >= 16 ? "155" : "115"}
-                  className="stroke-gray-400 dark:stroke-gray-500"
-                  strokeWidth="2"
-                />
-                <line
-                  x1="650"
-                  y1={poolB.length >= 16 ? "155" : "115"}
-                  x2="700"
-                  y2={poolB.length >= 16 ? "155" : "115"}
-                  className="stroke-gray-400 dark:stroke-gray-500"
-                  strokeWidth="2"
-                />
-                <circle
-                  cx="600"
-                  cy={poolA.length >= 16 ? "155" : "115"}
-                  r="8"
-                  className="fill-yellow-400 stroke-yellow-600"
-                  strokeWidth="2"
-                />
-                <text
-                  x="600"
-                  y={poolA.length >= 16 ? "100" : "60"}
-                  className="text-sm font-semibold fill-gray-900 dark:fill-white"
-                  textAnchor="middle"
+          <div className="flex gap-8">
+            {rounds.map((round, roundIndex) => {
+              const spacing = Math.pow(2, roundIndex);
+              const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+              
+              return (
+                <div
+                  key={roundIndex}
+                  className="flex flex-col relative"
+                  style={{ 
+                    minWidth: '200px',
+                    gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
+                    marginTop: `${topMargin}px`
+                  }}
                 >
-                  FINAL
-                </text>
-              </g>
-            </svg>
+                  {round.map((match, matchIndex) => (
+                    <div
+                      key={matchIndex}
+                      className="relative"
+                      style={{ height: `${matchHeight}px` }}
+                    >
+                      {/* Match Container */}
+                      <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800">
+                        {/* Athlete 1 */}
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">
+                              {match[0].seed > 0 ? match[0].seed : ''}
+                            </span>
+                            <span className="font-medium truncate" title={match[0].name}>
+                              {match[0].name.length > 18 ? match[0].name.substring(0, 18) + '...' : match[0].name}
+                            </span>
+                            {match[0].country && (
+                              <span className="text-lg ml-auto">
+                                {getCountryFlag(match[0].country)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Athlete 2 */}
+                        {match[1] && (
+                          <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                {match[1].seed > 0 ? match[1].seed : ''}
+                              </span>
+                              <span className="font-medium truncate" title={match[1].name}>
+                                {match[1].name.length > 18 ? match[1].name.substring(0, 18) + '...' : match[1].name}
+                              </span>
+                              {match[1].country && (
+                                <span className="text-lg ml-auto">
+                                  {getCountryFlag(match[1].country)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Connector line to next round */}
+                      {roundIndex < rounds.length - 1 && (
+                        <div
+                          className="absolute top-1/2 -right-8 w-8 h-0.5 bg-gray-300 dark:bg-gray-600"
+                          style={{ transform: 'translateY(-50%)' }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       </Card>
 
       {/* Participant Count */}
       <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-        {participants.length} participants in this weight category
+        {participants.length} participants • {bracketSize}-person bracket
       </div>
     </div>
   );
