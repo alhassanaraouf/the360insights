@@ -18,7 +18,7 @@ export function setAnalysisComplete(jobId: string, analysisId: number) {
 }
 
 // Express route for SSE progress updates
-export function videoAnalysisProgressSSE(req, res) {
+export function videoAnalysisProgressSSE(req: any, res: any) {
   const jobId = req.params.jobId;
   console.log(`[SSE] Client connected for jobId: ${jobId}`);
   res.setHeader('Content-Type', 'text/event-stream');
@@ -351,8 +351,7 @@ export class GeminiVideoAnalysis {
 
       // Match Analysis (Text) - Run first to extract player names
       try {
-          try {
-            const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
+        const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
 
 Write your response in English.
 
@@ -371,7 +370,7 @@ Start with the first player, then analyze the second player. Use actual player n
 
 Provide a detailed narrative that captures the essence of the competition.`;
 
-            const result = await genAI.models.generateContent({
+        const result = await genAI.models.generateContent({
           model: "gemini-2.0-flash-exp",
           config: {
             temperature: 0,
@@ -724,19 +723,19 @@ Rules:
   if (jobId) delete progressStore[jobId];
   return {
         match_analysis: matchAnalysisText,
-        score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
-        punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
-        kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
-        yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
+        score_analysis: scoreResult.status === 'fulfilled' ? scoreResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
+        punch_analysis: punchResult.status === 'fulfilled' ? punchResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
+        kick_count_analysis: kickResult.status === 'fulfilled' ? kickResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
+        yellow_card_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
         // NEW: provide a forward-compatible alias with preferred name
-        gam_jeom_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText),
-        advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(matchAnalysisText),
+        gam_jeom_analysis: violationResult.status === 'fulfilled' ? violationResult.value.data : getFallbackPlayerStructure(matchAnalysisText || ""),
+        advice_analysis: adviceResult.status === 'fulfilled' ? adviceResult.value.data : getFallbackAdviceStructure(matchAnalysisText || ""),
         sport: "Taekwondo",
         roundAnalyzed: round,
         processedAt: new Date().toISOString(),
         processingTimeMs: processingTime,
         errors: {
-          match: matchResult.status === 'fulfilled' ? matchResult.value.error : (matchResult as PromiseRejectedResult).reason,
+          match: matchAnalysisText === null ? "Match analysis failed" : null,
           score: scoreResult.status === 'fulfilled' ? scoreResult.value.error : (scoreResult as PromiseRejectedResult).reason,
           punch: punchResult.status === 'fulfilled' ? punchResult.value.error : (punchResult as PromiseRejectedResult).reason,
           kick: kickResult.status === 'fulfilled' ? kickResult.value.error : (kickResult as PromiseRejectedResult).reason,
