@@ -1,18 +1,27 @@
-import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
+import {
+  GoogleGenAI,
+  createUserContent,
+  createPartFromUri,
+} from "@google/genai";
 import * as fs from "fs";
 import * as path from "path";
 import { randomUUID } from "crypto";
 
 // In-memory progress store (for demo; use Redis for production)
-const progressStore: Record<string, { stage: string; progress: number; analysisId?: number }> = {};
+const progressStore: Record<
+  string,
+  { stage: string; progress: number; analysisId?: number }
+> = {};
 
 // Function to set final progress with analysisId
 export function setAnalysisComplete(jobId: string, analysisId: number) {
-  console.log(`[PROGRESS] Setting analysis complete for jobId: ${jobId}, analysisId: ${analysisId}`);
+  console.log(
+    `[PROGRESS] Setting analysis complete for jobId: ${jobId}, analysisId: ${analysisId}`,
+  );
   progressStore[jobId] = {
     stage: "Analysis complete",
     progress: 100,
-    analysisId
+    analysisId,
   };
   console.log(`[PROGRESS] Progress store updated:`, progressStore[jobId]);
 }
@@ -21,9 +30,9 @@ export function setAnalysisComplete(jobId: string, analysisId: number) {
 export function videoAnalysisProgressSSE(req: any, res: any) {
   const jobId = req.params.jobId;
   console.log(`[SSE] Client connected for jobId: ${jobId}`);
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
   let lastProgress = -1;
@@ -36,7 +45,7 @@ export function videoAnalysisProgressSSE(req: any, res: any) {
     }
   };
   const interval = setInterval(sendProgress, 1000);
-  req.on('close', () => {
+  req.on("close", () => {
     console.log(`[SSE] Client disconnected for jobId: ${jobId}`);
     clearInterval(interval);
   });
@@ -44,7 +53,9 @@ export function videoAnalysisProgressSSE(req: any, res: any) {
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
 if (!API_KEY) {
-  console.warn("Warning: GEMINI_API_KEY is not set. Video analysis will not work.");
+  console.warn(
+    "Warning: GEMINI_API_KEY is not set. Video analysis will not work.",
+  );
 }
 
 const genAI = new GoogleGenAI({ apiKey: API_KEY });
@@ -52,34 +63,34 @@ const genAI = new GoogleGenAI({ apiKey: API_KEY });
 // JSON cleaning function
 function cleanJsonResponse(responseText: string): string {
   let cleanedText = responseText.trim();
-  
+
   // Remove code block markers
-  cleanedText = cleanedText.replace(/^```json\s*/m, '').replace(/\s*```$/m, '');
-  cleanedText = cleanedText.replace(/^```\s*/m, '').replace(/\s*```$/m, '');
-  
+  cleanedText = cleanedText.replace(/^```json\s*/m, "").replace(/\s*```$/m, "");
+  cleanedText = cleanedText.replace(/^```\s*/m, "").replace(/\s*```$/m, "");
+
   // Extract JSON object from text (handle responses like "Okay, here's the JSON: {...}")
-  const firstBrace = cleanedText.indexOf('{');
-  const lastBrace = cleanedText.lastIndexOf('}');
-  
+  const firstBrace = cleanedText.indexOf("{");
+  const lastBrace = cleanedText.lastIndexOf("}");
+
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
   }
-  
+
   // Parse and reformat
   try {
     const parsed = JSON.parse(cleanedText);
     return JSON.stringify(parsed);
   } catch (error) {
     // Additional cleanup attempts
-    cleanedText = cleanedText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-    cleanedText = cleanedText.replace(/,\s*([}\]])/g, '$1');
-    
+    cleanedText = cleanedText.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+    cleanedText = cleanedText.replace(/,\s*([}\]])/g, "$1");
+
     try {
       const parsed = JSON.parse(cleanedText);
       return JSON.stringify(parsed);
     } catch (e) {
       console.error("Failed to parse JSON:", cleanedText);
-      throw new Error('Failed to parse JSON response');
+      throw new Error("Failed to parse JSON response");
     }
   }
 }
@@ -107,14 +118,14 @@ function parseAdviceJsonWithRecovery(responseText: string) {
   let inString = false;
   let escaped = false;
   let lastQuoteIndex = -1;
-  
+
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (escaped) {
       escaped = false;
       continue;
     }
-    if (ch === '\\') {
+    if (ch === "\\") {
       escaped = true;
       continue;
     }
@@ -123,24 +134,24 @@ function parseAdviceJsonWithRecovery(responseText: string) {
       inString = !inString;
     }
   }
-  
+
   // If we ended in a string, close it
   if (inString && lastQuoteIndex >= 0) {
     text = text + '"';
-    console.log('[ADVICE] Closed unclosed string literal');
+    console.log("[ADVICE] Closed unclosed string literal");
   }
 
   // 4) Balance braces/brackets using a stack, append required closers
   const stack: string[] = [];
   inString = false;
   escaped = false;
-  
+
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (inString) {
       if (escaped) {
         escaped = false;
-      } else if (ch === '\\') {
+      } else if (ch === "\\") {
         escaped = true;
       } else if (ch === '"') {
         inString = false;
@@ -149,11 +160,11 @@ function parseAdviceJsonWithRecovery(responseText: string) {
     }
     if (ch === '"') {
       inString = true;
-    } else if (ch === '{' || ch === '[') {
+    } else if (ch === "{" || ch === "[") {
       stack.push(ch);
-    } else if (ch === '}' || ch === ']') {
+    } else if (ch === "}" || ch === "]") {
       const top = stack[stack.length - 1];
-      if ((ch === '}' && top === '{') || (ch === ']' && top === '[')) {
+      if ((ch === "}" && top === "{") || (ch === "]" && top === "[")) {
         stack.pop();
       }
     }
@@ -162,64 +173,64 @@ function parseAdviceJsonWithRecovery(responseText: string) {
   const closers = stack
     .slice()
     .reverse()
-    .map((c) => (c === '{' ? '}' : ']'))
-    .join('');
+    .map((c) => (c === "{" ? "}" : "]"))
+    .join("");
 
   if (closers) {
     text = text + closers;
-    console.log('[ADVICE] Added missing closers:', closers);
+    console.log("[ADVICE] Added missing closers:", closers);
   }
 
   try {
     return { parsed: tryParse(text), recovered: true };
   } catch (e: any) {
-    console.log('[ADVICE] Still failed after balancing:', e.message);
+    console.log("[ADVICE] Still failed after balancing:", e.message);
   }
 
   // 5) Truncate to last valid comma or closing bracket before attempting final parse
-  const lastComma = text.lastIndexOf(',');
-  const lastCloseBracket = text.lastIndexOf(']');
-  const lastCloseBrace = text.lastIndexOf('}');
+  const lastComma = text.lastIndexOf(",");
+  const lastCloseBracket = text.lastIndexOf("]");
+  const lastCloseBrace = text.lastIndexOf("}");
   const truncatePoint = Math.max(lastComma, lastCloseBracket, lastCloseBrace);
-  
+
   if (truncatePoint > text.length / 2) {
     const truncated = text.slice(0, truncatePoint + 1);
-    
+
     // Re-balance after truncation
     const stackAfter: string[] = [];
     let inStr = false;
     let esc = false;
-    
+
     for (let i = 0; i < truncated.length; i++) {
       const ch = truncated[i];
       if (inStr) {
         if (esc) esc = false;
-        else if (ch === '\\') esc = true;
+        else if (ch === "\\") esc = true;
         else if (ch === '"') inStr = false;
         continue;
       }
       if (ch === '"') inStr = true;
-      else if (ch === '{' || ch === '[') stackAfter.push(ch);
-      else if (ch === '}' || ch === ']') {
+      else if (ch === "{" || ch === "[") stackAfter.push(ch);
+      else if (ch === "}" || ch === "]") {
         const top = stackAfter[stackAfter.length - 1];
-        if ((ch === '}' && top === '{') || (ch === ']' && top === '[')) {
+        if ((ch === "}" && top === "{") || (ch === "]" && top === "[")) {
           stackAfter.pop();
         }
       }
     }
-    
+
     const closersAfter = stackAfter
       .slice()
       .reverse()
-      .map((c) => (c === '{' ? '}' : ']'))
-      .join('');
-    
+      .map((c) => (c === "{" ? "}" : "]"))
+      .join("");
+
     try {
       return { parsed: tryParse(truncated + closersAfter), recovered: true };
     } catch {}
   }
 
-  throw new Error('Cannot parse advice JSON after recovery attempts');
+  throw new Error("Cannot parse advice JSON after recovery attempts");
 }
 
 // Extract player names from match analysis text
@@ -227,13 +238,13 @@ function extractPlayerNames(matchAnalysis: string): string[] {
   // Try to find player names in patterns like "Name (COUNTRY)" or just "Name"
   const pattern = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+\([A-Z]{2,3}\))?)/g;
   const matches = matchAnalysis.match(pattern);
-  
+
   if (matches && matches.length >= 2) {
     // Return first two unique names
     const uniqueNames = Array.from(new Set(matches));
     return uniqueNames.slice(0, 2);
   }
-  
+
   return ["Player 1", "Player 2"];
 }
 
@@ -281,7 +292,10 @@ function normalizeNameText(name: string): string {
   return name.replace(/\s+/g, " ").trim();
 }
 
-function shouldReplaceName(currentName: string | undefined, fallbackName: string): boolean {
+function shouldReplaceName(
+  currentName: string | undefined,
+  fallbackName: string,
+): boolean {
   if (!currentName) return true;
   const normalized = normalizeNameText(currentName);
   if (!normalized) return true;
@@ -299,10 +313,9 @@ function shouldReplaceName(currentName: string | undefined, fallbackName: string
   return false;
 }
 
-function applyConsistentPlayerNames<T extends { players?: Array<{ name?: string }> }>(
-  data: T,
-  playerNames: string[],
-): T {
+function applyConsistentPlayerNames<
+  T extends { players?: Array<{ name?: string }> },
+>(data: T, playerNames: string[]): T {
   if (!data || !Array.isArray(data.players)) {
     return data;
   }
@@ -331,27 +344,31 @@ function applyConsistentPlayerNames<T extends { players?: Array<{ name?: string 
 // Fallback JSON structure for errors
 function getFallbackPlayerStructure(matchAnalysis?: string) {
   const names = ensureTwoPlayerNames(
-    matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"],
+    matchAnalysis
+      ? extractPlayerNames(matchAnalysis)
+      : ["Player 1", "Player 2"],
   );
   return {
     players: [
       {
         name: names[0],
         total: 0,
-        events: []
+        events: [],
       },
       {
         name: names[1],
         total: 0,
-        events: []
-      }
-    ]
+        events: [],
+      },
+    ],
   };
 }
 
 function getFallbackAdviceStructure(matchAnalysis?: string) {
   const names = ensureTwoPlayerNames(
-    matchAnalysis ? extractPlayerNames(matchAnalysis) : ["Player 1", "Player 2"],
+    matchAnalysis
+      ? extractPlayerNames(matchAnalysis)
+      : ["Player 1", "Player 2"],
   );
   return {
     players: [
@@ -359,15 +376,15 @@ function getFallbackAdviceStructure(matchAnalysis?: string) {
         name: names[0],
         tactical_advice: { issues: [], improvements: [] },
         technical_advice: { issues: [], improvements: [] },
-        mental_advice: { issues: [], improvements: [] }
+        mental_advice: { issues: [], improvements: [] },
       },
       {
         name: names[1],
         tactical_advice: { issues: [], improvements: [] },
         technical_advice: { issues: [], improvements: [] },
-        mental_advice: { issues: [], improvements: [] }
-      }
-    ]
+        mental_advice: { issues: [], improvements: [] },
+      },
+    ],
   };
 }
 
@@ -380,45 +397,42 @@ interface AnalysisProgress {
 export class GeminiVideoAnalysis {
   async uploadAndProcessVideo(
     videoPath: string,
-    onProgress: (stage: string, progress: number) => void
+    onProgress: (stage: string, progress: number) => void,
   ): Promise<any> {
     onProgress("Uploading video file...", 10);
 
     const uploadedFile = await genAI.files.upload({
       file: videoPath,
-      config: { 
-        mimeType: 'video/mp4',
-        displayName: `taekwondo_analysis_${Date.now()}`
-      }
+      config: {
+        mimeType: "video/mp4",
+        displayName: `taekwondo_analysis_${Date.now()}`,
+      },
     });
 
     onProgress("Processing video...", 20);
 
     // Wait for video to be processed
-    const fileName = uploadedFile.name || '';
+    const fileName = uploadedFile.name || "";
     let file = await genAI.files.get({ name: fileName });
     const maxWaitTime = 10 * 60 * 1000; // 10 minutes
     const startTime = Date.now();
 
-    while (file.state === 'PROCESSING') {
+    while (file.state === "PROCESSING") {
       if (Date.now() - startTime > maxWaitTime) {
-        throw new Error('Video processing timeout (10 minutes)');
+        throw new Error("Video processing timeout (10 minutes)");
       }
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       file = await genAI.files.get({ name: fileName });
     }
 
-    if (file.state === 'FAILED') {
-      throw new Error('Video processing failed');
+    if (file.state === "FAILED") {
+      throw new Error("Video processing failed");
     }
 
     return file;
   }
 
-  async analyzeMatch(
-    videoPath: string,
-    jobId?: string
-  ) {
+  async analyzeMatch(videoPath: string, jobId?: string) {
     const startTime = Date.now();
     let uploadedFile: any = null;
 
@@ -431,17 +445,17 @@ export class GeminiVideoAnalysis {
       // Upload and process video
       uploadedFile = await this.uploadAndProcessVideo(videoPath, onProgress);
 
-      const roundText = 'entire match';
+      const roundText = "entire match";
 
-  // First, run match analysis to extract player names
-  onProgress("Analyzing match narrative...", 30);
+      // First, run match analysis to extract player names
+      onProgress("Analyzing match narrative...", 30);
 
       let matchAnalysisText: string | null = null;
       let playerNames: string[] = ["Player 1", "Player 2"];
 
       // Match Analysis (Text) - Run first to extract player names
       try {
-        const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
+        const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === "entire match" ? "match" : "round"}.
 
 Write your response in English.
 
@@ -461,33 +475,34 @@ Start with the first player, then analyze the second player. Use actual player n
 Provide a detailed narrative that captures the essence of the competition.`;
 
         const result = await genAI.models.generateContent({
-          model: "gemini-2.0-flash-exp",
+          model: "gemini-2.5-flash",
           config: {
             temperature: 0,
             maxOutputTokens: 8192,
           },
           contents: createUserContent([
             createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-            prompt
-          ])
+            prompt,
+          ]),
         });
 
-        const analysisText = result.text || '';
+        const analysisText = result.text || "";
         matchAnalysisText = analysisText;
         playerNames = ensureTwoPlayerNames(extractPlayerNames(analysisText));
-        console.log(`[ANALYSIS] Extracted player names: ${playerNames.join(', ')}`);
+        console.log(
+          `[ANALYSIS] Extracted player names: ${playerNames.join(", ")}`,
+        );
       } catch (error: any) {
-        console.error('[ANALYSIS] Match analysis failed:', error.message);
+        console.error("[ANALYSIS] Match analysis failed:", error.message);
         matchAnalysisText = null;
       }
 
       playerNames = ensureTwoPlayerNames(playerNames);
 
-  // Run remaining analyses in parallel with extracted player names
-  onProgress("Running comprehensive analysis...", 40);
+      // Run remaining analyses in parallel with extracted player names
+      onProgress("Running comprehensive analysis...", 40);
 
       const analysisPromises = [
-
         // Score Analysis (JSON)
         (async () => {
           try {
@@ -530,18 +545,18 @@ CRITICAL:
 - List scoring events chronologically`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
+                prompt,
+              ]),
             });
 
-            const cleaned = cleanJsonResponse(result.text || '');
+            const cleaned = cleanJsonResponse(result.text || "");
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
             return {
@@ -580,18 +595,18 @@ Return this EXACT JSON format:
 CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
+                prompt,
+              ]),
             });
 
-            const cleaned = cleanJsonResponse(result.text || '');
+            const cleaned = cleanJsonResponse(result.text || "");
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
             return {
@@ -603,7 +618,7 @@ CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
         // Kick Count Analysis (JSON)
         (async () => {
-          try{
+          try {
             const prompt = `IMPORTANT: Return ONLY the JSON object below, with no explanatory text before or after.
 
 Track all kicks executed in ${roundText}. Count every kick attempt regardless of success.
@@ -630,18 +645,18 @@ Return this EXACT JSON format:
 CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
+                prompt,
+              ]),
             });
 
-            const cleaned = cleanJsonResponse(result.text || '');
+            const cleaned = cleanJsonResponse(result.text || "");
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
             return {
@@ -683,18 +698,18 @@ CRITICAL:
 - Use the term "Gam-jeom" for penalty events in descriptions`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
+                prompt,
+              ]),
             });
 
-            const cleaned = cleanJsonResponse(result.text || '');
+            const cleaned = cleanJsonResponse(result.text || "");
             return { data: JSON.parse(cleaned), error: null };
           } catch (error: any) {
             return {
@@ -756,75 +771,122 @@ Rules:
 - Return ONLY the JSON object`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.0-flash-exp",
+              model: "gemini-2.5-flash",
               config: {
                 temperature: 0,
                 maxOutputTokens: 16384,
               },
               contents: createUserContent([
                 createPartFromUri(uploadedFile.uri, uploadedFile.mimeType),
-                prompt
-              ])
+                prompt,
+              ]),
             });
 
             // Extract and robustly parse JSON
-            const responseText = result.text || '';
+            const responseText = result.text || "";
             if (!responseText) {
-              console.error('[ADVICE] Empty response from Gemini');
-              console.error('[ADVICE] Result object keys:', Object.keys(result));
-              throw new Error('Empty response from Gemini');
+              console.error("[ADVICE] Empty response from Gemini");
+              console.error(
+                "[ADVICE] Result object keys:",
+                Object.keys(result),
+              );
+              throw new Error("Empty response from Gemini");
             }
 
-            console.log('[ADVICE] Raw response length:', responseText.length);
-            console.log('[ADVICE] First 300 chars:', responseText.substring(0, 300));
-            console.log('[ADVICE] Last 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)));
+            console.log("[ADVICE] Raw response length:", responseText.length);
+            console.log(
+              "[ADVICE] First 300 chars:",
+              responseText.substring(0, 300),
+            );
+            console.log(
+              "[ADVICE] Last 200 chars:",
+              responseText.substring(Math.max(0, responseText.length - 200)),
+            );
 
             let parsed: any;
             try {
-              const { parsed: p, recovered } = parseAdviceJsonWithRecovery(responseText) as any;
+              const { parsed: p, recovered } = parseAdviceJsonWithRecovery(
+                responseText,
+              ) as any;
               parsed = p;
-              console.log('[ADVICE] Successfully parsed JSON', recovered ? '(with recovery)' : '(direct parse)');
-              console.log('[ADVICE] Parsed structure has', parsed.players?.length || 0, 'players');
+              console.log(
+                "[ADVICE] Successfully parsed JSON",
+                recovered ? "(with recovery)" : "(direct parse)",
+              );
+              console.log(
+                "[ADVICE] Parsed structure has",
+                parsed.players?.length || 0,
+                "players",
+              );
             } catch (e: any) {
-              console.error('[ADVICE] Parsing failed after all recovery attempts:', e.message);
-              console.error('[ADVICE] Response preview:', responseText.substring(0, 500));
-              throw new Error('Cannot parse advice JSON: ' + e.message);
+              console.error(
+                "[ADVICE] Parsing failed after all recovery attempts:",
+                e.message,
+              );
+              console.error(
+                "[ADVICE] Response preview:",
+                responseText.substring(0, 500),
+              );
+              throw new Error("Cannot parse advice JSON: " + e.message);
             }
 
             // Validate that we have proper data
             if (!parsed.players || parsed.players.length === 0) {
-              console.error('[ADVICE] Invalid structure - missing or empty players array');
-              console.error('[ADVICE] Parsed data preview:', JSON.stringify(parsed).substring(0, 500));
-              throw new Error('Invalid advice structure - missing or empty players array');
+              console.error(
+                "[ADVICE] Invalid structure - missing or empty players array",
+              );
+              console.error(
+                "[ADVICE] Parsed data preview:",
+                JSON.stringify(parsed).substring(0, 500),
+              );
+              throw new Error(
+                "Invalid advice structure - missing or empty players array",
+              );
             }
 
             // Validate each player has the required advice structure
             for (let i = 0; i < parsed.players.length; i++) {
               const player = parsed.players[i];
-              if (!player.tactical_advice || !player.technical_advice || !player.mental_advice) {
-                console.warn(`[ADVICE] Player ${i} (${player.name}) missing advice categories`);
+              if (
+                !player.tactical_advice ||
+                !player.technical_advice ||
+                !player.mental_advice
+              ) {
+                console.warn(
+                  `[ADVICE] Player ${i} (${player.name}) missing advice categories`,
+                );
               }
             }
 
-            console.log('[ADVICE] ✓ Successfully validated advice for', parsed.players.length, 'players');
+            console.log(
+              "[ADVICE] ✓ Successfully validated advice for",
+              parsed.players.length,
+              "players",
+            );
             return { data: parsed, error: null };
           } catch (error: any) {
-            console.error('Advice analysis error:', error.message);
-            console.error('Full error:', error);
+            console.error("Advice analysis error:", error.message);
+            console.error("Full error:", error);
             return {
               data: getFallbackAdviceStructure(matchAnalysisText || undefined),
               error: error.message,
             };
           }
-        })()
+        })(),
       ];
 
       const results = await Promise.allSettled(analysisPromises);
 
-  onProgress("Finalizing analysis...", 95);
+      onProgress("Finalizing analysis...", 95);
 
       // Extract results
-      const [scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
+      const [
+        scoreResult,
+        punchResult,
+        kickResult,
+        violationResult,
+        adviceResult,
+      ] = results;
 
       const processingTime = Date.now() - startTime;
       const normalizedNames = ensureTwoPlayerNames(playerNames);
@@ -851,11 +913,26 @@ Rules:
           ? adviceResult.value.data
           : getFallbackAdviceStructure(fallbackContext);
 
-      const scoreAnalysis = applyConsistentPlayerNames(rawScoreAnalysis, normalizedNames);
-      const punchAnalysis = applyConsistentPlayerNames(rawPunchAnalysis, normalizedNames);
-      const kickAnalysis = applyConsistentPlayerNames(rawKickAnalysis, normalizedNames);
-      const violationAnalysis = applyConsistentPlayerNames(rawViolationAnalysis, normalizedNames);
-      const adviceAnalysis = applyConsistentPlayerNames(rawAdviceAnalysis, normalizedNames);
+      const scoreAnalysis = applyConsistentPlayerNames(
+        rawScoreAnalysis,
+        normalizedNames,
+      );
+      const punchAnalysis = applyConsistentPlayerNames(
+        rawPunchAnalysis,
+        normalizedNames,
+      );
+      const kickAnalysis = applyConsistentPlayerNames(
+        rawKickAnalysis,
+        normalizedNames,
+      );
+      const violationAnalysis = applyConsistentPlayerNames(
+        rawViolationAnalysis,
+        normalizedNames,
+      );
+      const adviceAnalysis = applyConsistentPlayerNames(
+        rawAdviceAnalysis,
+        normalizedNames,
+      );
 
       if (jobId) delete progressStore[jobId];
       return {
@@ -895,15 +972,14 @@ Rules:
               : (adviceResult as PromiseRejectedResult).reason,
         },
       };
-
     } finally {
       // Cleanup uploaded file
       if (uploadedFile && uploadedFile.name) {
         try {
           await genAI.files.delete({ name: uploadedFile.name });
-          console.log('Uploaded file cleaned up successfully');
+          console.log("Uploaded file cleaned up successfully");
         } catch (cleanupError) {
-          console.warn('Failed to cleanup uploaded file:', cleanupError);
+          console.warn("Failed to cleanup uploaded file:", cleanupError);
         }
       }
     }
