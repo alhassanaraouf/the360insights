@@ -44,6 +44,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes */}
+      <Route path="/login" component={Login} />
+      
       {/* Protected routes */}
       {isAuthenticated ? (
         <>
@@ -128,8 +131,23 @@ function Router() {
         </>
       ) : (
         <>
-          {/* Unauthenticated users see landing page */}
+          {/* Unauthenticated users see landing page on root, login page on /login */}
           <Route path="/" component={Landing} />
+          {/* Redirect protected routes to login */}
+          <Route path="/rank-up" component={() => <Login />} />
+          <Route path="/sponsorship-hub" component={() => <Login />} />
+          <Route path="/competition-draws" component={() => <Login />} />
+          <Route path="/competitions" component={() => <Login />} />
+          <Route path="/competition/:id" component={() => <Login />} />
+          <Route path="/athletes" component={() => <Login />} />
+          <Route path="/training-planner" component={() => <Login />} />
+          <Route path="/ai-insights" component={() => <Login />} />
+          <Route path="/opponent-analysis" component={() => <Login />} />
+          <Route path="/live-match" component={() => <Login />} />
+          <Route path="/account-settings" component={() => <Login />} />
+          <Route path="/data-scraper" component={() => <Login />} />
+          <Route path="/athlete360" component={() => <Login />} />
+          <Route path="/career-journey" component={() => <Login />} />
         </>
       )}
       

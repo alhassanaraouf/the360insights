@@ -57,6 +57,10 @@ localPort = 34643
 externalPort = 3000
 
 [[ports]]
+localPort = 35359
+externalPort = 8000
+
+[[ports]]
 localPort = 39873
 externalPort = 6800
 
@@ -85,7 +89,7 @@ localPort = 46629
 externalPort = 3002
 
 [agent]
-integrations = ["javascript_openai:1.0.0", "javascript_gemini:1.0.0", "javascript_log_in_with_replit:1.0.0"]
+integrations = ["javascript_openai:1.0.0", "javascript_gemini:1.0.0"]
 expertMode = true
 
 [objectStorage]
