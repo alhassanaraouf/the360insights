@@ -19,11 +19,8 @@ interface BracketParticipant {
 export function DrawSheet({ competition, participants, isLoading }: DrawSheetProps) {
   const bracket = useMemo(() => {
     if (!participants || participants.length === 0) {
-      console.log('No participants provided to DrawSheet');
       return null;
     }
-
-    console.log('DrawSheet participants:', participants.length, participants);
 
     // Shuffle and assign seed numbers randomly
     const shuffled = [...participants].sort(() => Math.random() - 0.5);
