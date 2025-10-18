@@ -1,9 +1,9 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY as string);
 
 export async function sendVerificationEmail(to: string, otp: string) {
-  const appName = process.env.APP_NAME || 'The360 Insights';
+  const appName = process.env.APP_NAME || "The360 Insights";
   const subject = `${appName}: Verify your email`;
   const html = `
     <div style="font-family: sans-serif; line-height: 1.5;">
@@ -16,7 +16,7 @@ export async function sendVerificationEmail(to: string, otp: string) {
   `;
 
   await resend.emails.send({
-    from: process.env.MAIL_FROM || `${appName} <no-reply@the360insights.app>`,
+    from: process.env.MAIL_FROM || `${appName} <no-reply@the360insights.ai>`,
     to,
     subject,
     html,

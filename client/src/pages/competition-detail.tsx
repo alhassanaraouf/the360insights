@@ -35,6 +35,13 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DrawSheet } from "@/components/draw-sheet";
 
 interface Competition {
   id: number;
@@ -71,6 +78,8 @@ export default function CompetitionDetail() {
   const [weightCategoryFilter, setWeightCategoryFilter] = useState<string>("");
   const [rankedOnly, setRankedOnly] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [selectedDrawWeight, setSelectedDrawWeight] = useState<string>("");
+  const [drawSheetOpen, setDrawSheetOpen] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -645,6 +654,54 @@ export default function CompetitionDetail() {
           </CardContent>
         </Card>
 
+        {/* Draw Section */}
+        {competition.simplyCompeteEventId && filterOptions.weightCategories.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                Draw
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Select 
+                  value={selectedDrawWeight} 
+                  onValueChange={setSelectedDrawWeight}
+                >
+                  <SelectTrigger className="flex-1" data-testid="select-draw-weight">
+                    <SelectValue placeholder="Select weight division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterOptions.weightCategories.map((category: string) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={() => {
+                    if (selectedDrawWeight) {
+                      setDrawSheetOpen(true);
+                    } else {
+                      toast({
+                        title: "Please select a weight division",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={!selectedDrawWeight}
+                  data-testid="button-generate-draw"
+                >
+                  <Trophy className="w-4 h-4 mr-2" />
+                  Generate Drawsheet
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <Card>
           <CardContent className="p-4">
@@ -670,6 +727,30 @@ export default function CompetitionDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Drawsheet Dialog */}
+        <Dialog open={drawSheetOpen} onOpenChange={setDrawSheetOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="drawsheet-dialog">
+            <DialogHeader>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Drawsheet - {selectedDrawWeight}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedDrawWeight && (
+              <DrawSheet
+                competition={competition as any}
+                participants={
+                  participants.filter((p: any) => 
+                    p.weightCategory === selectedDrawWeight
+                  ) as any
+                }
+                isLoading={participantsLoading}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
