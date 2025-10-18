@@ -1,7 +1,5 @@
 import { storage } from "./storage";
 import { getOpenAIClient } from "./openai-client";
-import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
 
 export interface OpponentAnalysis {
   weaknessExploitation: string[];
@@ -92,6 +90,14 @@ Provide a comprehensive tactical analysis in JSON format:
   "mentalPreparation": ["psychological preparation advice"],
   "technicalFocus": ["specific techniques to practice"]
 }`;
+
+      // Log the prompt being sent to OpenAI
+      console.log('\n========== AI OPPONENT ANALYSIS PROMPT ==========');
+      console.log('System Message:');
+      console.log('You are an elite Taekwondo tactical analyst with decades of experience analyzing fights and developing winning strategies. Provide detailed, actionable tactical advice based on fighter profiles and historical data.');
+      console.log('\nUser Prompt:');
+      console.log(analysisPrompt);
+      console.log('==================================================\n');
 
       const response = await openai.chat.completions.create({
         model: "gpt-5",
