@@ -16,7 +16,7 @@ export async function sendVerificationEmail(to: string, otp: string) {
   `;
 
   await resend.emails.send({
-    from: process.env.MAIL_FROM || 'no-reply@the360insights.app',
+    from: process.env.MAIL_FROM || `${appName} <no-reply@the360insights.app>`,
     to,
     subject,
     html,
