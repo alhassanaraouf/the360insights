@@ -33,9 +33,6 @@ import {
   type UpsertUser,
   type RankUpCalculationCache,
   type InsertRankUpCalculationCache,
-  performanceAnalysisCache,
-  type PerformanceAnalysisCache,
-  type InsertPerformanceAnalysisCache,
   opponentAnalysisCache,
   type OpponentAnalysisCache,
   type InsertOpponentAnalysisCache,
@@ -237,10 +234,6 @@ export interface IStorage {
   getVideoAnalysesByUserId(userId: string): Promise<VideoAnalysis[]>;
   updateVideoAnalysisPath(id: number, videoPath: string): Promise<void>;
   deleteVideoAnalysis(id: number): Promise<void>;
-
-  // Performance Analysis Cache
-  getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined>;
-  savePerformanceAnalysisCache(cache: InsertPerformanceAnalysisCache): Promise<PerformanceAnalysisCache>;
 
   // Rank Up Analyses
   getSavedRankUpAnalyses(athleteId: number): Promise<RankUpCalculationCache[]>;
@@ -1771,33 +1764,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedSettings;
-  }
-
-  async getPerformanceAnalysisCache(athleteId: number): Promise<PerformanceAnalysisCache | undefined> {
-    const [cache] = await db
-      .select()
-      .from(performanceAnalysisCache)
-      .where(
-        and(
-          eq(performanceAnalysisCache.athleteId, athleteId),
-          gte(performanceAnalysisCache.expiresAt, new Date())
-        )
-      )
-      .orderBy(desc(performanceAnalysisCache.createdAt))
-      .limit(1);
-    return cache;
-  }
-
-  async savePerformanceAnalysisCache(cache: InsertPerformanceAnalysisCache): Promise<PerformanceAnalysisCache> {
-    await db
-      .delete(performanceAnalysisCache)
-      .where(eq(performanceAnalysisCache.athleteId, cache.athleteId));
-    
-    const [newCache] = await db
-      .insert(performanceAnalysisCache)
-      .values(cache)
-      .returning();
-    return newCache;
   }
 
   async getSavedRankUpAnalyses(athleteId: number): Promise<RankUpCalculationCache[]> {

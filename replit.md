@@ -74,7 +74,6 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 -   `competitions`: Competition events with SimplyCompete integration fields (`sourceUrl`, `metadata`, `lastSyncedAt`, `simplyCompeteEventId`, `logo`) - logos stored in Replit Object Storage (indexed on: simplyCompeteEventId)
 -   `competition_participants`: Links athletes to competitions with performance data (`points`, `eventResult`, `weightCategory`, `seedNumber`, `subeventName`, `status`) - serves as the single source of truth for athlete competition history and career events (indexed on: competitionId, athleteId)
 -   `opponent_analysis_cache`: Stores AI-powered opponent analysis results with monthly expiration.
--   `performance_analysis_cache`: Stores AI-powered performance analysis results with 30-day expiration.
 -   `ai_queries`: AI query history (indexed on: athleteId, timestamp)
 -   `training_plans`: Detailed training plans (indexed on: athleteId)
 -   `sponsorship_bids`: Sponsorship bids for athletes (indexed on: athleteId, sponsorUserId)

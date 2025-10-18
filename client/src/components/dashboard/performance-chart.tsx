@@ -15,10 +15,9 @@ import {
 } from "lucide-react";
 
 interface SportStatisticsProps {
-  performanceData?: any[];
 }
 
-export default function SportStatistics({ performanceData }: SportStatisticsProps) {
+export default function SportStatistics({}: SportStatisticsProps) {
   // Sport-wide analytics data
   const sportMetrics = [
     {

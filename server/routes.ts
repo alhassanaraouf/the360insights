@@ -3329,54 +3329,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.get("/api/ai/performance-insight/:athleteId", async (req, res) => {
-    try {
-      const athleteId = parseInt(req.params.athleteId);
-
-      if (!athleteId || isNaN(athleteId)) {
-        return res.status(400).json({ error: "Valid athlete ID is required" });
-      }
-
-      const cachedAnalysis =
-        await storage.getPerformanceAnalysisCache(athleteId);
-      if (cachedAnalysis) {
-        console.log(
-          `[PerformanceAnalysis] Using cached analysis for athlete ${athleteId}`,
-        );
-        return res.json({
-          trend: cachedAnalysis.trend,
-          confidence: parseFloat(cachedAnalysis.confidence),
-          keyMetrics: cachedAnalysis.keyMetrics,
-          recommendations: cachedAnalysis.recommendations,
-          riskFactors: cachedAnalysis.riskFactors,
-        });
-      }
-
-      console.log(
-        `[PerformanceAnalysis] Generating new analysis for athlete ${athleteId}`,
-      );
-      const insight = await aiEngine.analyzePerformanceTrend(athleteId);
-
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-
-      await storage.savePerformanceAnalysisCache({
-        athleteId,
-        trend: insight.trend,
-        confidence: insight.confidence.toString(),
-        keyMetrics: insight.keyMetrics,
-        recommendations: insight.recommendations,
-        riskFactors: insight.riskFactors,
-        expiresAt,
-      });
-
-      res.json(insight);
-    } catch (error) {
-      console.error("Performance analysis error:", error);
-      res.status(500).json({ error: "Failed to analyze performance trend" });
-    }
-  });
-
   app.get("/api/ai/training-recommendations/:athleteId", async (req, res) => {
     try {
       const athleteId = parseInt(req.params.athleteId);

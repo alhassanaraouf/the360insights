@@ -86,9 +86,7 @@ Generate authentic data based on real Egyptian Taekwondo athlete performance pat
     await Promise.all([
       db.delete(kpiMetrics).where(eq(kpiMetrics.athleteId, athleteId)),
       db.delete(strengths).where(eq(strengths.athleteId, athleteId)),
-      db.delete(weaknesses).where(eq(weaknesses.athleteId, athleteId)),
-      db.delete(performanceData).where(eq(performanceData.athleteId, athleteId)),
-      db.delete(careerEvents).where(eq(careerEvents.athleteId, athleteId))
+      db.delete(weaknesses).where(eq(weaknesses.athleteId, athleteId))
     ]);
 
     // Insert KPI metrics
@@ -124,28 +122,6 @@ Generate authentic data based on real Egyptian Taekwondo athlete performance pat
       await db.insert(weaknesses).values(weaknessData);
     }
 
-    // Insert performance history
-    if (athleteData.performanceHistory) {
-      const performanceDataInserts = athleteData.performanceHistory.map((perf: any) => ({
-        athleteId,
-        month: perf.month,
-        performanceScore: perf.score.toString(),
-        ranking: perf.ranking
-      }));
-      await db.insert(performanceData).values(performanceDataInserts);
-    }
-
-    // Insert career events
-    if (athleteData.careerEvents) {
-      const careerEventData = athleteData.careerEvents.map((event: any) => ({
-        athleteId,
-        eventType: event.type || 'achievement',
-        title: event.title,
-        date: event.date,
-        description: `${event.title} - Significant milestone in athletic career`
-      }));
-      await db.insert(careerEvents).values(careerEventData);
-    }
 
     console.log("Successfully populated authentic athlete data using OpenAI o3 model");
     return { success: true, message: "Authentic data populated successfully" };

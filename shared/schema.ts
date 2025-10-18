@@ -121,16 +121,6 @@ export const opponents = pgTable("opponents", {
   athleteIdIdx: index("opponents_athlete_id_idx").on(table.athleteId),
 }));
 
-// Legacy performance data table (still in database)
-export const performanceData = pgTable("performance_data", {
-  id: serial("id").primaryKey(),
-  athleteId: integer("athlete_id").references(() => athletes.id),
-  month: text("month").notNull(),
-  performanceScore: decimal("performance_score", { precision: 5, scale: 2 }),
-  ranking: integer("ranking"),
-}, (table) => ({
-  athleteIdIdx: index("performance_data_athlete_id_idx").on(table.athleteId),
-}));
 
 export const athleteRanks = pgTable("athlete_ranks", {
   id: serial("id").primaryKey(),
@@ -290,20 +280,6 @@ export const rankUpCalculationCache = pgTable("rank_up_calculation_cache", {
   expiresAtIdx: index("expires_at_idx").on(table.expiresAt),
 }));
 
-// Performance analysis cache table
-export const performanceAnalysisCache = pgTable("performance_analysis_cache", {
-  id: serial("id").primaryKey(),
-  athleteId: integer("athlete_id").notNull().references(() => athletes.id),
-  trend: varchar("trend", { length: 20 }).notNull(),
-  confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull(),
-  keyMetrics: jsonb("key_metrics").notNull(),
-  recommendations: jsonb("recommendations").notNull(),
-  riskFactors: jsonb("risk_factors").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  athleteUnique: unique().on(table.athleteId),
-}));
 
 // Opponent analysis cache table
 export const opponentAnalysisCache = pgTable("opponent_analysis_cache", {
@@ -351,10 +327,6 @@ export const insertOpponentSchema = createInsertSchema(opponents).omit({
   id: true,
 });
 
-// Legacy performance data schema (still in database)
-export const insertPerformanceDataSchema = createInsertSchema(performanceData).omit({
-  id: true,
-});
 
 export const insertAthleteRankSchema = createInsertSchema(athleteRanks).omit({
   id: true,
@@ -393,10 +365,6 @@ export const insertRankUpCalculationCacheSchema = createInsertSchema(rankUpCalcu
   createdAt: true,
 });
 
-export const insertPerformanceAnalysisCacheSchema = createInsertSchema(performanceAnalysisCache).omit({
-  id: true,
-  createdAt: true,
-});
 
 export const insertOpponentAnalysisCacheSchema = createInsertSchema(opponentAnalysisCache).omit({
   id: true,
@@ -475,9 +443,6 @@ export type InsertWeakness = z.infer<typeof insertWeaknessSchema>;
 export type Opponent = typeof opponents.$inferSelect;
 export type InsertOpponent = z.infer<typeof insertOpponentSchema>;
 
-// Legacy performance data types (still in database)
-export type PerformanceData = typeof performanceData.$inferSelect;
-export type InsertPerformanceData = z.infer<typeof insertPerformanceDataSchema>;
 
 export type AthleteRank = typeof athleteRanks.$inferSelect;
 export type InsertAthleteRank = z.infer<typeof insertAthleteRankSchema>;
@@ -497,8 +462,6 @@ export type InsertCompetitionParticipant = z.infer<typeof insertCompetitionParti
 export type RankUpCalculationCache = typeof rankUpCalculationCache.$inferSelect;
 export type InsertRankUpCalculationCache = z.infer<typeof insertRankUpCalculationCacheSchema>;
 
-export type PerformanceAnalysisCache = typeof performanceAnalysisCache.$inferSelect;
-export type InsertPerformanceAnalysisCache = z.infer<typeof insertPerformanceAnalysisCacheSchema>;
 
 export type OpponentAnalysisCache = typeof opponentAnalysisCache.$inferSelect;
 export type InsertOpponentAnalysisCache = z.infer<typeof insertOpponentAnalysisCacheSchema>;

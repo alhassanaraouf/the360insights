@@ -46,14 +46,6 @@ interface OpponentAnalysis {
   technicalFocus: string[];
 }
 
-interface PerformanceInsight {
-  trend: 'improving' | 'declining' | 'stable';
-  confidence: number;
-  keyMetrics: string[];
-  recommendations: string[];
-  riskFactors: string[];
-}
-
 export default function OpponentAnalysis() {
   const [selectedOpponent, setSelectedOpponent] = useState<string>("");
   const [showAllWeightClass, setShowAllWeightClass] = useState<boolean>(false);
@@ -125,11 +117,6 @@ export default function OpponentAnalysis() {
 
   // Check if we're waiting for debounce or initial loading (not for pagination)
   const isSearching = searchInput !== debouncedSearch || opponentsLoading;
-
-  const { data: performanceInsight, isLoading: performanceLoading } = useQuery<PerformanceInsight>({
-    queryKey: [`/api/ai/performance-insight/${selectedAthleteId}`],
-    enabled: true
-  });
 
   const opponentAnalysisMutation = useMutation({
     mutationFn: async (opponentId: string) => {
@@ -390,43 +377,6 @@ export default function OpponentAnalysis() {
             )}
           </CardContent>
         </Card>
-
-        {/* Performance Insight Overview */}
-        {performanceInsight && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Your Performance Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${
-                    performanceInsight.trend === 'improving' ? 'text-green-600' :
-                    performanceInsight.trend === 'declining' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
-                    {performanceInsight.trend.toUpperCase()}
-                  </div>
-                  <p className="text-sm text-gray-500">Current Trend</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {performanceInsight.confidence}%
-                  </div>
-                  <p className="text-sm text-gray-500">Analysis Confidence</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {performanceInsight.keyMetrics.length}
-                  </div>
-                  <p className="text-sm text-gray-500">Key Metrics Tracked</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* AI Analysis Results */}
         {selectedOpponentData && (

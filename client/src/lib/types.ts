@@ -4,6 +4,5 @@ export interface DashboardData {
   strengths: any[];
   weaknesses: any[];
   opponents: any[];
-  performanceData: any[];
   trainingRecommendations: any[];
 }

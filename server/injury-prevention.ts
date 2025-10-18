@@ -383,9 +383,8 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
     }
 
     try {
-      const [athlete, performanceData, weaknesses] = await Promise.all([
+      const [athlete, weaknesses] = await Promise.all([
         storage.getAthlete(athleteId),
-        storage.getPerformanceDataByAthleteId(athleteId),
         storage.getWeaknessesByAthleteId(athleteId),
       ]);
 
@@ -397,7 +396,6 @@ Focus on evidence-based rehabilitation specific to Taekwondo biomechanics and re
 Analyze patterns to predict potential injuries for this Taekwondo athlete:
 
 ATHLETE: ${athlete.name}
-PERFORMANCE TREND: ${performanceData.map((p) => `${p.month}: ${p.performanceScore}%`).join(", ")}
 CURRENT WEAKNESSES: ${weaknesses.map((w) => `${w.name}: ${w.score}/100`).join(", ")}
 RECENT METRICS: ${JSON.stringify(recentMetrics)}
 
