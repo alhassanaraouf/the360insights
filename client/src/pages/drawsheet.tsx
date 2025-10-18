@@ -181,7 +181,7 @@ export default function DrawsheetPage() {
           )}
           {match[0].athleteId ? (
             <Link 
-              href={`/athlete/${match[0].athleteId}`}
+              href={`/athlete360?athlete=${match[0].athleteId}`}
               className="font-medium truncate flex-1 hover:text-primary hover:underline"
               title={match[0].name}
               data-testid={`link-athlete-${match[0].athleteId}`}
@@ -209,7 +209,7 @@ export default function DrawsheetPage() {
             )}
             {match[1].athleteId ? (
               <Link 
-                href={`/athlete/${match[1].athleteId}`}
+                href={`/athlete360?athlete=${match[1].athleteId}`}
                 className="font-medium truncate flex-1 hover:text-primary hover:underline"
                 title={match[1].name}
                 data-testid={`link-athlete-${match[1].athleteId}`}
