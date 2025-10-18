@@ -134,7 +134,7 @@ ${
 8. Peak performance timing - schedule most important competitions when athlete will be in best form`
 }
 ${customNotes ? `
-CUSTOM REQUIREMENTS:
+CUSTOM NOTES:
 ${customNotes}
 
 Please incorporate these specific requirements and preferences into your recommendations.

@@ -4,8 +4,8 @@ import { getOpenAIClient } from "./openai-client";
 export interface TrainingDay {
   day: number;
   date: string;
-  phase: 'preparation' | 'development' | 'competition' | 'recovery';
-  intensity: 'low' | 'medium' | 'high' | 'peak';
+  phase: "preparation" | "development" | "competition" | "recovery";
+  intensity: "low" | "medium" | "high" | "peak";
   focus: string[];
   sessions: TrainingSession[];
   duration: number; // minutes
@@ -13,7 +13,7 @@ export interface TrainingDay {
 }
 
 export interface TrainingSession {
-  type: 'technical' | 'tactical' | 'physical' | 'mental' | 'recovery';
+  type: "technical" | "tactical" | "physical" | "mental" | "recovery";
   name: string;
   duration: number;
   intensity: number; // 1-10 scale
@@ -55,7 +55,11 @@ export interface TrainingPlan {
   planName: string;
   startDate: string;
   duration: number; // weeks
-  planType: 'competition-prep' | 'off-season' | 'skill-development' | 'injury-recovery';
+  planType:
+    | "competition-prep"
+    | "off-season"
+    | "skill-development"
+    | "injury-recovery";
   microCycles: MicroCycle[];
   overallObjectives: string[];
   progressionStrategy: string;
@@ -68,21 +72,24 @@ export class TrainingPlanGenerator {
     planType: string,
     duration: number,
     targetCompetition?: string,
-    customNotes?: string
+    customNotes?: string,
   ): Promise<TrainingPlan> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     try {
-      const [athlete, strengths, weaknesses, kpis, careerEvents] = await Promise.all([
-        storage.getAthlete(athleteId),
-        storage.getStrengthsByAthleteId(athleteId),
-        storage.getWeaknessesByAthleteId(athleteId),
-        storage.getKpiMetricsByAthleteId(athleteId),
-        storage.getCareerEventsByAthleteId(athleteId)
-      ]);
+      const [athlete, strengths, weaknesses, kpis, careerEvents] =
+        await Promise.all([
+          storage.getAthlete(athleteId),
+          storage.getStrengthsByAthleteId(athleteId),
+          storage.getWeaknessesByAthleteId(athleteId),
+          storage.getKpiMetricsByAthleteId(athleteId),
+          storage.getCareerEventsByAthleteId(athleteId),
+        ]);
 
       if (!athlete) {
         throw new Error("Athlete not found");
@@ -90,7 +97,9 @@ export class TrainingPlanGenerator {
 
       // Get athlete ranking data
       const athleteRanks = await storage.getAthleteRanksByAthleteId(athleteId);
-      const worldRank = athleteRanks.find(rank => rank.rankingType === 'world')?.ranking || 'Unranked';
+      const worldRank =
+        athleteRanks.find((rank) => rank.rankingType === "world")?.ranking ||
+        "Unranked";
 
       const planningPrompt = `
 Create a comprehensive ${duration}-week training plan for this elite Taekwondo athlete:
@@ -99,30 +108,42 @@ ATHLETE PROFILE:
 - Name: ${athlete.name}
 - Nationality: ${athlete.nationality}
 - World Rank: #${worldRank}
-- Category: ${athlete.worldCategory || 'General'}
+- Category: ${athlete.worldCategory || "General"}
 
 PERFORMANCE ANALYSIS:
-Strengths: ${strengths.map(s => `${s.name} (${s.score}/100): ${s.description}`).join(', ')}
-Weaknesses: ${weaknesses.map(w => `${w.name} (${w.score}/100): ${w.description}`).join(', ')}
+Strengths: ${strengths.map((s) => `${s.name} (${s.score}/100): ${s.description}`).join(", ")}
+Weaknesses: ${weaknesses.map((w) => `${w.name} (${w.score}/100): ${w.description}`).join(", ")}
 
 CURRENT METRICS:
-${kpis.map(kpi => `${kpi.metricName}: ${kpi.value}% (trend: ${kpi.trend || '0'}%)`).join('\n')}
+${kpis.map((kpi) => `${kpi.metricName}: ${kpi.value}% (trend: ${kpi.trend || "0"}%)`).join("\n")}
 
 RECENT CAREER EVENTS:
-${careerEvents?.slice(0, 5).map(event => `${event.date}: ${event.title} - ${event.description || 'No description'}`).join('\n') || 'No recent events recorded'}
+${
+  careerEvents
+    ?.slice(0, 5)
+    .map(
+      (event) =>
+        `${event.date}: ${event.title} - ${event.description || "No description"}`,
+    )
+    .join("\n") || "No recent events recorded"
+}
 
 PLAN REQUIREMENTS:
 - Duration: ${duration} weeks
 - Plan Type: ${planType}
-- Target Competition: ${targetCompetition || 'General performance improvement'}
+- Target Competition: ${targetCompetition || "General performance improvement"}
 - Sport: Taekwondo (focus on Olympic-style competition)
-${customNotes ? `
+${
+  customNotes
+    ? `
 
-CUSTOM TRAINING CONSIDERATIONS:
+CUSTOM NOTES:
 ${customNotes}
 
 Please incorporate these specific requirements and preferences into the training plan.
-` : ''}
+`
+    : ""
+}
 
 Generate a detailed training plan with micro-cycle periodization in JSON format:
 {
@@ -150,30 +171,36 @@ Generate a detailed training plan with micro-cycle periodization in JSON format:
 Focus on evidence-based training methodologies specific to Taekwondo, addressing identified weaknesses while maintaining strengths.`;
 
       let planStructure;
-      
+
       try {
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: "You are a world-class Taekwondo coach and sports scientist specializing in periodized training plans. Create evidence-based, progressive training programs that optimize athletic performance through systematic micro-cycle planning."
+              content:
+                "You are a world-class Taekwondo coach and sports scientist specializing in periodized training plans. Create evidence-based, progressive training programs that optimize athletic performance through systematic micro-cycle planning.",
             },
             {
               role: "user",
-              content: planningPrompt
-            }
+              content: planningPrompt,
+            },
           ],
           response_format: { type: "json_object" },
-          temperature: 0.7
+          temperature: 0.7,
         });
         planStructure = JSON.parse(response.choices[0].message.content || "{}");
       } catch (aiError) {
         console.log("OpenAI API not available, using template plan:", aiError);
         // Fallback to a template plan structure for testing
-        planStructure = this.createTemplatePlan(athlete.name, duration, planType, targetCompetition);
+        planStructure = this.createTemplatePlan(
+          athlete.name,
+          duration,
+          planType,
+          targetCompetition,
+        );
       }
-      
+
       // Generate detailed daily training sessions for each micro-cycle
       const detailedMicroCycles = await Promise.all(
         planStructure.microCycles.map(async (cycle: any, index: number) => {
@@ -183,22 +210,22 @@ Focus on evidence-based training methodologies specific to Taekwondo, addressing
             index + 1,
             planType,
             strengths,
-            weaknesses
+            weaknesses,
           );
           return detailedCycle;
-        })
+        }),
       );
 
       return {
         athleteId,
         planName: planStructure.planName || `${duration}-Week ${planType} Plan`,
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: new Date().toISOString().split("T")[0],
         duration,
         planType: planType as any,
         microCycles: detailedMicroCycles,
         overallObjectives: planStructure.overallObjectives || [],
-        progressionStrategy: planStructure.progressionStrategy || '',
-        adaptationProtocol: planStructure.adaptationProtocol || ''
+        progressionStrategy: planStructure.progressionStrategy || "",
+        adaptationProtocol: planStructure.adaptationProtocol || "",
       };
     } catch (error) {
       console.error("Error generating training plan:", error);
@@ -212,11 +239,13 @@ Focus on evidence-based training methodologies specific to Taekwondo, addressing
     weekNumber: number,
     planType: string,
     strengths: any[],
-    weaknesses: any[]
+    weaknesses: any[],
   ): Promise<MicroCycle> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     const startDate = this.getWeekStartDate(weekNumber);
@@ -227,12 +256,18 @@ Generate detailed daily training sessions for Week ${weekNumber} of a Taekwondo 
 
 WEEK OVERVIEW:
 - Theme: ${cycleStructure.theme}
-- Objectives: ${cycleStructure.objectives?.join(', ')}
+- Objectives: ${cycleStructure.objectives?.join(", ")}
 - Load Distribution: ${JSON.stringify(cycleStructure.loadDistribution)}
 
 ATHLETE CONTEXT:
-- Primary Strengths: ${strengths.slice(0, 2).map(s => s.name).join(', ')}
-- Key Weaknesses: ${weaknesses.slice(0, 2).map(w => w.name).join(', ')}
+- Primary Strengths: ${strengths
+      .slice(0, 2)
+      .map((s) => s.name)
+      .join(", ")}
+- Key Weaknesses: ${weaknesses
+      .slice(0, 2)
+      .map((w) => w.name)
+      .join(", ")}
 - Plan Type: ${planType}
 
 Create 7 daily training sessions (Monday-Sunday) in JSON format:
@@ -274,48 +309,56 @@ Ensure progression throughout the week and include specific Taekwondo techniques
 
     try {
       let dailySessions;
-      
+
       try {
         const response = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: "You are an expert Taekwondo coach creating detailed daily training sessions. Focus on progressive skill development, proper recovery, and sport-specific conditioning."
+              content:
+                "You are an expert Taekwondo coach creating detailed daily training sessions. Focus on progressive skill development, proper recovery, and sport-specific conditioning.",
             },
             {
               role: "user",
-              content: sessionPrompt
-            }
+              content: sessionPrompt,
+            },
           ],
           response_format: { type: "json_object" },
-          temperature: 0.8
+          temperature: 0.8,
         });
         dailySessions = JSON.parse(response.choices[0].message.content || "{}");
       } catch (aiError) {
-        console.log("OpenAI API not available for micro-cycle details, using template:", aiError);
+        console.log(
+          "OpenAI API not available for micro-cycle details, using template:",
+          aiError,
+        );
         // Fallback to template daily sessions
-        dailySessions = this.createTemplateDailySessions(weekNumber, cycleStructure.theme);
+        dailySessions = this.createTemplateDailySessions(
+          weekNumber,
+          cycleStructure.theme,
+        );
       }
-      
+
       return {
         weekNumber,
         startDate,
         endDate,
         theme: cycleStructure.theme || `Week ${weekNumber} Development`,
         objectives: cycleStructure.objectives || [],
-        trainingDays: dailySessions.trainingDays?.map((day: any) => ({
-          ...day,
-          date: this.getDayDate(weekNumber, day.day)
-        })) || [],
+        trainingDays:
+          dailySessions.trainingDays?.map((day: any) => ({
+            ...day,
+            date: this.getDayDate(weekNumber, day.day),
+          })) || [],
         loadDistribution: cycleStructure.loadDistribution || {
           technical: 30,
           tactical: 25,
           physical: 25,
           mental: 10,
-          recovery: 10
+          recovery: 10,
         },
-        expectedOutcomes: cycleStructure.expectedOutcomes || []
+        expectedOutcomes: cycleStructure.expectedOutcomes || [],
       };
     } catch (error) {
       console.error("Error generating micro-cycle details:", error);
@@ -327,11 +370,13 @@ Ensure progression throughout the week and include specific Taekwondo techniques
     planId: string,
     athleteId: number,
     weekNumber: number,
-    performanceData: any
+    performanceData: any,
   ): Promise<{ adjustments: string[]; modifiedSessions: TrainingSession[] }> {
     const openai = getOpenAIClient();
     if (!openai) {
-      throw new Error("OpenAI API key not configured. AI features are unavailable.");
+      throw new Error(
+        "OpenAI API key not configured. AI features are unavailable.",
+      );
     }
 
     try {
@@ -358,21 +403,24 @@ Provide response in JSON format:
         messages: [
           {
             role: "system",
-            content: "You are an adaptive training specialist who modifies training plans based on real-time performance feedback."
+            content:
+              "You are an adaptive training specialist who modifies training plans based on real-time performance feedback.",
           },
           {
             role: "user",
-            content: adjustmentPrompt
-          }
+            content: adjustmentPrompt,
+          },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.6
+        temperature: 0.6,
       });
 
-      const adjustments = JSON.parse(response.choices[0].message.content || "{}");
+      const adjustments = JSON.parse(
+        response.choices[0].message.content || "{}",
+      );
       return {
         adjustments: adjustments.adjustments || [],
-        modifiedSessions: adjustments.modifiedSessions || []
+        modifiedSessions: adjustments.modifiedSessions || [],
       };
     } catch (error) {
       console.error("Error generating adaptive adjustments:", error);
@@ -383,55 +431,62 @@ Provide response in JSON format:
   private getWeekStartDate(weekNumber: number): string {
     const today = new Date();
     const daysToAdd = (weekNumber - 1) * 7;
-    const weekStart = new Date(today.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-    return weekStart.toISOString().split('T')[0];
+    const weekStart = new Date(
+      today.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
+    );
+    return weekStart.toISOString().split("T")[0];
   }
 
   private getWeekEndDate(weekNumber: number): string {
     const today = new Date();
     const daysToAdd = (weekNumber - 1) * 7 + 6;
     const weekEnd = new Date(today.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-    return weekEnd.toISOString().split('T')[0];
+    return weekEnd.toISOString().split("T")[0];
   }
 
   private getDayDate(weekNumber: number, dayNumber: number): string {
     const today = new Date();
     const daysToAdd = (weekNumber - 1) * 7 + (dayNumber - 1);
     const dayDate = new Date(today.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-    return dayDate.toISOString().split('T')[0];
+    return dayDate.toISOString().split("T")[0];
   }
 
-  private createTemplatePlan(athleteName: string, duration: number, planType: string, targetCompetition?: string) {
+  private createTemplatePlan(
+    athleteName: string,
+    duration: number,
+    planType: string,
+    targetCompetition?: string,
+  ) {
     const microCycles = [];
-    
+
     for (let week = 1; week <= duration; week++) {
       const weekThemes = [
         "Foundation Building",
-        "Technical Development", 
+        "Technical Development",
         "Tactical Integration",
-        "Peak Performance"
+        "Peak Performance",
       ];
-      
+
       microCycles.push({
         weekNumber: week,
         theme: weekThemes[(week - 1) % weekThemes.length],
         objectives: [
           `Week ${week} primary objective`,
           `Build on previous week's progress`,
-          `Prepare for next phase`
+          `Prepare for next phase`,
         ],
         loadDistribution: {
           technical: 30,
           tactical: 25,
           physical: 25,
           mental: 15,
-          recovery: 5
+          recovery: 5,
         },
         expectedOutcomes: [
           `Improved skill execution`,
           `Enhanced tactical awareness`,
-          `Increased physical capacity`
-        ]
+          `Increased physical capacity`,
+        ],
       });
     }
 
@@ -441,98 +496,113 @@ Provide response in JSON format:
         "Improve technical execution",
         "Enhance competitive performance",
         "Optimize physical conditioning",
-        targetCompetition ? `Prepare for ${targetCompetition}` : "General performance improvement"
+        targetCompetition
+          ? `Prepare for ${targetCompetition}`
+          : "General performance improvement",
       ],
       progressionStrategy: "Progressive overload with periodic recovery phases",
-      adaptationProtocol: "Weekly assessment and adjustment based on performance indicators",
-      microCycles
+      adaptationProtocol:
+        "Weekly assessment and adjustment based on performance indicators",
+      microCycles,
     };
   }
 
   private createTemplateDailySessions(weekNumber: number, theme: string) {
     const trainingDays = [];
-    
+
     for (let day = 1; day <= 7; day++) {
-      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const dayNames = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ];
       const isRestDay = day === 7; // Sunday rest
-      
+
       if (isRestDay) {
         trainingDays.push({
           day,
-          phase: 'recovery',
-          intensity: 'low',
-          focus: ['Active Recovery', 'Mobility'],
-          sessions: [{
-            type: 'recovery',
-            name: 'Active Recovery Session',
-            duration: 45,
-            intensity: 2,
-            exercises: [
-              {
-                name: 'Light Stretching',
-                description: 'Full body stretching routine',
-                duration: 20,
-                sets: 1,
-                reps: 1
-              },
-              {
-                name: 'Walking',
-                description: 'Light aerobic activity',
-                duration: 25,
-                sets: 1,
-                reps: 1
-              }
-            ],
-            objectives: ['Recovery', 'Mobility maintenance']
-          }],
+          phase: "recovery",
+          intensity: "low",
+          focus: ["Active Recovery", "Mobility"],
+          sessions: [
+            {
+              type: "recovery",
+              name: "Active Recovery Session",
+              duration: 45,
+              intensity: 2,
+              exercises: [
+                {
+                  name: "Light Stretching",
+                  description: "Full body stretching routine",
+                  duration: 20,
+                  sets: 1,
+                  reps: 1,
+                },
+                {
+                  name: "Walking",
+                  description: "Light aerobic activity",
+                  duration: 25,
+                  sets: 1,
+                  reps: 1,
+                },
+              ],
+              objectives: ["Recovery", "Mobility maintenance"],
+            },
+          ],
           duration: 45,
-          targetZones: ['Recovery', 'Flexibility']
+          targetZones: ["Recovery", "Flexibility"],
         });
       } else {
         trainingDays.push({
           day,
-          phase: 'development',
-          intensity: day <= 2 ? 'medium' : day <= 4 ? 'high' : 'medium',
-          focus: ['Technical Skills', 'Physical Conditioning'],
-          sessions: [{
-            type: 'technical',
-            name: `${dayNames[day-1]} Training Session`,
-            duration: 90,
-            intensity: day <= 2 ? 6 : day <= 4 ? 8 : 6,
-            exercises: [
-              {
-                name: 'Warm-up',
-                description: 'Dynamic stretching and movement preparation',
-                duration: 15,
-                sets: 1,
-                reps: 1
-              },
-              {
-                name: 'Technique Practice',
-                description: 'Basic kicks and combinations',
-                duration: 45,
-                sets: 3,
-                reps: 10
-              },
-              {
-                name: 'Conditioning',
-                description: 'Sport-specific fitness exercises',
-                duration: 20,
-                sets: 3,
-                reps: 15
-              },
-              {
-                name: 'Cool-down',
-                description: 'Static stretching and relaxation',
-                duration: 10,
-                sets: 1,
-                reps: 1
-              }
-            ],
-            objectives: ['Improve technique', 'Build conditioning']
-          }],
+          phase: "development",
+          intensity: day <= 2 ? "medium" : day <= 4 ? "high" : "medium",
+          focus: ["Technical Skills", "Physical Conditioning"],
+          sessions: [
+            {
+              type: "technical",
+              name: `${dayNames[day - 1]} Training Session`,
+              duration: 90,
+              intensity: day <= 2 ? 6 : day <= 4 ? 8 : 6,
+              exercises: [
+                {
+                  name: "Warm-up",
+                  description: "Dynamic stretching and movement preparation",
+                  duration: 15,
+                  sets: 1,
+                  reps: 1,
+                },
+                {
+                  name: "Technique Practice",
+                  description: "Basic kicks and combinations",
+                  duration: 45,
+                  sets: 3,
+                  reps: 10,
+                },
+                {
+                  name: "Conditioning",
+                  description: "Sport-specific fitness exercises",
+                  duration: 20,
+                  sets: 3,
+                  reps: 15,
+                },
+                {
+                  name: "Cool-down",
+                  description: "Static stretching and relaxation",
+                  duration: 10,
+                  sets: 1,
+                  reps: 1,
+                },
+              ],
+              objectives: ["Improve technique", "Build conditioning"],
+            },
+          ],
           duration: 90,
-          targetZones: ['Kicks', 'Footwork', 'Flexibility']
+          targetZones: ["Kicks", "Footwork", "Flexibility"],
         });
       }
     }

@@ -73,13 +73,17 @@ OPPONENT PROFILE:
 - Gender: ${opponent.gender || "Unknown"}
 - Strengths: ${opponentStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${opponentWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
-${customNotes ? `
+${
+  customNotes
+    ? `
 
-CUSTOM TACTICAL CONSIDERATIONS:
+CUSTOM NOTES:
 ${customNotes}
 
 Please incorporate these specific requirements and preferences into your analysis.
-` : ''}
+`
+    : ""
+}
 
 Provide a comprehensive tactical analysis in JSON format:
 {
@@ -92,12 +96,14 @@ Provide a comprehensive tactical analysis in JSON format:
 }`;
 
       // Log the prompt being sent to OpenAI
-      console.log('\n========== AI OPPONENT ANALYSIS PROMPT ==========');
-      console.log('System Message:');
-      console.log('You are an elite Taekwondo tactical analyst with decades of experience analyzing fights and developing winning strategies. Provide detailed, actionable tactical advice based on fighter profiles and historical data.');
-      console.log('\nUser Prompt:');
+      console.log("\n========== AI OPPONENT ANALYSIS PROMPT ==========");
+      console.log("System Message:");
+      console.log(
+        "You are an elite Taekwondo tactical analyst with decades of experience analyzing fights and developing winning strategies. Provide detailed, actionable tactical advice based on fighter profiles and historical data.",
+      );
+      console.log("\nUser Prompt:");
       console.log(analysisPrompt);
-      console.log('==================================================\n');
+      console.log("==================================================\n");
 
       const response = await openai.chat.completions.create({
         model: "gpt-5",
@@ -287,19 +293,14 @@ Return as a JSON array of strings: ["recommendation 1", "recommendation 2", ...]
       console.log(`Processing query: "${query}" for athlete ${athleteId}`);
 
       // Get comprehensive athlete data
-      const [
-        athlete,
-        kpis,
-        strengths,
-        weaknesses,
-        trainingRecommendations,
-      ] = await Promise.all([
-        storage.getAthlete(athleteId),
-        storage.getKpiMetricsByAthleteId(athleteId),
-        storage.getStrengthsByAthleteId(athleteId),
-        storage.getWeaknessesByAthleteId(athleteId),
-        storage.getTrainingRecommendationsByAthleteId(athleteId),
-      ]);
+      const [athlete, kpis, strengths, weaknesses, trainingRecommendations] =
+        await Promise.all([
+          storage.getAthlete(athleteId),
+          storage.getKpiMetricsByAthleteId(athleteId),
+          storage.getStrengthsByAthleteId(athleteId),
+          storage.getWeaknessesByAthleteId(athleteId),
+          storage.getTrainingRecommendationsByAthleteId(athleteId),
+        ]);
 
       console.log(
         `Athlete data loaded: ${athlete?.name}, ${strengths.length} strengths, ${weaknesses.length} weaknesses`,
