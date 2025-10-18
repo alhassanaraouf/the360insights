@@ -104,19 +104,42 @@ export default function DrawsheetPage() {
     let bracketSize = Math.max(64, Math.pow(2, Math.ceil(Math.log2(seededParticipants.length))));
     bracketSize = Math.min(bracketSize, 128);
     
-    // Pad with byes if needed
-    while (seededParticipants.length < bracketSize) {
-      seededParticipants.push({
-        seed: 0,
-        name: "BYE",
-        country: "",
-      });
-    }
-
-    // Split into two halves
+    // Distribute participants evenly between left and right pools
     const halfSize = bracketSize / 2;
-    const leftPool = seededParticipants.slice(0, halfSize);
-    const rightPool = seededParticipants.slice(halfSize);
+    const leftPool: BracketParticipant[] = [];
+    const rightPool: BracketParticipant[] = [];
+    
+    // Alternate distribution: odd indices go left, even indices go right
+    seededParticipants.forEach((participant, index) => {
+      if (index % 2 === 0) {
+        leftPool.push(participant);
+      } else {
+        rightPool.push(participant);
+      }
+    });
+    
+    // Fill remaining slots with BYEs, alternating between pools
+    let leftByes = halfSize - leftPool.length;
+    let rightByes = halfSize - rightPool.length;
+    
+    while (leftByes > 0 || rightByes > 0) {
+      if (leftByes > 0) {
+        leftPool.push({
+          seed: 0,
+          name: "BYE",
+          country: "",
+        });
+        leftByes--;
+      }
+      if (rightByes > 0) {
+        rightPool.push({
+          seed: 0,
+          name: "BYE",
+          country: "",
+        });
+        rightByes--;
+      }
+    }
 
     // Generate rounds
     const generateRounds = (pool: BracketParticipant[]) => {
