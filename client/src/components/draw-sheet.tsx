@@ -97,24 +97,32 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
       });
     }
 
-    // Calculate number of rounds
-    const totalRounds = Math.log2(bracketSize);
-    
-    // Generate rounds structure
-    const rounds: BracketParticipant[][][] = [];
-    let currentMatches = seededParticipants;
-    
-    for (let round = 0; round < totalRounds; round++) {
-      const matchPairs: BracketParticipant[][] = [];
-      for (let i = 0; i < currentMatches.length; i += 2) {
-        matchPairs.push([currentMatches[i], currentMatches[i + 1]]);
-      }
-      rounds.push(matchPairs);
-      // For next round, take winner slots (we'll just take first of each pair for display)
-      currentMatches = matchPairs.map(pair => pair[0]);
-    }
+    // Split into two halves
+    const halfSize = bracketSize / 2;
+    const leftPool = seededParticipants.slice(0, halfSize);
+    const rightPool = seededParticipants.slice(halfSize);
 
-    return { rounds, bracketSize, totalRounds };
+    // Generate rounds for left pool (goes left to right)
+    const generateRounds = (pool: BracketParticipant[]) => {
+      const rounds: BracketParticipant[][][] = [];
+      let currentMatches = pool;
+      
+      while (currentMatches.length > 1) {
+        const matchPairs: BracketParticipant[][] = [];
+        for (let i = 0; i < currentMatches.length; i += 2) {
+          matchPairs.push([currentMatches[i], currentMatches[i + 1] || currentMatches[i]]);
+        }
+        rounds.push(matchPairs);
+        currentMatches = matchPairs.map(pair => pair[0]);
+      }
+      
+      return rounds;
+    };
+
+    const leftRounds = generateRounds(leftPool);
+    const rightRounds = generateRounds(rightPool);
+
+    return { leftRounds, rightRounds, bracketSize };
   }, [participants]);
 
   if (isLoading) {
@@ -144,15 +152,15 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
 
   if (!bracket) return null;
 
-  const { rounds, bracketSize } = bracket;
+  const { leftRounds, rightRounds, bracketSize } = bracket;
   
   // Round labels based on bracket size
   const getRoundLabel = (roundIndex: number, totalRounds: number): string => {
     const roundsFromEnd = totalRounds - roundIndex;
     
     if (roundsFromEnd === 1) return "Final";
-    if (roundsFromEnd === 2) return "Semi Finals";
-    if (roundsFromEnd === 3) return "Quarter Finals";
+    if (roundsFromEnd === 2) return "Semifinals";
+    if (roundsFromEnd === 3) return "Quarterfinals";
     if (roundsFromEnd === 4) return "Round of 16";
     if (roundsFromEnd === 5) return "Round of 32";
     if (roundsFromEnd === 6) return "Round of 64";
@@ -163,167 +171,226 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
 
   const matchHeight = 60;
   const matchGap = 20;
-  const roundWidth = 220;
+  const roundWidth = 200;
   const connectorWidth = 40;
+
+  // Render a match box
+  const MatchBox = ({ match }: { match: BracketParticipant[] }) => (
+    <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 h-full">
+      {/* Athlete 1 */}
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
+            {match[0].seed > 0 ? match[0].seed : ''}
+          </span>
+          <span className="font-medium truncate flex-1" title={match[0].name}>
+            {match[0].name.length > 14 ? match[0].name.substring(0, 14) + '...' : match[0].name}
+          </span>
+          {match[0].country && (
+            <span className="text-base flex-shrink-0" title={match[0].country}>
+              {getCountryFlag(match[0].country)}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Athlete 2 */}
+      {match[1] && (
+        <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
+              {match[1].seed > 0 ? match[1].seed : ''}
+            </span>
+            <span className="font-medium truncate flex-1" title={match[1].name}>
+              {match[1].name.length > 14 ? match[1].name.substring(0, 14) + '...' : match[1].name}
+            </span>
+            {match[1].country && (
+              <span className="text-base flex-shrink-0" title={match[1].country}>
+                {getCountryFlag(match[1].country)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       {/* Bracket Display */}
       <Card className="p-6 overflow-x-auto">
-        <div className="min-w-max relative">
-          {/* Round Headers */}
-          <div className="flex mb-6">
-            {rounds.map((round, roundIndex) => (
-              <div
-                key={roundIndex}
-                className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
-                style={{ width: `${roundWidth + connectorWidth}px` }}
-              >
-                {getRoundLabel(roundIndex, rounds.length)}
-              </div>
-            ))}
+        <div className="min-w-max">
+          {/* Headers */}
+          <div className="flex justify-center mb-6">
+            {/* Left side headers */}
+            <div className="flex">
+              {leftRounds.map((round, roundIndex) => (
+                <div
+                  key={`left-header-${roundIndex}`}
+                  className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
+                  style={{ width: `${roundWidth + connectorWidth}px` }}
+                >
+                  {getRoundLabel(roundIndex, leftRounds.length + 1)}
+                </div>
+              ))}
+            </div>
+            
+            {/* Finals header in the middle */}
+            <div
+              className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
+              style={{ width: `${roundWidth}px` }}
+            >
+              Final
+            </div>
+            
+            {/* Right side headers (reversed) */}
+            <div className="flex">
+              {rightRounds.slice().reverse().map((round, roundIndex) => (
+                <div
+                  key={`right-header-${roundIndex}`}
+                  className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300"
+                  style={{ width: `${connectorWidth + roundWidth}px` }}
+                >
+                  {getRoundLabel(rightRounds.length - 1 - roundIndex, rightRounds.length + 1)}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* SVG for connector lines */}
-          <svg 
-            className="absolute top-16 left-0 pointer-events-none"
-            style={{ 
-              width: '100%', 
-              height: `${Math.max(...rounds.map((r, idx) => {
-                const spacing = Math.pow(2, idx);
+          {/* Bracket */}
+          <div className="flex items-center justify-center">
+            {/* Left Side */}
+            <div className="flex">
+              {leftRounds.map((round, roundIndex) => {
+                const spacing = Math.pow(2, roundIndex);
                 const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
-                return topMargin + r.length * ((matchHeight + matchGap) * spacing);
-              }))}px`,
-              zIndex: 0
-            }}
-          >
-            {rounds.map((round, roundIndex) => {
-              if (roundIndex === rounds.length - 1) return null; // No connectors after final
-              
-              const spacing = Math.pow(2, roundIndex);
-              const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
-              const x1 = roundIndex * (roundWidth + connectorWidth) + roundWidth;
-              const x2 = x1 + connectorWidth;
-              
-              return round.map((match, matchIndex) => {
-                const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                const y2 = topMargin + Math.floor(matchIndex / 2) * ((matchHeight + matchGap) * spacing * 2) + matchHeight / 2 + (matchHeight + matchGap) * spacing / 2;
                 
-                // Every pair of matches connects to one match in next round
-                if (matchIndex % 2 === 0) {
-                  const y1Next = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                  
-                  return (
-                    <g key={`connector-${roundIndex}-${matchIndex}`}>
-                      {/* Horizontal line from match 1 */}
-                      <line
-                        x1={x1}
-                        y1={y1}
-                        x2={x1 + connectorWidth / 2}
-                        y2={y1}
-                        className="stroke-gray-400 dark:stroke-gray-500"
-                        strokeWidth="2"
-                      />
-                      {/* Horizontal line from match 2 */}
-                      <line
-                        x1={x1}
-                        y1={y1Next}
-                        x2={x1 + connectorWidth / 2}
-                        y2={y1Next}
-                        className="stroke-gray-400 dark:stroke-gray-500"
-                        strokeWidth="2"
-                      />
-                      {/* Vertical line connecting them */}
-                      <line
-                        x1={x1 + connectorWidth / 2}
-                        y1={y1}
-                        x2={x1 + connectorWidth / 2}
-                        y2={y1Next}
-                        className="stroke-gray-400 dark:stroke-gray-500"
-                        strokeWidth="2"
-                      />
-                      {/* Horizontal line to next round */}
-                      <line
-                        x1={x1 + connectorWidth / 2}
-                        y1={y2}
-                        x2={x2}
-                        y2={y2}
-                        className="stroke-gray-400 dark:stroke-gray-500"
-                        strokeWidth="2"
-                      />
-                    </g>
-                  );
-                }
-                return null;
-              });
-            })}
-          </svg>
-
-          {/* Bracket Structure */}
-          <div className="flex relative" style={{ zIndex: 1 }}>
-            {rounds.map((round, roundIndex) => {
-              const spacing = Math.pow(2, roundIndex);
-              const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
-              
-              return (
-                <div
-                  key={roundIndex}
-                  className="flex flex-col"
-                  style={{ 
-                    width: `${roundWidth + connectorWidth}px`,
-                    gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
-                    marginTop: `${topMargin}px`
-                  }}
-                >
-                  {round.map((match, matchIndex) => (
+                return (
+                  <div key={`left-round-${roundIndex}`} className="flex items-start">
                     <div
-                      key={matchIndex}
-                      className="relative"
-                      style={{ height: `${matchHeight}px`, width: `${roundWidth}px` }}
+                      className="flex flex-col"
+                      style={{ 
+                        width: `${roundWidth}px`,
+                        gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
+                        marginTop: `${topMargin}px`
+                      }}
                     >
-                      {/* Match Container */}
-                      <div className="border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 h-full">
-                        {/* Athlete 1 */}
-                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-500 dark:text-gray-400 text-xs w-4">
-                              {match[0].seed > 0 ? match[0].seed : ''}
-                            </span>
-                            <span className="font-medium truncate flex-1" title={match[0].name}>
-                              {match[0].name.length > 15 ? match[0].name.substring(0, 15) + '...' : match[0].name}
-                            </span>
-                            {match[0].country && (
-                              <span className="text-base" title={match[0].country}>
-                                {getCountryFlag(match[0].country)}
-                              </span>
-                            )}
-                          </div>
+                      {round.map((match, matchIndex) => (
+                        <div
+                          key={matchIndex}
+                          style={{ height: `${matchHeight}px` }}
+                        >
+                          <MatchBox match={match} />
                         </div>
-                        
-                        {/* Athlete 2 */}
-                        {match[1] && (
-                          <div className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-gray-500 dark:text-gray-400 text-xs w-4">
-                                {match[1].seed > 0 ? match[1].seed : ''}
-                              </span>
-                              <span className="font-medium truncate flex-1" title={match[1].name}>
-                                {match[1].name.length > 15 ? match[1].name.substring(0, 15) + '...' : match[1].name}
-                              </span>
-                              {match[1].country && (
-                                <span className="text-base" title={match[1].country}>
-                                  {getCountryFlag(match[1].country)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                    
+                    {/* Connectors */}
+                    {roundIndex < leftRounds.length - 1 && (
+                      <svg 
+                        width={connectorWidth} 
+                        height={(matchHeight + matchGap) * Math.pow(2, roundIndex) * round.length}
+                        style={{ marginTop: `${topMargin}px` }}
+                      >
+                        {round.map((_, matchIndex) => {
+                          if (matchIndex % 2 === 0) {
+                            const y1 = matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const y2 = (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const yMid = (y1 + y2) / 2;
+                            
+                            return (
+                              <g key={matchIndex}>
+                                <line x1="0" y1={y1} x2={connectorWidth / 2} y2={y1} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1="0" y1={y2} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1={connectorWidth / 2} y1={y1} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1={connectorWidth / 2} y1={yMid} x2={connectorWidth} y2={yMid} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                              </g>
+                            );
+                          }
+                          return null;
+                        })}
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Finals */}
+            <div
+              className="flex flex-col justify-center"
+              style={{ 
+                width: `${roundWidth}px`,
+                minHeight: `${matchHeight}px`
+              }}
+            >
+              <div style={{ height: `${matchHeight}px` }}>
+                <div className="border-2 border-yellow-500 dark:border-yellow-400 rounded bg-yellow-50 dark:bg-yellow-900/20 h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">🏆</div>
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">FINAL</div>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+
+            {/* Right Side */}
+            <div className="flex">
+              {rightRounds.slice().reverse().map((round, roundIndex) => {
+                const actualRoundIndex = rightRounds.length - 1 - roundIndex;
+                const spacing = Math.pow(2, actualRoundIndex);
+                const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+                
+                return (
+                  <div key={`right-round-${roundIndex}`} className="flex items-start">
+                    {/* Connectors */}
+                    {roundIndex > 0 && (
+                      <svg 
+                        width={connectorWidth} 
+                        height={(matchHeight + matchGap) * Math.pow(2, actualRoundIndex) * round.length}
+                        style={{ marginTop: `${topMargin}px` }}
+                      >
+                        {round.map((_, matchIndex) => {
+                          if (matchIndex % 2 === 0) {
+                            const y1 = matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const y2 = (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            const yMid = (y1 + y2) / 2;
+                            
+                            return (
+                              <g key={matchIndex}>
+                                <line x1={connectorWidth} y1={y1} x2={connectorWidth / 2} y2={y1} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1={connectorWidth} y1={y2} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1={connectorWidth / 2} y1={y1} x2={connectorWidth / 2} y2={y2} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                                <line x1={connectorWidth / 2} y1={yMid} x2="0" y2={yMid} stroke="currentColor" strokeWidth="2" className="text-gray-400 dark:text-gray-500" />
+                              </g>
+                            );
+                          }
+                          return null;
+                        })}
+                      </svg>
+                    )}
+                    
+                    <div
+                      className="flex flex-col"
+                      style={{ 
+                        width: `${roundWidth}px`,
+                        gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
+                        marginTop: `${topMargin}px`
+                      }}
+                    >
+                      {round.map((match, matchIndex) => (
+                        <div
+                          key={matchIndex}
+                          style={{ height: `${matchHeight}px` }}
+                        >
+                          <MatchBox match={match} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </Card>
