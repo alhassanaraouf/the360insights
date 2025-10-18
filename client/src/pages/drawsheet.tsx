@@ -9,6 +9,7 @@ interface BracketParticipant {
   seed: number;
   name: string;
   country: string;
+  athleteId?: number;
 }
 
 // Helper function to get country flag emoji
@@ -96,6 +97,7 @@ export default function DrawsheetPage() {
       seed: idx + 1,
       name: p.athlete.name,
       country: p.athlete.nationality,
+      athleteId: p.athlete.id,
     }));
 
     // Calculate bracket size - minimum 64, max 128
@@ -172,12 +174,23 @@ export default function DrawsheetPage() {
           <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
             {match[0].seed > 0 ? match[0].seed : ''}
           </span>
-          <span className="font-medium truncate flex-1" title={match[0].name}>
-            {match[0].name.length > 14 ? match[0].name.substring(0, 14) + '...' : match[0].name}
-          </span>
           {match[0].country && (
             <span className="text-base flex-shrink-0" title={match[0].country}>
               {getCountryFlag(match[0].country)}
+            </span>
+          )}
+          {match[0].athleteId ? (
+            <Link 
+              href={`/athlete/${match[0].athleteId}`}
+              className="font-medium truncate flex-1 hover:text-primary hover:underline"
+              title={match[0].name}
+              data-testid={`link-athlete-${match[0].athleteId}`}
+            >
+              {match[0].name.length > 14 ? match[0].name.substring(0, 14) + '...' : match[0].name}
+            </Link>
+          ) : (
+            <span className="font-medium truncate flex-1 text-gray-400" title={match[0].name}>
+              {match[0].name}
             </span>
           )}
         </div>
@@ -189,12 +202,23 @@ export default function DrawsheetPage() {
             <span className="text-gray-500 dark:text-gray-400 text-xs w-5 flex-shrink-0">
               {match[1].seed > 0 ? match[1].seed : ''}
             </span>
-            <span className="font-medium truncate flex-1" title={match[1].name}>
-              {match[1].name.length > 14 ? match[1].name.substring(0, 14) + '...' : match[1].name}
-            </span>
             {match[1].country && (
               <span className="text-base flex-shrink-0" title={match[1].country}>
                 {getCountryFlag(match[1].country)}
+              </span>
+            )}
+            {match[1].athleteId ? (
+              <Link 
+                href={`/athlete/${match[1].athleteId}`}
+                className="font-medium truncate flex-1 hover:text-primary hover:underline"
+                title={match[1].name}
+                data-testid={`link-athlete-${match[1].athleteId}`}
+              >
+                {match[1].name.length > 14 ? match[1].name.substring(0, 14) + '...' : match[1].name}
+              </Link>
+            ) : (
+              <span className="font-medium truncate flex-1 text-gray-400" title={match[1].name}>
+                {match[1].name}
               </span>
             )}
           </div>
