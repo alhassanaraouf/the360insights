@@ -25,7 +25,7 @@ The platform uses React 18 with TypeScript for the frontend, styled with Tailwin
 
 ### Feature Specifications
 -   **Dashboard System**: Athlete 360° overview, performance analytics, KPI tracking, strengths/weaknesses analysis.
--   **AI-Powered Features**: Opponent analysis, personalized training planner, injury prevention, live match analysis, performance insights.
+-   **AI-Powered Features**: Opponent analysis with rank-weighted intelligence (when rank difference >5, ranking is prioritized over other factors), personalized training planner, injury prevention, live match analysis, performance insights.
 -   **Athlete Management**: Comprehensive directory with search, filter, sort, edit, and delete functionalities.
 -   **Competitions Directory**: Full-featured competition browser with search, filters (status, location), sorting, competition cards with logos, and comprehensive detailed popup modals showing all competition information (location, dates, category, grade level, competition type, ranking points, registration deadline, organizer, sync metadata) - following the same pattern as Athletes directory. Defaults to showing upcoming competitions on page load.
 -   **Competition Sync**: Backend-only participant syncing using Puppeteer with stealth mode (JavaScript equivalent of Python's cloudscraper) to bypass Cloudflare protection; Fetches and processes participants server-side (page 0 only, 500 max participants) with intelligent athlete matching: primary match by SimplyCompete userId, fallback to name+nationality matching, automatic userId backfilling for existing athletes.

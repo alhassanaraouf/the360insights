@@ -57,6 +57,25 @@ export class AIAnalysisEngine {
         throw new Error("Athlete or opponent data not found");
       }
 
+      // Calculate rank difference and determine if rank should be prioritized
+      const athleteRank = (athlete as any).worldRank;
+      const opponentRank = (opponent as any).worldRank;
+      const hasRankData = athleteRank && opponentRank;
+      const rankDifference = hasRankData ? Math.abs(athleteRank - opponentRank) : 0;
+      const prioritizeRank = hasRankData && rankDifference > 5;
+      
+      // Determine who is higher ranked (lower number = better rank)
+      let rankContext = "";
+      if (hasRankData) {
+        if (athleteRank < opponentRank) {
+          rankContext = `Your athlete is ranked HIGHER (#${athleteRank} vs #${opponentRank}) - a difference of ${rankDifference} positions.`;
+        } else if (athleteRank > opponentRank) {
+          rankContext = `Your athlete is ranked LOWER (#${athleteRank} vs #${opponentRank}) - a difference of ${rankDifference} positions.`;
+        } else {
+          rankContext = `Both athletes are equally ranked at #${athleteRank}.`;
+        }
+      }
+
       const analysisPrompt = `
 Analyze this Taekwondo matchup and provide tactical recommendations:
 
@@ -64,6 +83,7 @@ ATHLETE PROFILE:
 - Name: ${athlete.name}
 - Nationality: ${athlete.nationality}
 - Gender: ${athlete.gender || "Unknown"}
+${hasRankData ? `- World Rank: #${athleteRank}` : ''}
 - Strengths: ${athleteStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${athleteWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
 
@@ -71,8 +91,19 @@ OPPONENT PROFILE:
 - Name: ${opponent.name}
 - Nationality: ${opponent.nationality}
 - Gender: ${opponent.gender || "Unknown"}
+${hasRankData ? `- World Rank: #${opponentRank}` : ''}
 - Strengths: ${opponentStrengths.map((s: any) => `${s.name} (${s.score}/100): ${s.description}`).join(", ") || "No strength data available"}
 - Weaknesses: ${opponentWeaknesses.map((w: any) => `${w.name} (${w.score}/100): ${w.description}`).join(", ") || "No weakness data available"}
+${prioritizeRank ? `
+
+⚠️ CRITICAL RANKING CONTEXT:
+${rankContext}
+This is a SIGNIFICANT rank difference (>${5} positions). The world ranking difference should be weighted MORE HEAVILY than other considerations in your analysis. World rankings reflect consistent performance, competition experience, and overall skill level. Adjust your win probability, tactical recommendations, and mental preparation advice to heavily account for this ranking disparity.
+` : hasRankData ? `
+
+RANKING CONTEXT:
+${rankContext}
+` : ''}
 ${
   customNotes
     ? `
