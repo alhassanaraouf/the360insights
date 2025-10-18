@@ -264,6 +264,8 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
               {leftRounds.map((round, roundIndex) => {
                 const spacing = Math.pow(2, roundIndex);
                 const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+                const gap = (matchHeight + matchGap) * spacing - matchGap;
+                const columnHeight = topMargin * 2 + round.length * matchHeight + (round.length - 1) * gap;
                 
                 return (
                   <div key={`left-round-${roundIndex}`} className="flex items-start">
@@ -271,7 +273,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       className="flex flex-col"
                       style={{ 
                         width: `${roundWidth}px`,
-                        gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
+                        gap: `${gap}px`,
                         marginTop: `${topMargin}px`
                       }}
                     >
@@ -286,13 +288,14 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     {roundIndex < leftRounds.length - 1 && (
                       <svg 
                         width={connectorWidth} 
-                        height={(matchHeight + matchGap) * Math.pow(2, roundIndex) * round.length + topMargin * 2}
+                        height={columnHeight}
                         style={{ flexShrink: 0 }}
                       >
                         {round.map((_, matchIndex) => {
                           if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                            const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                            const y2 = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            // Calculate Y position using corrected formula
+                            const y1 = topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
+                            const y2 = topMargin + matchHeight / 2 + (matchIndex + 1) * (matchHeight + gap);
                             const yMid = (y1 + y2) / 2;
                             
                             return (
@@ -372,6 +375,8 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                 const actualRoundIndex = rightRounds.length - 1 - roundIndex;
                 const spacing = Math.pow(2, actualRoundIndex);
                 const topMargin = (matchHeight + matchGap) * (spacing - 1) / 2;
+                const gap = (matchHeight + matchGap) * spacing - matchGap;
+                const columnHeight = topMargin * 2 + round.length * matchHeight + (round.length - 1) * gap;
                 
                 return (
                   <div key={`right-round-${roundIndex}`} className="flex items-start">
@@ -379,13 +384,14 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                     {roundIndex > 0 && (
                       <svg 
                         width={connectorWidth} 
-                        height={(matchHeight + matchGap) * Math.pow(2, actualRoundIndex) * round.length + topMargin * 2}
+                        height={columnHeight}
                         style={{ flexShrink: 0 }}
                       >
                         {round.map((_, matchIndex) => {
                           if (matchIndex % 2 === 0 && matchIndex + 1 < round.length) {
-                            const y1 = topMargin + matchIndex * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
-                            const y2 = topMargin + (matchIndex + 1) * ((matchHeight + matchGap) * spacing) + matchHeight / 2;
+                            // Calculate Y position using corrected formula
+                            const y1 = topMargin + matchHeight / 2 + matchIndex * (matchHeight + gap);
+                            const y2 = topMargin + matchHeight / 2 + (matchIndex + 1) * (matchHeight + gap);
                             const yMid = (y1 + y2) / 2;
                             
                             return (
@@ -442,7 +448,7 @@ export function DrawSheet({ competition, participants, isLoading }: DrawSheetPro
                       className="flex flex-col"
                       style={{ 
                         width: `${roundWidth}px`,
-                        gap: `${(matchHeight + matchGap) * spacing - matchGap}px`,
+                        gap: `${gap}px`,
                         marginTop: `${topMargin}px`
                       }}
                     >
