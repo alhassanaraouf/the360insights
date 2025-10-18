@@ -3,9 +3,6 @@ import {
   createUserContent,
   createPartFromUri,
 } from "@google/genai";
-import * as fs from "fs";
-import * as path from "path";
-import { randomUUID } from "crypto";
 
 // In-memory progress store (for demo; use Redis for production)
 const progressStore: Record<
