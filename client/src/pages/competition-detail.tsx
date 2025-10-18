@@ -738,17 +738,22 @@ export default function CompetitionDetail() {
               </DialogTitle>
             </DialogHeader>
             
-            {selectedDrawWeight && (
-              <DrawSheet
-                competition={competition as any}
-                participants={
-                  participants.filter((p: any) => 
-                    p.weightCategory === selectedDrawWeight
-                  ) as any
-                }
-                isLoading={participantsLoading}
-              />
-            )}
+            {selectedDrawWeight && (() => {
+              const filteredForDraw = participants.filter((p: any) => 
+                p.weightCategory === selectedDrawWeight
+              );
+              console.log('Selected weight:', selectedDrawWeight);
+              console.log('Total participants:', participants.length);
+              console.log('Filtered for draw:', filteredForDraw.length, filteredForDraw);
+              
+              return (
+                <DrawSheet
+                  competition={competition as any}
+                  participants={filteredForDraw as any}
+                  isLoading={participantsLoading}
+                />
+              );
+            })()}
           </DialogContent>
         </Dialog>
       </div>
