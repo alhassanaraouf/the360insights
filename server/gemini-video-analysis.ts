@@ -52,19 +52,19 @@ const genAI = new GoogleGenAI({ apiKey: API_KEY });
 // JSON cleaning function
 function cleanJsonResponse(responseText: string): string {
   let cleanedText = responseText.trim();
-
+  
   // Remove code block markers
   cleanedText = cleanedText.replace(/^```json\s*/m, '').replace(/\s*```$/m, '');
   cleanedText = cleanedText.replace(/^```\s*/m, '').replace(/\s*```$/m, '');
-
+  
   // Extract JSON object from text (handle responses like "Okay, here's the JSON: {...}")
   const firstBrace = cleanedText.indexOf('{');
   const lastBrace = cleanedText.lastIndexOf('}');
-
+  
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
   }
-
+  
   // Parse and reformat
   try {
     const parsed = JSON.parse(cleanedText);
@@ -73,7 +73,7 @@ function cleanJsonResponse(responseText: string): string {
     // Additional cleanup attempts
     cleanedText = cleanedText.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
     cleanedText = cleanedText.replace(/,\s*([}\]])/g, '$1');
-
+    
     try {
       const parsed = JSON.parse(cleanedText);
       return JSON.stringify(parsed);
@@ -107,7 +107,7 @@ function parseAdviceJsonWithRecovery(responseText: string) {
   let inString = false;
   let escaped = false;
   let lastQuoteIndex = -1;
-
+  
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (escaped) {
@@ -123,7 +123,7 @@ function parseAdviceJsonWithRecovery(responseText: string) {
       inString = !inString;
     }
   }
-
+  
   // If we ended in a string, close it
   if (inString && lastQuoteIndex >= 0) {
     text = text + '"';
@@ -134,7 +134,7 @@ function parseAdviceJsonWithRecovery(responseText: string) {
   const stack: string[] = [];
   inString = false;
   escaped = false;
-
+  
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (inString) {
@@ -181,15 +181,15 @@ function parseAdviceJsonWithRecovery(responseText: string) {
   const lastCloseBracket = text.lastIndexOf(']');
   const lastCloseBrace = text.lastIndexOf('}');
   const truncatePoint = Math.max(lastComma, lastCloseBracket, lastCloseBrace);
-
+  
   if (truncatePoint > text.length / 2) {
     const truncated = text.slice(0, truncatePoint + 1);
-
+    
     // Re-balance after truncation
     const stackAfter: string[] = [];
     let inStr = false;
     let esc = false;
-
+    
     for (let i = 0; i < truncated.length; i++) {
       const ch = truncated[i];
       if (inStr) {
@@ -207,13 +207,13 @@ function parseAdviceJsonWithRecovery(responseText: string) {
         }
       }
     }
-
+    
     const closersAfter = stackAfter
       .slice()
       .reverse()
       .map((c) => (c === '{' ? '}' : ']'))
       .join('');
-
+    
     try {
       return { parsed: tryParse(truncated + closersAfter), recovered: true };
     } catch {}
@@ -227,13 +227,13 @@ function extractPlayerNames(matchAnalysis: string): string[] {
   // Try to find player names in patterns like "Name (COUNTRY)" or just "Name"
   const pattern = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+\([A-Z]{2,3}\))?)/g;
   const matches = matchAnalysis.match(pattern);
-
+  
   if (matches && matches.length >= 2) {
     // Return first two unique names
     const uniqueNames = Array.from(new Set(matches));
     return uniqueNames.slice(0, 2);
   }
-
+  
   return ["Player 1", "Player 2"];
 }
 
@@ -351,7 +351,8 @@ export class GeminiVideoAnalysis {
 
       // Match Analysis (Text) - Run first to extract player names
       try {
-        const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
+          try {
+            const prompt = `Write me a match analysis of what happened in ${roundText} in technical terms. Include the story of the ${roundText === 'entire match' ? 'match' : 'round'}.
 
 Write your response in English.
 
@@ -371,7 +372,7 @@ Start with the first player, then analyze the second player. Use actual player n
 Provide a detailed narrative that captures the essence of the competition.`;
 
             const result = await genAI.models.generateContent({
-          model: "gemini-2.5-pro",
+          model: "gemini-2.0-flash-exp",
           config: {
             temperature: 0,
             maxOutputTokens: 8192,
@@ -437,7 +438,7 @@ CRITICAL:
 - List scoring events chronologically`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.5-pro",
+              model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
@@ -484,7 +485,7 @@ Return this EXACT JSON format:
 CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.5-pro",
+              model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
@@ -531,7 +532,7 @@ Return this EXACT JSON format:
 CRITICAL: Use MM:SS timestamp format (Minutes:Seconds) - NOT HH:MM:SS`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.5-pro",
+              model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
@@ -581,7 +582,7 @@ CRITICAL:
 - Use the term "Gam-jeom" for penalty events in descriptions`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.5-pro",
+              model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 8192,
@@ -651,7 +652,7 @@ Rules:
 - Return ONLY the JSON object`;
 
             const result = await genAI.models.generateContent({
-              model: "gemini-2.5-pro",
+              model: "gemini-2.0-flash-exp",
               config: {
                 temperature: 0,
                 maxOutputTokens: 16384,
@@ -719,7 +720,7 @@ Rules:
       const [scoreResult, punchResult, kickResult, violationResult, adviceResult] = results;
 
       const processingTime = Date.now() - startTime;
-
+      
   if (jobId) delete progressStore[jobId];
   return {
         match_analysis: matchAnalysisText,
@@ -735,7 +736,7 @@ Rules:
         processedAt: new Date().toISOString(),
         processingTimeMs: processingTime,
         errors: {
-          match: matchAnalysisText === null ? "Match analysis failed" : null,
+          match: matchResult.status === 'fulfilled' ? matchResult.value.error : (matchResult as PromiseRejectedResult).reason,
           score: scoreResult.status === 'fulfilled' ? scoreResult.value.error : (scoreResult as PromiseRejectedResult).reason,
           punch: punchResult.status === 'fulfilled' ? punchResult.value.error : (punchResult as PromiseRejectedResult).reason,
           kick: kickResult.status === 'fulfilled' ? kickResult.value.error : (kickResult as PromiseRejectedResult).reason,
@@ -799,7 +800,7 @@ Be specific, detailed, and constructive. Focus on practical coaching advice.`;
       onProgress("Comparing to professional standards...", 70);
 
       const result = await genAI.models.generateContent({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.0-flash-exp",
         config: {
           temperature: 0,
           maxOutputTokens: 8192,
